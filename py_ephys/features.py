@@ -418,7 +418,9 @@ def get_sweep_sag(sweep: efex.EphysSweepFeatureExtractor) -> Tuple[float, Dict]:
 
 
 @ephys_feature
-def get_sag_fraction(sweep: efex.EphysSweepFeatureExtractor) -> Tuple[float, Dict]:
+def get_sweep_sag_fraction(
+    sweep: efex.EphysSweepFeatureExtractor,
+) -> Tuple[float, Dict]:
     """Extract sweep level sag fraction feature.
 
     description: fraction that membrane potential relaxes back to baseline.
@@ -1097,7 +1099,7 @@ def get_fp_sweep_ft_dict(return_ft_info=False):
         "spike_freq_adapt": get_sweep_spike_freq_adapt,  # num_ap, stim_onset, stim_end, spike_features
         "r_input": get_sweep_r_input,  # stim_onset, stim_end, stim_amp, v_baseline, v_deflect
         "sag": get_sweep_sag,  # None (part of efex)
-        "sag_fraction": get_sag_fraction,  # None (part of efex)
+        "sag_fraction": get_sweep_sag_fraction,  # None (part of efex)
         "sag_ratio": get_sweep_sag_ratio,  # None (part of efex)
         "sag_area": get_sweep_sag_area,  # stim_onset, stim_end, v_deflect
         "sag_time": get_sweep_sag_time,  # stim_onset, stim_end, v_deflect

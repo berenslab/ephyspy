@@ -47,6 +47,8 @@ class EphysSweepSetFeatureExtractor(efex.EphysSweepSetFeatureExtractor):
         super().__init__(t_set, v_set, i_set, t_start, t_end, *args, **kwargs)
         self.spike_feature_funcs = {}
         self.sweep_feature_funcs = {}
+        self.sweepset_feature_funcs = {}
+        self.sweepset_features = {}
         self.metadata = metadata
 
     def get_sweep_features(self):
@@ -59,14 +61,25 @@ class EphysSweepSetFeatureExtractor(efex.EphysSweepSetFeatureExtractor):
     def get_sweep_feature(self, key):
         return self.get_sweep_features()[key]
 
+    def get_sweepset_features(self):
+        if self.sweepset_features == {}:
+            self.process()
+        return self.sweepset_features
+
     def add_spike_feature(self, feature_name, feature_func):
         self.spike_feature_funcs[feature_name] = feature_func
 
     def add_sweep_feature(self, feature_name, feature_func):
         self.sweep_feature_funcs[feature_name] = feature_func
 
-    def process_spikes(self):
-        """Analyze spike features for all sweeps."""
+    def add_sweepset_feature(self, feature_name, feature_func):
+        self.sweepset_feature_funcs[feature_name] = feature_func
+
+    def process_new_sweepset_feature(self, ft, ft_func):
+        self.sweepset_features[ft] = ft_func(self.get_sweep_features())
+
+    def process(self):
+        """Analyze features for all sweeps."""
         for sweep in self._sweeps:
             sweep.process_spikes()
             for ft, ft_func in self.spike_feature_funcs.items():
@@ -75,17 +88,12 @@ class EphysSweepSetFeatureExtractor(efex.EphysSweepSetFeatureExtractor):
             for ft, ft_func in self.sweep_feature_funcs.items():
                 sweep.process_new_sweep_feature(ft, ft_func)
 
+        for ft, ft_func in self.sweepset_feature_funcs.items():
+            self.process_new_sweepset_feature(ft, ft_func)
+
     def set_stimulus_amplitude_calculator(self, func):
         for sweep in self._sweeps:
             sweep.set_stimulus_amplitude_calculator(func)
-
-    def get_sweepset_statistics(self):
-        """Get statistics for all sweeps."""
-        # filter and postprocess the sweep and spike fts
-        # return means and representative fts
-        # return dataframe or dict
-        # includes postprocessing on sweepset level
-        return self.get_sweep_features().aggregate(["median", "mean", "std"]).T
 
 
 def has_stimulus(sweep: efex.EphysSweepFeatureExtractor) -> bool:
