@@ -37,14 +37,19 @@ class EphysSweepSetFeatureExtractor(efex.EphysSweepSetFeatureExtractor):
         **kwargs
     ):
         is_array = lambda x: isinstance(x, ndarray) and x is not None
+        is_float = lambda x: isinstance(x, float) and x is not None
         t_set = [t for t in t_set] if is_array(t_set) else t_set
         v_set = [v for v in v_set] if is_array(v_set) else v_set
         i_set = [i for i in i_set] if is_array(i_set) else i_set
-        # TODO: t_start and t_end should be able to be supplied as floats
-        t_start = [
-            t[1] for t in t_set
-        ]  # if is_array(t_start) else t_start  # with t[0] warnings are thrown
-        t_end = [t[-1] for t in t_set]  # if is_array(t_end) else t_end
+        if t_start is None:
+            t_start = [t[1] for t in t_set]
+            t_end = [t[-1] for t in t_set]
+        elif is_float(t_start):
+            t_start = [t_start] * len(t_set)
+            t_end = [t_end] * len(t_set)
+        elif is_array(t_start):
+            pass  # t_start and t_end for each sweep are already specified
+
         super().__init__(t_set, v_set, i_set, t_start, t_end, *args, **kwargs)
         self.spike_feature_funcs = {}
         self.sweep_feature_funcs = {}

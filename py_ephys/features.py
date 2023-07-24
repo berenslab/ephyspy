@@ -1221,6 +1221,32 @@ def get_sweepset_r_input(sweep_fts: DataFrame) -> Union[Dict, float]:
     return r_input, r_input_info
 
 
+# baseline membrane potential
+@ephys_feature
+def get_sweepset_v_baseline(sweep_fts: DataFrame) -> Union[Dict, float]:
+    """Extract sweep set level baseline potential feature.
+
+    description: median of the baseline potentials from all hyperpolarizing
+    traces.
+
+    Args:
+        sweep_fts (DataFrame): DataFrame containing the sweep features.
+
+    Returns:
+        Tuple[float, Dict]: sweep set level resting potential feature.
+    """
+    v_base, v_base_info = ephys_feature_init()
+    is_hyperpol = sweep_fts["stim_amp"] < 0
+    v_base = sweep_fts["v_baseline"][is_hyperpol]
+    v_base = v_base.median(skipna=True)
+    v_base_info.update(
+        {
+            "v_base": v_base,
+        }
+    )
+    return v_base, v_base_info
+
+
 # resting potential
 @ephys_feature
 def get_sweepset_v_rest(sweep_fts: DataFrame) -> Union[Dict, float]:
@@ -1236,11 +1262,11 @@ def get_sweepset_v_rest(sweep_fts: DataFrame) -> Union[Dict, float]:
         Tuple[float, Dict]: sweep set level resting potential feature.
     """
     dc_offset = sweep_fts["dc_offset"]
-    v_rest, v_rest_info = ephys_feature_init({})
+    v_rest, v_rest_info = ephys_feature_init()
     is_hyperpol = sweep_fts["stim_amp"] < 0
     r_input = get_sweepset_r_input(
         sweep_fts
-    )  # TEMPORARY SINCE THIS NEEDS UNNECESSARY FITS
+    )  #TODO: TEMPORARY SINCE THIS NEEDS UNNECESSARY FITS
     v_base = sweep_fts["v_baseline"][is_hyperpol]
     v_rests = v_base - r_input * 1e-3 * dc_offset
     v_rest = v_rests.median(skipna=True)
@@ -2221,6 +2247,7 @@ def get_fp_sweepset_ft_dict(return_ft_info=False):
         "tau": get_sweepset_time_constant,
         "r_input": get_sweepset_r_input,
         "v_rest": get_sweepset_v_rest,
+        "v_baseline": get_sweepset_v_baseline,
         "slow_hyperpolarization": get_sweepset_slow_hyperpolarization,
         "sag": get_sweepset_sag,
         "sag_ratio": get_sweepset_sag_ratio,
