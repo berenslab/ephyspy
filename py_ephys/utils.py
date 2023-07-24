@@ -33,7 +33,7 @@ class EphysSweepSetFeatureExtractor(efex.EphysSweepSetFeatureExtractor):
         t_start: Optional[Union[List, ndarray, float]] = None,
         t_end: Optional[Union[List, ndarray, float]] = None,
         metadata: Dict = {},
-        dc_offset=float("nan"),
+        dc_offset=0,
         *args,
         **kwargs
     ):
