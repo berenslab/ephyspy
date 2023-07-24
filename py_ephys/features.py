@@ -1173,39 +1173,53 @@ def get_fp_sweep_ft_dict(return_ft_info=False):
 
 
 @ephys_feature
-def get_sweepset_time_constant(sweep_fts: DataFrame) -> Union[Dict, float]:
+def get_sweepset_time_constant(
+    sweepset: EphysSweepSetFeatureExtractor,
+) -> Union[Dict, float]:
     """Extract sweep set level time constant feature.
 
     description: median of the membrane time constants from all hyperpolarizing traces.
 
     Args:
-        sweep_fts (DataFrame): DataFrame containing the sweep features.
+        sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
 
     Returns:
         Tuple[float, Dict]: sweep set level time constant feature.
     """
     tau, tau_info = ephys_feature_init()
-    tau = sweep_fts["tau"].median(skipna=True)
+    tau = get_stripped_sweep_fts(sweepset)["tau"].median(skipna=True)
     return tau, tau_info
 
 
 # input resistance
 @ephys_feature
-def get_sweepset_r_input(sweep_fts: DataFrame) -> Union[Dict, float]:
+def get_sweepset_r_input(sweepset: EphysSweepSetFeatureExtractor) -> Union[Dict, float]:
     """Extract sweep set level input resistance feature.
 
     description: fitted slope of v_deflect(v_input) in MOhms.
 
     Args:
-        sweep_fts (DataFrame): DataFrame containing the sweep features.
+        sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
 
     Returns:
         Tuple[float, Dict]: sweep set level input resistance feature.
     """
     r_input, r_input_info = ephys_feature_init()
-    is_hyperpol = sweep_fts["stim_amp"] < 0
-    v_deflect = sweep_fts["v_deflect"].loc[is_hyperpol].to_numpy().reshape(-1, 1)
-    i_amp = sweep_fts["stim_amp"].loc[is_hyperpol].to_numpy().reshape(-1, 1)
+    is_hyperpol = get_stripped_sweep_fts(sweepset)["stim_amp"] < 0
+    v_deflect = (
+        sweepset.get_sweep_features()
+        .applymap(strip_info)["v_deflect"]
+        .loc[is_hyperpol]
+        .to_numpy()
+        .reshape(-1, 1)
+    )
+    i_amp = (
+        sweepset.get_sweep_features()
+        .applymap(strip_info)["stim_amp"]
+        .loc[is_hyperpol]
+        .to_numpy()
+        .reshape(-1, 1)
+    )
     if len(v_deflect) >= 3:
         ransac.fit(i_amp, v_deflect)
         r_input = ransac.coef_[0, 0] * 1000
@@ -1223,21 +1237,23 @@ def get_sweepset_r_input(sweep_fts: DataFrame) -> Union[Dict, float]:
 
 # baseline membrane potential
 @ephys_feature
-def get_sweepset_v_baseline(sweep_fts: DataFrame) -> Union[Dict, float]:
+def get_sweepset_v_baseline(
+    sweepset: EphysSweepSetFeatureExtractor,
+) -> Union[Dict, float]:
     """Extract sweep set level baseline potential feature.
 
     description: median of the baseline potentials from all hyperpolarizing
     traces.
 
     Args:
-        sweep_fts (DataFrame): DataFrame containing the sweep features.
+        sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
 
     Returns:
         Tuple[float, Dict]: sweep set level resting potential feature.
     """
     v_base, v_base_info = ephys_feature_init()
-    is_hyperpol = sweep_fts["stim_amp"] < 0
-    v_base = sweep_fts["v_baseline"][is_hyperpol]
+    is_hyperpol = get_stripped_sweep_fts(sweepset)["stim_amp"] < 0
+    v_base = get_stripped_sweep_fts(sweepset)["v_baseline"][is_hyperpol]
     v_base = v_base.median(skipna=True)
     v_base_info.update(
         {
@@ -1249,25 +1265,25 @@ def get_sweepset_v_baseline(sweep_fts: DataFrame) -> Union[Dict, float]:
 
 # resting potential
 @ephys_feature
-def get_sweepset_v_rest(sweep_fts: DataFrame) -> Union[Dict, float]:
+def get_sweepset_v_rest(sweepset: EphysSweepSetFeatureExtractor) -> Union[Dict, float]:
     """Extract sweep set level resting potential feature.
 
     description: median of the resting potentials from all hyperpolarizing
     traces. v_rest = v_baseline - r_input * dc
 
     Args:
-        sweep_fts (DataFrame): DataFrame containing the sweep features.
+        sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
 
     Returns:
         Tuple[float, Dict]: sweep set level resting potential feature.
     """
-    dc_offset = sweep_fts["dc_offset"]
+    dc_offset = get_stripped_sweep_fts(sweepset)["dc_offset"]
     v_rest, v_rest_info = ephys_feature_init()
-    is_hyperpol = sweep_fts["stim_amp"] < 0
+    is_hyperpol = get_stripped_sweep_fts(sweepset)["stim_amp"] < 0
     r_input = get_sweepset_r_input(
-        sweep_fts
-    )  #TODO: TEMPORARY SINCE THIS NEEDS UNNECESSARY FITS
-    v_base = sweep_fts["v_baseline"][is_hyperpol]
+        sweepset
+    )  # TODO: TEMPORARY SINCE THIS NEEDS UNNECESSARY FITS
+    v_base = get_stripped_sweep_fts(sweepset)["v_baseline"][is_hyperpol]
     v_rests = v_base - r_input * 1e-3 * dc_offset
     v_rest = v_rests.median(skipna=True)
     v_rest_info.update(
@@ -1283,22 +1299,24 @@ def get_sweepset_v_rest(sweep_fts: DataFrame) -> Union[Dict, float]:
 
 # slow hyperpolarizing potential
 @ephys_feature
-def get_sweepset_slow_hyperpolarization(sweep_fts: DataFrame) -> Union[Dict, float]:
+def get_sweepset_slow_hyperpolarization(
+    sweepset: EphysSweepSetFeatureExtractor,
+) -> Union[Dict, float]:
     """Extract sweep set level slow hyperpolarization feature.
 
     description: difference between the max and min baseline voltages.
 
     Args:
-        sweep_fts (DataFrame): DataFrame containing the sweep features.
+        sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
 
     Returns:
         Tuple[float, Dict]: sweep set level slow hyperpolarization feature.
     """
     slow_hyperpol, slow_hyperpol_info = ephys_feature_init()
     is_hyperpol = (
-        sweep_fts["stim_amp"] < 0
+        get_stripped_sweep_fts(sweepset)["stim_amp"] < 0
     )  # TODO: ASK IF THIS IS ONLY TAKEN FOR HYPERPOLARIZING TRACES (I THINK NOT)
-    v_base = sweep_fts["v_baseline"][is_hyperpol]
+    v_base = get_stripped_sweep_fts(sweepset)["v_baseline"][is_hyperpol]
     slow_hyperpol = (
         v_base.max() - v_base.min()
     )  # like v_rest.min() - v_rest.max(), since v_rest = v_base - const
@@ -1307,13 +1325,13 @@ def get_sweepset_slow_hyperpolarization(sweep_fts: DataFrame) -> Union[Dict, flo
 
 
 # sag features (steepest hyperpolarizing trace)
-def select_representative_sag_sweep(sweep_fts: DataFrame) -> int:
+def select_representative_sag_sweep(sweepset: EphysSweepSetFeatureExtractor) -> int:
     """Select representative sweep from which the sag features are extracted.
 
     description: Lowest hyperpolarization sweep.
 
     Args:
-        sweep_fts (DataFrame): DataFrame containing the sweep features.
+        sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
 
     Returns:
         int: Index of the sweep from which the rebound features are extracted.
@@ -1323,20 +1341,20 @@ def select_representative_sag_sweep(sweep_fts: DataFrame) -> int:
 
 
 @ephys_feature
-def get_sweepset_sag(sweep_fts: DataFrame) -> Union[Dict, float]:
+def get_sweepset_sag(sweepset: EphysSweepSetFeatureExtractor) -> Union[Dict, float]:
     """Extract sweep set level sag feature.
 
     description: sag voltage for a representative sweep.
 
     Args:
-        sweep_fts (DataFrame): DataFrame containing the sweep features.
+        sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
 
     Returns:
         Tuple[float, Dict]: sweep set level sag feature.
     """
     sag, sag_info = ephys_feature_init()
-    sag_sweep_idx = select_representative_sag_sweep(sweep_fts)
-    sag = sweep_fts["sag"].iloc[sag_sweep_idx]
+    sag_sweep_idx = select_representative_sag_sweep(get_stripped_sweep_fts(sweepset))
+    sag = get_stripped_sweep_fts(sweepset)["sag"].iloc[sag_sweep_idx]
     sag_info.update(
         {
             "sag_sweep_idx": sag_sweep_idx,
@@ -1347,20 +1365,26 @@ def get_sweepset_sag(sweep_fts: DataFrame) -> Union[Dict, float]:
 
 
 @ephys_feature
-def get_sweepset_sag_ratio(sweep_fts: DataFrame) -> Union[Dict, float]:
+def get_sweepset_sag_ratio(
+    sweepset: EphysSweepSetFeatureExtractor,
+) -> Union[Dict, float]:
     """Extract sweep set level sag ratio feature.
 
     description: sag ratio for a representative sweep.
 
     Args:
-        sweep_fts (DataFrame): DataFrame containing the sweep features.
+        sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
 
     Returns:
         Tuple[float, Dict]: sweep set level sag ratio feature.
     """
     sag_ratio, sag_ratio_info = ephys_feature_init()
-    sag_sweep_idx = select_representative_sag_sweep(sweep_fts)
-    sag_ratio = sweep_fts["sag_ratio"].iloc[sag_sweep_idx]
+    sag_sweep_idx = select_representative_sag_sweep(get_stripped_sweep_fts(sweepset))
+    sag_ratio = (
+        sweepset.get_sweep_features()
+        .applymap(strip_info)["sag_ratio"]
+        .iloc[sag_sweep_idx]
+    )
     sag_ratio_info.update(
         {
             "sag_sweep_idx": sag_sweep_idx,
@@ -1371,21 +1395,27 @@ def get_sweepset_sag_ratio(sweep_fts: DataFrame) -> Union[Dict, float]:
 
 
 @ephys_feature
-def get_sweepset_sag_fraction(sweep_fts: DataFrame) -> Union[Dict, float]:
+def get_sweepset_sag_fraction(
+    sweepset: EphysSweepSetFeatureExtractor,
+) -> Union[Dict, float]:
     """Extract sweep set level sag fraction feature.
 
     description: sag fraction for a representative sweep.
 
     Args:
-        sweep_fts (DataFrame): DataFrame containing the sweep features.
+        sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
 
 
     Returns:
         Tuple[float, Dict]: sweep set level sag fraction feature.
     """
     sag_fraction, sag_fraction_info = ephys_feature_init()
-    sag_sweep_idx = select_representative_sag_sweep(sweep_fts)
-    sag_fraction = sweep_fts["sag_fraction"].iloc[sag_sweep_idx]
+    sag_sweep_idx = select_representative_sag_sweep(get_stripped_sweep_fts(sweepset))
+    sag_fraction = (
+        sweepset.get_sweep_features()
+        .applymap(strip_info)["sag_fraction"]
+        .iloc[sag_sweep_idx]
+    )
     sag_fraction_info.update(
         {
             "sag_sweep_idx": sag_sweep_idx,
@@ -1396,20 +1426,26 @@ def get_sweepset_sag_fraction(sweep_fts: DataFrame) -> Union[Dict, float]:
 
 
 @ephys_feature
-def get_sweepset_sag_area(sweep_fts: DataFrame) -> Union[Dict, float]:
+def get_sweepset_sag_area(
+    sweepset: EphysSweepSetFeatureExtractor,
+) -> Union[Dict, float]:
     """Extract sweep set level sag area feature.
 
     description: sag area for a representative sweep.
 
     Args:
-        sweep_fts (DataFrame): DataFrame containing the sweep features.
+        sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
 
     Returns:
         Tuple[float, Dict]: sweep set level sag area feature.
     """
     sag_area, sag_area_info = ephys_feature_init()
-    sag_sweep_idx = select_representative_sag_sweep(sweep_fts)
-    sag_area = sweep_fts["sag_area"].iloc[sag_sweep_idx]
+    sag_sweep_idx = select_representative_sag_sweep(get_stripped_sweep_fts(sweepset))
+    sag_area = (
+        sweepset.get_sweep_features()
+        .applymap(strip_info)["sag_area"]
+        .iloc[sag_sweep_idx]
+    )
     sag_area_info.update(
         {
             "sag_sweep_idx": sag_sweep_idx,
@@ -1420,20 +1456,26 @@ def get_sweepset_sag_area(sweep_fts: DataFrame) -> Union[Dict, float]:
 
 
 @ephys_feature
-def get_sweepset_sag_time(sweep_fts: DataFrame) -> Union[Dict, float]:
+def get_sweepset_sag_time(
+    sweepset: EphysSweepSetFeatureExtractor,
+) -> Union[Dict, float]:
     """Extract sweep set level sag time feature.
 
     description: sag time for a representative sweep.
 
     Args:
-        sweep_fts (DataFrame): DataFrame containing the sweep features.
+        sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
 
     Returns:
         Tuple[float, Dict]: sweep set level sag time feature.
     """
     sag_time, sag_time_info = ephys_feature_init()
-    sag_sweep_idx = select_representative_sag_sweep(sweep_fts)
-    sag_time = sweep_fts["sag_time"].iloc[sag_sweep_idx]
+    sag_sweep_idx = select_representative_sag_sweep(get_stripped_sweep_fts(sweepset))
+    sag_time = (
+        sweepset.get_sweep_features()
+        .applymap(strip_info)["sag_time"]
+        .iloc[sag_sweep_idx]
+    )
     sag_time_info.update(
         {
             "sag_sweep_idx": sag_sweep_idx,
@@ -1444,13 +1486,13 @@ def get_sweepset_sag_time(sweep_fts: DataFrame) -> Union[Dict, float]:
 
 
 # rebound features (steepest hyperpolarizing trace)
-def select_representative_rebound_sweep(sweep_fts: DataFrame) -> int:
+def select_representative_rebound_sweep(sweepset: EphysSweepSetFeatureExtractor) -> int:
     """Select representative sweep from which the rebound features are extracted.
 
     description: Lowest hyperpolarization sweep.
 
     Args:
-        sweep_fts (DataFrame): DataFrame containing the sweep features.
+        sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
 
     Returns:
         int: Index of the sweep from which the rebound features are extracted.
@@ -1460,20 +1502,26 @@ def select_representative_rebound_sweep(sweep_fts: DataFrame) -> int:
 
 
 @ephys_feature
-def get_sweepset_rebound(sweep_fts: DataFrame) -> Union[Dict, float]:
+def get_sweepset_rebound(sweepset: EphysSweepSetFeatureExtractor) -> Union[Dict, float]:
     """Extract sweep set level rebound feature.
 
     description: rebound voltage for a representative sweep.
 
     Args:
-        sweep_fts (DataFrame): DataFrame containing the sweep features.
+        sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
 
     Returns:
         Tuple[float, Dict]: sweep set level rebound feature.
     """
     rebound, rebound_info = ephys_feature_init()
-    rebound_sweep_idx = select_representative_rebound_sweep(sweep_fts)
-    rebound = sweep_fts["rebound"].iloc[rebound_sweep_idx]
+    rebound_sweep_idx = select_representative_rebound_sweep(
+        get_stripped_sweep_fts(sweepset)
+    )
+    rebound = (
+        sweepset.get_sweep_features()
+        .applymap(strip_info)["rebound"]
+        .iloc[rebound_sweep_idx]
+    )
     rebound_info.update(
         {
             "rebound_sweep_idx": rebound_sweep_idx,
@@ -1484,20 +1532,28 @@ def get_sweepset_rebound(sweep_fts: DataFrame) -> Union[Dict, float]:
 
 
 @ephys_feature
-def get_sweepset_rebound_ratio(sweep_fts: DataFrame) -> Union[Dict, float]:
+def get_sweepset_rebound_ratio(
+    sweepset: EphysSweepSetFeatureExtractor,
+) -> Union[Dict, float]:
     """Extract sweep set level rebound ratio feature.
 
     description: rebound ratio for a representative sweep.
 
     Args:
-        sweep_fts (DataFrame): DataFrame containing the sweep features.
+        sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
 
     Returns:
         Tuple[float, Dict]: sweep set level rebound ratio feature.
     """
     rebound_ratio, rebound_ratio_info = ephys_feature_init()
-    rebound_sweep_idx = select_representative_rebound_sweep(sweep_fts)
-    rebound_ratio = sweep_fts["rebound_spikes"].iloc[rebound_sweep_idx]
+    rebound_sweep_idx = select_representative_rebound_sweep(
+        get_stripped_sweep_fts(sweepset)
+    )
+    rebound_ratio = (
+        sweepset.get_sweep_features()
+        .applymap(strip_info)["rebound_spikes"]
+        .iloc[rebound_sweep_idx]
+    )
     rebound_ratio_info.update(
         {
             "rebound_sweep_idx": rebound_sweep_idx,
@@ -1508,20 +1564,28 @@ def get_sweepset_rebound_ratio(sweep_fts: DataFrame) -> Union[Dict, float]:
 
 
 @ephys_feature
-def get_sweepset_rebound_area(sweep_fts: DataFrame) -> Union[Dict, float]:
+def get_sweepset_rebound_area(
+    sweepset: EphysSweepSetFeatureExtractor,
+) -> Union[Dict, float]:
     """Extract sweep set level rebound area feature.
 
     description: rebound area for a representative sweep.
 
     Args:
-        sweep_fts (DataFrame): DataFrame containing the sweep features.
+        sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
 
     Returns:
         Tuple[float, Dict]: sweep set level rebound area feature.
     """
     rebound_area, rebound_area_info = ephys_feature_init()
-    rebound_sweep_idx = select_representative_rebound_sweep(sweep_fts)
-    rebound_area = sweep_fts["rebound_area"].iloc[rebound_sweep_idx]
+    rebound_sweep_idx = select_representative_rebound_sweep(
+        get_stripped_sweep_fts(sweepset)
+    )
+    rebound_area = (
+        sweepset.get_sweep_features()
+        .applymap(strip_info)["rebound_area"]
+        .iloc[rebound_sweep_idx]
+    )
     rebound_area_info.update(
         {
             "rebound_sweep_idx": rebound_sweep_idx,
@@ -1532,20 +1596,28 @@ def get_sweepset_rebound_area(sweep_fts: DataFrame) -> Union[Dict, float]:
 
 
 @ephys_feature
-def get_sweepset_rebound_latency(sweep_fts: DataFrame) -> Union[Dict, float]:
+def get_sweepset_rebound_latency(
+    sweepset: EphysSweepSetFeatureExtractor,
+) -> Union[Dict, float]:
     """Extract sweep set level rebound latency feature.
 
     description: rebound latency for a representative sweep.
 
     Args:
-        sweep_fts (DataFrame): DataFrame containing the sweep features.
+        sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
 
     Returns:
         Tuple[float, Dict]: sweep set level rebound latency feature.
     """
     rebound_latency, rebound_latency_info = ephys_feature_init()
-    rebound_sweep_idx = select_representative_rebound_sweep(sweep_fts)
-    rebound_latency = sweep_fts["rebound_latency"].iloc[rebound_sweep_idx]
+    rebound_sweep_idx = select_representative_rebound_sweep(
+        get_stripped_sweep_fts(sweepset)
+    )
+    rebound_latency = (
+        sweepset.get_sweep_features()
+        .applymap(strip_info)["rebound_latency"]
+        .iloc[rebound_sweep_idx]
+    )
     rebound_latency_info.update(
         {
             "rebound_sweep_idx": rebound_sweep_idx,
@@ -1556,20 +1628,28 @@ def get_sweepset_rebound_latency(sweep_fts: DataFrame) -> Union[Dict, float]:
 
 
 @ephys_feature
-def get_sweepset_rebound_avg(sweep_fts: DataFrame) -> Union[Dict, float]:
+def get_sweepset_rebound_avg(
+    sweepset: EphysSweepSetFeatureExtractor,
+) -> Union[Dict, float]:
     """Extract sweep set level average rebound feature.
 
     description: average rebound for a representative sweep.
 
     Args:
-        sweep_fts (DataFrame): DataFrame containing the sweep features.
+        sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
 
     Returns:
         Tuple[float, Dict]: sweep set level average rebound feature.
     """
     rebound_avg, rebound_avg_info = ephys_feature_init()
-    rebound_sweep_idx = select_representative_rebound_sweep(sweep_fts)
-    rebound_avg = sweep_fts["rebound_avg"].iloc[rebound_sweep_idx]
+    rebound_sweep_idx = select_representative_rebound_sweep(
+        get_stripped_sweep_fts(sweepset)
+    )
+    rebound_avg = (
+        sweepset.get_sweep_features()
+        .applymap(strip_info)["rebound_avg"]
+        .iloc[rebound_sweep_idx]
+    )
     rebound_avg_info.update(
         {
             "rebound_sweep_idx": rebound_sweep_idx,
@@ -1580,40 +1660,42 @@ def get_sweepset_rebound_avg(sweep_fts: DataFrame) -> Union[Dict, float]:
 
 
 # num spikes
-def select_representative_spiking_sweep(sweep_fts: DataFrame) -> int:
+def select_representative_spiking_sweep(sweepset: EphysSweepSetFeatureExtractor) -> int:
     """Select representative sweep from which the spiking related features are extracted.
 
     description: Highest non wild trace (wildness == cell dying).
 
     Args:
-        sweep_fts (DataFrame): DataFrame containing the sweep features.
+        sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
 
     Returns:
         int: Index of the sweep from which the rebound features are extracted.
     """
     # TODO: should I implement a better selection protocol / criterion!?
-    num_spikes = sweep_fts["num_ap"]
-    wildness = sweep_fts["wildness"]
+    num_spikes = get_stripped_sweep_fts(sweepset)["num_ap"]
+    wildness = get_stripped_sweep_fts(sweepset)["wildness"]
     return num_spikes[
         wildness.isna()
     ].argmax()  # select highest non wild trace (wildness == cell dying)
 
 
 @ephys_feature
-def get_sweepset_num_spikes(sweep_fts: DataFrame) -> Union[Dict, float]:
+def get_sweepset_num_spikes(
+    sweepset: EphysSweepSetFeatureExtractor,
+) -> Union[Dict, float]:
     """Extract sweep set level spike count feature.
 
     description: number of spikes for a representative sweep.
 
     Args:
-        sweep_fts (DataFrame): DataFrame containing the sweep features.
+        sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
 
     Returns:
         Tuple[float, Dict]: sweep set level spike count feature.
     """
     num_spikes, num_spikes_info = ephys_feature_init()
-    num_spikes = sweep_fts["num_ap"]
-    spike_sweep_idx = select_representative_spiking_sweep(sweep_fts)
+    num_spikes = get_stripped_sweep_fts(sweepset)["num_ap"]
+    spike_sweep_idx = select_representative_spiking_sweep(sweepset)
     num_spikes = num_spikes.loc[spike_sweep_idx]
     num_spikes_info.update(
         {
@@ -1625,20 +1707,20 @@ def get_sweepset_num_spikes(sweep_fts: DataFrame) -> Union[Dict, float]:
 
 
 @ephys_feature
-def get_sweepset_ap_freq(sweep_fts: DataFrame) -> Union[Dict, float]:
+def get_sweepset_ap_freq(sweepset: EphysSweepSetFeatureExtractor) -> Union[Dict, float]:
     """Extract sweep set level spike rate feature.
 
     description: spike rate for a representative sweep.
 
     Args:
-        sweep_fts (DataFrame): DataFrame containing the sweep features.
+        sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
 
     Returns:
         Tuple[float, Dict]: sweep set level spike rate feature.
     """
     ap_freq, ap_freq_info = ephys_feature_init()
-    ap_freq = sweep_fts["ap_freq"]
-    spike_sweep_idx = select_representative_spiking_sweep(sweep_fts)
+    ap_freq = get_stripped_sweep_fts(sweepset)["ap_freq"]
+    spike_sweep_idx = select_representative_spiking_sweep(sweepset)
     ap_freq = ap_freq.loc[spike_sweep_idx]
     ap_freq_info.update(
         {
@@ -1651,20 +1733,22 @@ def get_sweepset_ap_freq(sweep_fts: DataFrame) -> Union[Dict, float]:
 
 # wildness
 @ephys_feature
-def get_sweepset_wildness(sweep_fts: DataFrame) -> Union[Dict, float]:
+def get_sweepset_wildness(
+    sweepset: EphysSweepSetFeatureExtractor,
+) -> Union[Dict, float]:
     """Extract sweep set level wildness feature.
 
     description: wildness for a representative sweep.
 
     Args:
-        sweep_fts (DataFrame): DataFrame containing the sweep features.
+        sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
 
     Returns:
         Tuple[float, Dict]: sweep set level wildness feature.
     """
     wildness, wildness_info = ephys_feature_init()
-    wildness = sweep_fts["wildness"].max()
-    max_wild_sweep_idx = sweep_fts["wildness"].argmax()
+    wildness = get_stripped_sweep_fts(sweepset)["wildness"].max()
+    max_wild_sweep_idx = get_stripped_sweep_fts(sweepset)["wildness"].argmax()
     wildness_info.update(
         {
             "max_wild_sweep_idx": max_wild_sweep_idx,
@@ -1676,20 +1760,26 @@ def get_sweepset_wildness(sweep_fts: DataFrame) -> Union[Dict, float]:
 
 # spike frequency adaptation
 @ephys_feature
-def get_sweepset_spike_freq_adapt(sweep_fts: DataFrame) -> Union[Dict, float]:
+def get_sweepset_spike_freq_adapt(
+    sweepset: EphysSweepSetFeatureExtractor,
+) -> Union[Dict, float]:
     """Extract sweep set level spike frequency adaptation feature.
 
     description: spike frequency adaptation for a representative sweep.
 
     Args:
-        sweep_fts (DataFrame): DataFrame containing the sweep features.
+        sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
 
     Returns:
         Tuple[float, Dict]: sweep set level spike frequency adaptation feature.
     """
     spike_freq_adapt, spike_freq_adapt_info = ephys_feature_init()
-    spike_sweep_idx = select_representative_spiking_sweep(sweep_fts)
-    spike_freq_adapt = sweep_fts["spike_freq_adapt"].loc[spike_sweep_idx]
+    spike_sweep_idx = select_representative_spiking_sweep(sweepset)
+    spike_freq_adapt = (
+        sweepset.get_sweep_features()
+        .applymap(strip_info)["spike_freq_adapt"]
+        .loc[spike_sweep_idx]
+    )
     spike_freq_adapt_info.update(
         {
             "spike_sweep_idx": spike_sweep_idx,
@@ -1701,20 +1791,26 @@ def get_sweepset_spike_freq_adapt(sweep_fts: DataFrame) -> Union[Dict, float]:
 
 # AP Fano factor
 @ephys_feature
-def get_sweepset_fano_factor(sweep_fts: DataFrame) -> Union[Dict, float]:
+def get_sweepset_fano_factor(
+    sweepset: EphysSweepSetFeatureExtractor,
+) -> Union[Dict, float]:
     """Extract sweep set level fano factor feature.
 
     description: Fano factor for a representative sweep.
 
     Args:
-        sweep_fts (DataFrame): DataFrame containing the sweep features.
+        sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
 
     Returns:
         Tuple[float, Dict]: sweep set level fano factor feature.
     """
     fano_factor, fano_factor_info = ephys_feature_init()
-    spike_sweep_idx = select_representative_spiking_sweep(sweep_fts)
-    fano_factor = sweep_fts["fano_factor"].loc[spike_sweep_idx]
+    spike_sweep_idx = select_representative_spiking_sweep(sweepset)
+    fano_factor = (
+        sweepset.get_sweep_features()
+        .applymap(strip_info)["fano_factor"]
+        .loc[spike_sweep_idx]
+    )
     fano_factor_info.update(
         {
             "spike_sweep_idx": spike_sweep_idx,
@@ -1725,20 +1821,26 @@ def get_sweepset_fano_factor(sweep_fts: DataFrame) -> Union[Dict, float]:
 
 
 @ephys_feature
-def get_sweepset_ap_fano_factor(sweep_fts: DataFrame) -> Union[Dict, float]:
+def get_sweepset_ap_fano_factor(
+    sweepset: EphysSweepSetFeatureExtractor,
+) -> Union[Dict, float]:
     """Extract sweep set level ap fano factor feature.
 
     description: AP Fano factor for a representative sweep.
 
     Args:
-        sweep_fts (DataFrame): DataFrame containing the sweep features.
+        sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
 
     Returns:
         Tuple[float, Dict]: sweep set level ap fano factor feature.
     """
     ap_fano_factor, ap_fano_factor_info = ephys_feature_init()
-    spike_sweep_idx = select_representative_spiking_sweep(sweep_fts)
-    ap_fano_factor = sweep_fts["AP_fano_factor"].loc[spike_sweep_idx]
+    spike_sweep_idx = select_representative_spiking_sweep(sweepset)
+    ap_fano_factor = (
+        sweepset.get_sweep_features()
+        .applymap(strip_info)["AP_fano_factor"]
+        .loc[spike_sweep_idx]
+    )
     ap_fano_factor_info.update(
         {
             "spike_sweep_idx": spike_sweep_idx,
@@ -1749,20 +1851,20 @@ def get_sweepset_ap_fano_factor(sweep_fts: DataFrame) -> Union[Dict, float]:
 
 
 @ephys_feature
-def get_sweepset_cv(sweep_fts: DataFrame) -> Union[Dict, float]:
+def get_sweepset_cv(sweepset: EphysSweepSetFeatureExtractor) -> Union[Dict, float]:
     """Extract sweep set level coeffficent of variation feature.
 
     description: CV for a representative sweep.
 
     Args:
-        sweep_fts (DataFrame): DataFrame containing the sweep features.
+        sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
 
     Returns:
         Tuple[float, Dict]: sweep set level coeffficent of variation feature.
     """
     cv, cv_info = ephys_feature_init()
-    spike_sweep_idx = select_representative_spiking_sweep(sweep_fts)
-    cv = sweep_fts["cv"].loc[spike_sweep_idx]
+    spike_sweep_idx = select_representative_spiking_sweep(sweepset)
+    cv = get_stripped_sweep_fts(sweepset)["cv"].loc[spike_sweep_idx]
     cv_info.update(
         {
             "spike_sweep_idx": spike_sweep_idx,
@@ -1773,20 +1875,20 @@ def get_sweepset_cv(sweep_fts: DataFrame) -> Union[Dict, float]:
 
 
 @ephys_feature
-def get_sweepset_ap_cv(sweep_fts: DataFrame) -> Union[Dict, float]:
+def get_sweepset_ap_cv(sweepset: EphysSweepSetFeatureExtractor) -> Union[Dict, float]:
     """Extract sweep set level AP coefficient of variation feature.
 
     description: AP CV for a representative sweep.
 
     Args:
-        sweep_fts (DataFrame): DataFrame containing the sweep features.
+        sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
 
     Returns:
         Tuple[float, Dict]: sweep set level AP coefficient of variation feature.
     """
     ap_cv, ap_cv_info = ephys_feature_init()
-    spike_sweep_idx = select_representative_spiking_sweep(sweep_fts)
-    ap_cv = sweep_fts["AP_cv"].loc[spike_sweep_idx]
+    spike_sweep_idx = select_representative_spiking_sweep(sweepset)
+    ap_cv = get_stripped_sweep_fts(sweepset)["AP_cv"].loc[spike_sweep_idx]
     ap_cv_info.update(
         {
             "spike_sweep_idx": spike_sweep_idx,
@@ -1798,19 +1900,21 @@ def get_sweepset_ap_cv(sweep_fts: DataFrame) -> Union[Dict, float]:
 
 # burstiness
 @ephys_feature
-def get_sweepset_burstiness(sweep_fts: DataFrame) -> Union[Dict, float]:
+def get_sweepset_burstiness(
+    sweepset: EphysSweepSetFeatureExtractor,
+) -> Union[Dict, float]:
     """Extract sweep set level burstiness feature.
 
     description: median burstiness for the first 5 "bursty" traces.
 
     Args:
-        sweep_fts (DataFrame): DataFrame containing the sweep features.
+        sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
 
     Returns:
         Tuple[float, Dict]: sweep set level burstiness feature.
     """
     median_burstiness, burstiness_info = ephys_feature_init()
-    burstiness = sweep_fts["burstiness"]
+    burstiness = get_stripped_sweep_fts(sweepset)["burstiness"]
     burstiness[burstiness < 0] = float("nan")  # don't consider negative burstiness
     burstiness = burstiness[~burstiness.isna()]
     median_burstiness = burstiness.iloc[
@@ -1822,20 +1926,22 @@ def get_sweepset_burstiness(sweep_fts: DataFrame) -> Union[Dict, float]:
 
 # adaptation index
 @ephys_feature
-def get_sweepset_isi_adapt(sweep_fts: DataFrame) -> Union[Dict, float]:
+def get_sweepset_isi_adapt(
+    sweepset: EphysSweepSetFeatureExtractor,
+) -> Union[Dict, float]:
     """Extract sweep set level Inter spike interval adaptation feature.
 
     description: median of the ISI adaptation of the first 5 traces
     that show adaptation.
 
     Args:
-        sweep_fts (DataFrame): DataFrame containing the sweep features.
+        sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
 
     Returns:
         Tuple[float, Dict]: sweep set level Inter spike interval adaptation feature.
     """
     isi_adapt_median, isi_adapt_info = ephys_feature_init()
-    isi_adapt = sweep_fts["isi_adapt"]
+    isi_adapt = get_stripped_sweep_fts(sweepset)["isi_adapt"]
     isi_adapt_median = (
         isi_adapt[~isi_adapt.isna()].iloc[:5].median()
     )  # consider first 5 non-nan traces at most
@@ -1844,20 +1950,22 @@ def get_sweepset_isi_adapt(sweep_fts: DataFrame) -> Union[Dict, float]:
 
 
 @ephys_feature
-def get_sweepset_isi_adapt_avg(sweep_fts: DataFrame) -> Union[Dict, float]:
+def get_sweepset_isi_adapt_avg(
+    sweepset: EphysSweepSetFeatureExtractor,
+) -> Union[Dict, float]:
     """Extract sweep set level average inter spike interval adaptation feature.
 
     description: median of the ISI adaptation average of the first 5 traces
     that show adaptation.
 
     Args:
-        sweep_fts (DataFrame): DataFrame containing the sweep features.
+        sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
 
     Returns:
         Tuple[float, Dict]: sweep set level average inter spike interval adaptation feature.
     """
     isi_adapt_avg_median, isi_adapt_avg_info = ephys_feature_init()
-    isi_adapt_avg = sweep_fts["isi_adapt_average"]
+    isi_adapt_avg = get_stripped_sweep_fts(sweepset)["isi_adapt_average"]
     isi_adapt_avg_median = (
         isi_adapt_avg[~isi_adapt_avg.isna()].iloc[:5].median()
     )  # consider first 5 non-nan traces at most
@@ -1866,20 +1974,22 @@ def get_sweepset_isi_adapt_avg(sweep_fts: DataFrame) -> Union[Dict, float]:
 
 
 @ephys_feature
-def get_sweepset_ap_amp_adapt(sweep_fts: DataFrame) -> Union[Dict, float]:
+def get_sweepset_ap_amp_adapt(
+    sweepset: EphysSweepSetFeatureExtractor,
+) -> Union[Dict, float]:
     """Extract sweep set level AP amplitude adaptation feature.
 
     description: median of the AP amplitude adaptation of the first 5 traces
     that show adaptation.
 
     Args:
-        sweep_fts (DataFrame): DataFrame containing the sweep features.
+        sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
 
     Returns:
         Tuple[float, Dict]: sweep set level AP amplitude adaptation feature.
     """
     ap_amp_adapt_median, ap_amp_adapt_info = ephys_feature_init()
-    ap_amp_adapt = sweep_fts["AP_amp_adapt"]
+    ap_amp_adapt = get_stripped_sweep_fts(sweepset)["AP_amp_adapt"]
     ap_amp_adapt_median = (
         ap_amp_adapt[~ap_amp_adapt.isna()].iloc[:5].median()
     )  # consider first 5 non-nan traces at most
@@ -1890,20 +2000,22 @@ def get_sweepset_ap_amp_adapt(sweep_fts: DataFrame) -> Union[Dict, float]:
 
 
 @ephys_feature
-def get_sweepset_ap_amp_adapt_avg(sweep_fts: DataFrame) -> Union[Dict, float]:
+def get_sweepset_ap_amp_adapt_avg(
+    sweepset: EphysSweepSetFeatureExtractor,
+) -> Union[Dict, float]:
     """Extract sweep set level average AP amplitude adaptation feature.
 
     description: median of the AP amplitude adaptation average of the first 5
     traces that show adaptation.
 
     Args:
-        sweep_fts (DataFrame): DataFrame containing the sweep features.
+        sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
 
     Returns:
         Tuple[float, Dict]: sweep set level average AP amplitude adaptation feature.
     """
     ap_amp_adapt_avg_median, ap_amp_adapt_avg_info = ephys_feature_init()
-    ap_amp_adapt_avg = sweep_fts["AP_amp_adapt_average"]
+    ap_amp_adapt_avg = get_stripped_sweep_fts(sweepset)["AP_amp_adapt_average"]
     ap_amp_adapt_avg_median = (
         ap_amp_adapt_avg[~ap_amp_adapt_avg.isna()].iloc[:5].median()
     )  # consider first 5 non-nan traces at most
@@ -1917,59 +2029,59 @@ def get_sweepset_ap_amp_adapt_avg(sweep_fts: DataFrame) -> Union[Dict, float]:
 
 # latency
 @ephys_feature
-def get_sweepset_latency(sweep_fts: DataFrame) -> Union[Dict, float]:
+def get_sweepset_latency(sweepset: EphysSweepSetFeatureExtractor) -> Union[Dict, float]:
     """Extract sweep set level latency feature.
 
     description: latency of the first depolarization trace that contains spikes in ms.
 
     Args:
-        sweep_fts (DataFrame): DataFrame containing the sweep features.
+        sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
 
     Returns:
         Tuple[float, Dict]: sweep set level latency feature.
     """
     selected_latency, latency_info = ephys_feature_init()
-    is_depol = sweep_fts["stim_amp"] > 0
-    latency = sweep_fts["latency"]
+    is_depol = get_stripped_sweep_fts(sweepset)["stim_amp"] > 0
+    latency = get_stripped_sweep_fts(sweepset)["latency"]
     selected_latency = latency[is_depol & ~latency.isna()].iloc[0] * 1000  # ms
     latency_info.update({"latency": latency * 1000})
     return selected_latency, latency_info
 
 
-def select_representative_ap_sweep(sweep_fts: DataFrame) -> int:
+def select_representative_ap_sweep(sweepset: EphysSweepSetFeatureExtractor) -> int:
     """Select representative ap in a sweep from which the AP features are used.
 
     description: First depolarization trace that contains spikes.
 
     Args:
-        sweep_fts (DataFrame): DataFrame containing the sweep features.
+        sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
 
     Returns:
         int: Index of the sweep from which the rebound features are extracted.
     """
     # TODO: implement procedure to select representative AP in each trace for the following AP features
-    is_depol = sweep_fts["stim_amp"] > 0
-    has_spikes = sweep_fts["num_ap"] > 0
+    is_depol = get_stripped_sweep_fts(sweepset)["stim_amp"] > 0
+    has_spikes = get_stripped_sweep_fts(sweepset)["num_ap"] > 0
     return is_depol.index[is_depol & has_spikes][0]
 
 
 # ahp
 @ephys_feature
-def get_sweepset_ahp(sweep_fts: DataFrame) -> Union[Dict, float]:
+def get_sweepset_ahp(sweepset: EphysSweepSetFeatureExtractor) -> Union[Dict, float]:
     """Extract sweep set level Afterhyperpolarization feature.
 
     description: AHP (fast_trough_v - threshold_v) of a representative spike of
     a representative depolarization trace.
 
     Args:
-        sweep_fts (DataFrame): DataFrame containing the sweep features.
+        sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
 
     Returns:
         Tuple[float, Dict]: sweep set level Afterhyperpolarization feature.
     """
     ahp_selected, ahp_info = ephys_feature_init()
-    ahp = sweep_fts["ahp"]
-    sweep_ap_index = select_representative_ap_sweep(sweep_fts)
+    ahp = get_stripped_sweep_fts(sweepset)["ahp"]
+    sweep_ap_index = select_representative_ap_sweep(sweepset)
     ahp_selected = ahp.loc[sweep_ap_index]  # fast_trough_v - threshold_v
     ahp_info.update(
         {
@@ -1983,21 +2095,21 @@ def get_sweepset_ahp(sweep_fts: DataFrame) -> Union[Dict, float]:
 
 # adp
 @ephys_feature
-def get_sweepset_adp(sweep_fts: DataFrame) -> Union[Dict, float]:
+def get_sweepset_adp(sweepset: EphysSweepSetFeatureExtractor) -> Union[Dict, float]:
     """Extract sweep set level Afterdepolarization feature.
 
     description: ADP (adp_v - fast_trough_v) of a representative spike of a
     representative depolarization trace.
 
     Args:
-        sweep_fts (DataFrame): DataFrame containing the sweep features.
+        sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
 
     Returns:
         Tuple[float, Dict]: sweep set level Afterdepolarization feature.
     """
     adp_selected, adp_info = ephys_feature_init()
-    adp = sweep_fts["adp"]
-    sweep_ap_index = select_representative_ap_sweep(sweep_fts)
+    adp = get_stripped_sweep_fts(sweepset)["adp"]
+    sweep_ap_index = select_representative_ap_sweep(sweepset)
     adp_selected = adp.loc[sweep_ap_index]  # adp_v - fast_trough_v
     adp_info.update(
         {
@@ -2011,20 +2123,22 @@ def get_sweepset_adp(sweep_fts: DataFrame) -> Union[Dict, float]:
 
 # AP features
 @ephys_feature
-def get_sweepset_ap_thresh(sweep_fts: DataFrame) -> Union[Dict, float]:
+def get_sweepset_ap_thresh(
+    sweepset: EphysSweepSetFeatureExtractor,
+) -> Union[Dict, float]:
     """Extract sweep set level AP threshold feature.
 
     description: AP threshold of a representative spike of a representative depolarization trace.
 
     Args:
-        sweep_fts (DataFrame): DataFrame containing the sweep features.
+        sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
 
     Returns:
         Tuple[float, Dict]: sweep set level AP threshold feature.
     """
     ap_thresh_selected, ap_thresh_info = ephys_feature_init()
-    ap_thresh = sweep_fts["ap_thresh"]
-    sweep_ap_index = select_representative_ap_sweep(sweep_fts)
+    ap_thresh = get_stripped_sweep_fts(sweepset)["ap_thresh"]
+    sweep_ap_index = select_representative_ap_sweep(sweepset)
     ap_thresh_selected = ap_thresh.loc[sweep_ap_index]
     ap_thresh_info.update(
         {
@@ -2037,21 +2151,21 @@ def get_sweepset_ap_thresh(sweep_fts: DataFrame) -> Union[Dict, float]:
 
 
 @ephys_feature
-def get_sweepset_ap_amp(sweep_fts: DataFrame) -> Union[Dict, float]:
+def get_sweepset_ap_amp(sweepset: EphysSweepSetFeatureExtractor) -> Union[Dict, float]:
     """Extract sweep set level AP amplitude feature.
 
     description: AP amplitude of a representative spike of a representative
     depolarization trace.
 
     Args:
-        sweep_fts (DataFrame): DataFrame containing the sweep features.
+        sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
 
     Returns:
         Tuple[float, Dict]: sweep set level AP amplitude feature.
     """
     ap_amp_selected, ap_amp_info = ephys_feature_init()
-    ap_amp = sweep_fts["ap_amp"]
-    sweep_ap_index = select_representative_ap_sweep(sweep_fts)
+    ap_amp = get_stripped_sweep_fts(sweepset)["ap_amp"]
+    sweep_ap_index = select_representative_ap_sweep(sweepset)
     ap_amp_selected = ap_amp.loc[sweep_ap_index]
     ap_amp_info.update(
         {
@@ -2064,21 +2178,23 @@ def get_sweepset_ap_amp(sweep_fts: DataFrame) -> Union[Dict, float]:
 
 
 @ephys_feature
-def get_sweepset_ap_width(sweep_fts: DataFrame) -> Union[Dict, float]:
+def get_sweepset_ap_width(
+    sweepset: EphysSweepSetFeatureExtractor,
+) -> Union[Dict, float]:
     """Extract sweep set level AP width feature.
 
     description: AP width of a representative spike of a representative
     depolarization trace.
 
     Args:
-        sweep_fts (DataFrame): DataFrame containing the sweep features.
+        sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
 
     Returns:
         Tuple[float, Dict]: sweep set level AP width feature.
     """
     ap_width_selected, ap_width_info = ephys_feature_init()
-    ap_width = sweep_fts["ap_width"]
-    sweep_ap_index = select_representative_ap_sweep(sweep_fts)
+    ap_width = get_stripped_sweep_fts(sweepset)["ap_width"]
+    sweep_ap_index = select_representative_ap_sweep(sweepset)
     ap_width_selected = ap_width.loc[sweep_ap_index]
     ap_width_info.update(
         {
@@ -2091,21 +2207,21 @@ def get_sweepset_ap_width(sweep_fts: DataFrame) -> Union[Dict, float]:
 
 
 @ephys_feature
-def get_sweepset_ap_peak(sweep_fts: DataFrame) -> Union[Dict, float]:
+def get_sweepset_ap_peak(sweepset: EphysSweepSetFeatureExtractor) -> Union[Dict, float]:
     """Extract sweep set level AP peak feature.
 
     description: Peak of AP of a representative spike of a representative
     depolarization trace.
 
     Args:
-        sweep_fts (DataFrame): DataFrame containing the sweep features.
+        sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
 
     Returns:
         Tuple[float, Dict]: sweep set level AP peak feature.
     """
     ap_peak_selected, ap_peak_info = ephys_feature_init()
-    ap_peak = sweep_fts["ap_peak"]
-    sweep_ap_index = select_representative_ap_sweep(sweep_fts)
+    ap_peak = get_stripped_sweep_fts(sweepset)["ap_peak"]
+    sweep_ap_index = select_representative_ap_sweep(sweepset)
     ap_peak_selected = ap_peak.loc[sweep_ap_index]
     ap_peak_info.update(
         {
@@ -2118,21 +2234,23 @@ def get_sweepset_ap_peak(sweep_fts: DataFrame) -> Union[Dict, float]:
 
 
 @ephys_feature
-def get_sweepset_ap_trough(sweep_fts: DataFrame) -> Union[Dict, float]:
+def get_sweepset_ap_trough(
+    sweepset: EphysSweepSetFeatureExtractor,
+) -> Union[Dict, float]:
     """Extract sweep set level AP trough feature.
 
     description: AP trough of a representative spike of a representative
     depolarization trace.
 
     Args:
-        sweep_fts (DataFrame): DataFrame containing the sweep features.
+        sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
 
     Returns:
         Tuple[float, Dict]: sweep set level AP trough feature.
     """
     ap_trough_selected, ap_trough_info = ephys_feature_init()
-    ap_trough = sweep_fts["ap_trough"]
-    sweep_ap_index = select_representative_ap_sweep(sweep_fts)
+    ap_trough = get_stripped_sweep_fts(sweepset)["ap_trough"]
+    sweep_ap_index = select_representative_ap_sweep(sweepset)
     ap_trough_selected = ap_trough.loc[sweep_ap_index]
     ap_trough_info.update(
         {
@@ -2145,21 +2263,21 @@ def get_sweepset_ap_trough(sweep_fts: DataFrame) -> Union[Dict, float]:
 
 
 @ephys_feature
-def get_sweepset_ap_udr(sweep_fts: DataFrame) -> Union[Dict, float]:
+def get_sweepset_ap_udr(sweepset: EphysSweepSetFeatureExtractor) -> Union[Dict, float]:
     """Extract sweep set level AP upstroke to downstroke ratio feature.
 
     description: AP upstroke-downstroke ratio of a representative spike of a
     representative depolarization trace.
 
     Args:
-        sweep_fts (DataFrame): DataFrame containing the sweep features.
+        sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
 
     Returns:
         Tuple[float, Dict]: sweep set level AP upstroke to downstroke ratio feature.
     """
     udr_selected, ap_udr_info = ephys_feature_init()
-    udr = sweep_fts["udr"]
-    sweep_ap_index = select_representative_ap_sweep(sweep_fts)
+    udr = get_stripped_sweep_fts(sweepset)["udr"]
+    sweep_ap_index = select_representative_ap_sweep(sweepset)
     udr_selected = udr.loc[sweep_ap_index]
     ap_udr_info.update(
         {
@@ -2173,7 +2291,7 @@ def get_sweepset_ap_udr(sweep_fts: DataFrame) -> Union[Dict, float]:
 
 # rheobase
 @ephys_feature
-def get_sweepset_dfdi(sweep_fts: DataFrame) -> Union[Dict, float]:
+def get_sweepset_dfdi(sweepset: EphysSweepSetFeatureExtractor) -> Union[Dict, float]:
     """Extract sweep set level df/di feature.
 
     description: df/di (slope) for the first 5 depolarization traces that
@@ -2181,17 +2299,26 @@ def get_sweepset_dfdi(sweep_fts: DataFrame) -> Union[Dict, float]:
     -> nan. Frequncy = num_spikes / T_stim.
 
     Args:
-        sweep_fts (DataFrame): DataFrame containing the sweep features.
+        sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
 
     Returns:
         Tuple[float, Dict]: sweep set level df/di feature.
     """
     dfdi, dfdi_info = ephys_feature_init()
-    is_depol = sweep_fts["stim_amp"] > 0
-    i, n_spikes = sweep_fts[is_depol][["stim_amp", "num_ap"]].to_numpy().T
+    is_depol = get_stripped_sweep_fts(sweepset)["stim_amp"] > 0
+    i, n_spikes = (
+        sweepset.get_sweep_features()
+        .applymap(strip_info)[is_depol][["stim_amp", "num_ap"]]
+        .to_numpy()
+        .T
+    )
     has_spikes = ~np.isnan(n_spikes)
     if np.sum(has_spikes) > 4 and len(np.unique(n_spikes[:5])) > 3:
-        onset, end = sweep_fts[["stim_onset", "stim_end"]].iloc[0]
+        onset, end = (
+            sweepset.get_sweep_features()
+            .applymap(strip_info)[["stim_onset", "stim_end"]]
+            .iloc[0]
+        )
         f = n_spikes / (end - onset)
         i_s = i[has_spikes][:5]
         f_s = f[has_spikes][:5]
@@ -2204,7 +2331,9 @@ def get_sweepset_dfdi(sweep_fts: DataFrame) -> Union[Dict, float]:
 
 
 @ephys_feature
-def get_sweepset_rheobase(sweep_fts: DataFrame) -> Union[Dict, float]:
+def get_sweepset_rheobase(
+    sweepset: EphysSweepSetFeatureExtractor,
+) -> Union[Dict, float]:
     """Extract sweep set level rheobase feature.
 
     description: rheobase current in pA. If df/di is nan, rheobase is the first
@@ -2214,19 +2343,24 @@ def get_sweepset_rheobase(sweep_fts: DataFrame) -> Union[Dict, float]:
     spikes and the last depolarization that does not.
 
     Args:
-        sweep_fts (DataFrame): DataFrame containing the sweep features.
+        sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
 
     Returns:
         Tuple[float, Dict]: sweep set level rheobase feature.
     """
-    dc_offset = sweep_fts["dc_offset"].iloc[0]
+    dc_offset = get_stripped_sweep_fts(sweepset)["dc_offset"].iloc[0]
     rheobase, rheobase_info = ephys_feature_init()
-    is_depol = sweep_fts["stim_amp"] > 0
-    i, n_spikes = sweep_fts[is_depol][["stim_amp", "num_ap"]].to_numpy().T
+    is_depol = get_stripped_sweep_fts(sweepset)["stim_amp"] > 0
+    i, n_spikes = (
+        sweepset.get_sweep_features()
+        .applymap(strip_info)[is_depol][["stim_amp", "num_ap"]]
+        .to_numpy()
+        .T
+    )
     has_spikes = ~np.isnan(n_spikes)
     i_sub = i[~has_spikes][0]  # last stim < spike threshold
     i_sup = i[has_spikes][0]  # first stim > spike threshold
-    dfdi = strip_info(get_sweepset_dfdi(sweep_fts))
+    dfdi = strip_info(get_sweepset_dfdi(sweepset))
 
     if not np.isnan(dfdi):
         rheobase = float(ransac.predict(np.array([[0]]))) / dfdi

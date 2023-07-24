@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from functools import wraps
 
 import re
 import py_ephys.allen_sdk.ephys_extractor as efex
@@ -63,13 +64,17 @@ class EphysSweepSetFeatureExtractor(efex.EphysSweepSetFeatureExtractor):
         }
 
         self.set_sweep_feature("dc_offset", self.dc_offset)
+        self.cached_sweep_features = None  # for faster retrieval
 
-    def get_sweep_features(self):
-        l = []
-        for swp in self.sweeps():
-            swp._sweep_features
-            l.append(swp._sweep_features)
-        return pd.DataFrame(l)
+    def get_sweep_features(self, force_retrieval=False):
+        if self.cached_sweep_features is None or force_retrieval:
+            l = []
+            for swp in self.sweeps():
+                swp._sweep_features
+                l.append(swp._sweep_features)
+            self.cached_sweep_features = pd.DataFrame(l)
+            return pd.DataFrame(l)
+        return self.cached_sweep_features
 
     def get_sweep_feature(self, key):
         return self.get_sweep_features()[key]
@@ -96,9 +101,7 @@ class EphysSweepSetFeatureExtractor(efex.EphysSweepSetFeatureExtractor):
         self.sweepset_feature_funcs[feature_name] = feature_func
 
     def process_new_sweepset_feature(self, ft, ft_func):
-        self.sweepset_features[ft] = ft_func(
-            self.get_sweep_features().applymap(strip_info)
-        )
+        self.sweepset_features[ft] = ft_func(self)
 
     def process(self, overwrite_existing=True):
         """Analyze features for all sweeps."""
@@ -113,6 +116,8 @@ class EphysSweepSetFeatureExtractor(efex.EphysSweepSetFeatureExtractor):
             for ft, ft_func in self.sweep_feature_funcs.items():
                 sweep.process_new_sweep_feature(ft, ft_func)
 
+        if overwrite_existing:
+            self.cached_sweep_features = None
         for ft, ft_func in self.sweepset_feature_funcs.items():
             self.process_new_sweepset_feature(ft, ft_func)
 
@@ -290,6 +295,7 @@ def ephys_feature_init(ft_info_init: Dict = None) -> Tuple[float, Dict]:
 
 
 def ephys_feature(feature: Callable) -> Callable:
+    @wraps(feature)
     def feature_func(
         sweep: efex.EphysSweepFeatureExtractor, return_ft_info: bool = False
     ) -> Union[float, Dict]:
@@ -309,6 +315,20 @@ def get_example_feature(sweep: efex.EphysSweepFeatureExtractor) -> Tuple[float, 
     """Extracts example ephys feature.
 
     description: This describes how the features gets computed.
+
+    Example function definition
+    '''
+    @ephys_feature
+    def get_example_feature(sweep: efex.EphysSweepFeatureExtractor)
+        ft_value, ft_info = ephys_feature_init()  # init ft, ft_info = float("nan"), {}
+
+        # do some feature calculations using sweep.
+        ft_value = "some value"
+        ft_info.update({"metadata": "contains intermediary results and feature metadata."})
+
+        return ft_value, ft_info
+    '''
+
 
     Args:
         sweep (efex.EphysSweepFeatureExtractor): Sweep to extract feature from.
@@ -359,3 +379,8 @@ class strip_sweep_ft_info:
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.sweep._sweep_features = self.sweep_fts.copy()
+
+
+get_stripped_sweep_fts = lambda sweepset: sweepset.get_sweep_features().applymap(
+    strip_info
+)
