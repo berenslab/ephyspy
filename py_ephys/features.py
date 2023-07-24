@@ -314,10 +314,49 @@ def get_sweep_time_constant(
     """
     tau, tau_info = ephys_feature_init()
     if is_hyperpolarizing(sweep):
-        with strip_sweep_ft_info(sweep) as fsweep:
-            tau = fsweep.estimate_time_constant()
-        # TODO: Add diagnostic outputs, -i.e. trange, ,y0 etc.
-        tau = tau * 1000
+        """The following code block is copied and adapted from sweep.estimate_time_constant()."""
+        v_peak, peak_index = sweep.voltage_deflection("min")
+        v_baseline = strip_info(sweep.sweep_feature("v_baseline"))
+
+        stim_onset = strip_info(sweep.sweep_feature("stim_onset"))
+        onset_idx = ft.find_time_index(sweep.t, stim_onset)
+
+        frac = 0.1
+        search_result = np.flatnonzero(
+            sweep.v[onset_idx:] <= frac * (v_peak - v_baseline) + v_baseline
+        )
+        if not search_result.size:
+            raise ft.FeatureError("could not find interval for time constant estimate")
+
+        fit_start = sweep.t[search_result[0] + onset_idx]
+        fit_end = sweep.t[peak_index]
+
+        if sweep.v[peak_index] < -200:
+            print("A DOWNWARD PEAK WAS OBSERVED GOING TO LESS THAN 200 MV!!!")
+            # Look for another local minimum closer to stimulus onset
+            # We look for a couple of milliseconds after stimulus onset to 50 ms before the downward peak
+            end_index = (onset_idx + 50) + np.argmin(
+                sweep.v[onset_idx + 50 : peak_index - 1250]
+            )
+            fit_end = sweep.t[end_index]
+            fit_start = sweep.t[onset_idx + 50]
+
+        a, inv_tau, y0 = ft.fit_membrane_time_constant(
+            sweep.v, sweep.t, fit_start, fit_end
+        )
+
+        tau = 1.0 / inv_tau * 1000
+        tau_info.update(
+            {
+                "a": a,
+                "inv_tau": inv_tau,
+                "y0": y0,
+                "fit_start": fit_start,
+                "fit_end": fit_end,
+                "equation": "y0 + a * exp(-inv_tau * x)",
+            }
+        )
+
     return tau, tau_info
 
 
@@ -1092,10 +1131,10 @@ def get_fp_sweep_ft_dict(return_ft_info=False):
         "stim_onset": get_sweep_stim_onset,  # None
         "stim_end": get_sweep_stim_end,  # None
         "v_deflect": get_sweep_v_deflect,  # stim_end
-        "tau": get_sweep_time_constant,  # None (part of efex)
+        "v_baseline": get_sweep_v_baseline,  # stim_onset
+        "tau": get_sweep_time_constant,  # v_baseline
         "num_ap": get_sweep_num_ap,  # spike_features
         "ap_freq": get_sweep_ap_freq,  # num_ap, stim_onset, stim_end
-        "v_baseline": get_sweep_v_baseline,  # stim_onset
         "spike_freq_adapt": get_sweep_spike_freq_adapt,  # num_ap, stim_onset, stim_end, spike_features
         "r_input": get_sweep_r_input,  # stim_onset, stim_end, stim_amp, v_baseline, v_deflect
         "sag": get_sweep_sag,  # None (part of efex)

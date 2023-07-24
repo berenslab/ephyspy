@@ -66,6 +66,9 @@ class EphysSweepSetFeatureExtractor(efex.EphysSweepSetFeatureExtractor):
             self.process()
         return self.sweepset_features
 
+    def get_sweepset_feature(self, key):
+        return self.get_sweepset_features()[key]
+
     def add_spike_feature(self, feature_name, feature_func):
         self.spike_feature_funcs[feature_name] = feature_func
 
@@ -76,11 +79,16 @@ class EphysSweepSetFeatureExtractor(efex.EphysSweepSetFeatureExtractor):
         self.sweepset_feature_funcs[feature_name] = feature_func
 
     def process_new_sweepset_feature(self, ft, ft_func):
-        self.sweepset_features[ft] = ft_func(self.get_sweep_features())
+        self.sweepset_features[ft] = ft_func(
+            self.get_sweep_features().applymap(strip_info)
+        )
 
-    def process(self):
+    def process(self, overwrite_existing=True):
         """Analyze features for all sweeps."""
         for sweep in self._sweeps:
+            if overwrite_existing:
+                sweep._sweep_features = {}
+                sweep.spike_features = {}
             sweep.process_spikes()
             for ft, ft_func in self.spike_feature_funcs.items():
                 sweep.process_new_spike_feature(ft, ft_func)
