@@ -32,6 +32,7 @@ class EphysSweepSetFeatureExtractor(efex.EphysSweepSetFeatureExtractor):
         t_start: Optional[Union[List, ndarray, float]] = None,
         t_end: Optional[Union[List, ndarray, float]] = None,
         metadata: Dict = {},
+        dc_offset=float("nan"),
         *args,
         **kwargs
     ):
@@ -50,6 +51,13 @@ class EphysSweepSetFeatureExtractor(efex.EphysSweepSetFeatureExtractor):
         self.sweepset_feature_funcs = {}
         self.sweepset_features = {}
         self.metadata = metadata
+        self.dc_offset = {
+            "value": dc_offset,
+            "units": "pA",
+            "description": "offset current",
+        }
+
+        self.set_sweep_feature("dc_offset", self.dc_offset)
 
     def get_sweep_features(self):
         l = []
@@ -60,6 +68,10 @@ class EphysSweepSetFeatureExtractor(efex.EphysSweepSetFeatureExtractor):
 
     def get_sweep_feature(self, key):
         return self.get_sweep_features()[key]
+
+    def set_sweep_feature(self, key, value):
+        for swp in self.sweeps():
+            swp._sweep_features[key] = value
 
     def get_sweepset_features(self):
         if self.sweepset_features == {}:
@@ -87,7 +99,7 @@ class EphysSweepSetFeatureExtractor(efex.EphysSweepSetFeatureExtractor):
         """Analyze features for all sweeps."""
         for sweep in self._sweeps:
             if overwrite_existing:
-                sweep._sweep_features = {}
+                sweep._sweep_features = {"dc_offset": self.dc_offset}
                 sweep.spike_features = {}
             sweep.process_spikes()
             for ft, ft_func in self.spike_feature_funcs.items():

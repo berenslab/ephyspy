@@ -794,7 +794,7 @@ def get_sweep_v_rest(sweep: efex.EphysSweepFeatureExtractor) -> Tuple[float, Dic
     v_baseline = strip_info(sweep.sweep_feature("v_baseline"))
     r_input = strip_info(sweep.sweep_feature("r_input"))
     try:
-        dc_offset = strip_info(sweep.sweep_feature("dc_offset"))  # TODO: add dc_offset
+        dc_offset = strip_info(sweep.sweep_feature("dc_offset"))
         v_rest = v_baseline - r_input * 1000 * dc_offset
         v_rest_info.update(
             {
@@ -1148,7 +1148,7 @@ def get_fp_sweep_ft_dict(return_ft_info=False):
         "rebound_area": get_sweep_rebound_area,  # stim_end, v_baseline
         "rebound_latency": get_sweep_rebound_latency,  # stim_end, v_baseline
         "rebound_avg": get_sweep_rebound_avg,  # stim_end, v_baseline
-        "v_rest": get_sweep_v_rest,  # r_input, v_baseline TODO: include dc_offset
+        "v_rest": get_sweep_v_rest,  # r_input, v_baseline
         "num_bursts": get_sweep_num_bursts,  # num_ap
         "burstiness": get_sweep_burstiness,  # num_ap
         "wildness": get_sweep_wildness,  # stim_onset, stim_end, spike_features
@@ -1235,20 +1235,21 @@ def get_sweepset_v_rest(sweep_fts: DataFrame) -> Union[Dict, float]:
     Returns:
         Tuple[float, Dict]: sweep set level resting potential feature.
     """
-    dc = 10  # TEMPORARY !!!
-    v_rest, v_rest_info = ephys_feature_init({"dc": dc})
+    dc_offset = sweep_fts["dc_offset"]
+    v_rest, v_rest_info = ephys_feature_init({})
     is_hyperpol = sweep_fts["stim_amp"] < 0
     r_input = get_sweepset_r_input(
         sweep_fts
     )  # TEMPORARY SINCE THIS NEEDS UNNECESSARY FITS
     v_base = sweep_fts["v_baseline"][is_hyperpol]
-    v_rests = v_base - r_input * 1e-3 * dc
+    v_rests = v_base - r_input * 1e-3 * dc_offset
     v_rest = v_rests.median(skipna=True)
     v_rest_info.update(
         {
             "r_input": r_input,
             "v_rest": v_rests,
             "v_base": v_base,
+            "dc_offset": dc_offset,
         }
     )
     return v_rest, v_rest_info
@@ -1941,7 +1942,7 @@ def get_sweepset_ahp(sweep_fts: DataFrame) -> Union[Dict, float]:
         Tuple[float, Dict]: sweep set level Afterhyperpolarization feature.
     """
     ahp_selected, ahp_info = ephys_feature_init()
-    ahp = sweep_fts["ahp"]  # TODO: implement AHP
+    ahp = sweep_fts["ahp"]
     sweep_ap_index = select_representative_ap_sweep(sweep_fts)
     ahp_selected = ahp.loc[sweep_ap_index]  # fast_trough_v - threshold_v
     ahp_info.update(
@@ -1969,7 +1970,7 @@ def get_sweepset_adp(sweep_fts: DataFrame) -> Union[Dict, float]:
         Tuple[float, Dict]: sweep set level Afterdepolarization feature.
     """
     adp_selected, adp_info = ephys_feature_init()
-    adp = sweep_fts["adp"]  # TODO: implement ADP
+    adp = sweep_fts["adp"]
     sweep_ap_index = select_representative_ap_sweep(sweep_fts)
     adp_selected = adp.loc[sweep_ap_index]  # adp_v - fast_trough_v
     adp_info.update(
@@ -2192,8 +2193,8 @@ def get_sweepset_rheobase(sweep_fts: DataFrame) -> Union[Dict, float]:
     Returns:
         Tuple[float, Dict]: sweep set level rheobase feature.
     """
-    dc = 10  # TEMPORARY
-    rheobase, rheobase_info = ephys_feature_init({"dc": dc})
+    dc_offset = sweep_fts["dc_offset"].iloc[0]
+    rheobase, rheobase_info = ephys_feature_init()
     is_depol = sweep_fts["stim_amp"] > 0
     i, n_spikes = sweep_fts[is_depol][["stim_amp", "num_ap"]].to_numpy().T
     has_spikes = ~np.isnan(n_spikes)
@@ -2208,8 +2209,10 @@ def get_sweepset_rheobase(sweep_fts: DataFrame) -> Union[Dict, float]:
             rheobase = i_sup
     else:
         rheobase = i_sup
-    rheobase -= dc
-    rheobase_info.update({"i_sub": i_sub, "i_sup": i_sup, "dfdi": dfdi})
+    rheobase -= dc_offset
+    rheobase_info.update(
+        {"i_sub": i_sub, "i_sup": i_sup, "dfdi": dfdi, "dc_offset": dc_offset}
+    )
     return rheobase, rheobase_info
 
 
