@@ -267,7 +267,8 @@ def include_info(
     return ft
 
 
-def ephys_feature_init(ft_info_init: Dict = {}) -> Tuple[float, Dict]:
+def ephys_feature_init(ft_info_init: Dict = None) -> Tuple[float, Dict]:
+    ft_info_init = {} if ft_info_init is None else ft_info_init
     return float("nan"), ft_info_init
 
 
