@@ -736,12 +736,12 @@ def get_sweep_rebound_latency(
         where_rebound = np.logical_and(where_rebound, sweep.v > v_baseline)
         t_rebound = sweep.t[where_rebound]
         v_rebound = sweep.v[where_rebound]
-        where_rebound_reached = np.where(where_rebound)[0]
-        t_rebound_reached = sweep.t[where_rebound_reached][0]
+        idx_rebound_reached = np.where(where_rebound)[0]
+        t_rebound_reached = sweep.t[idx_rebound_reached][0]
         rebound_latency = t_rebound_reached - end
         rebound_latency_info.update(
             {
-                "where_rebound_reached": where_rebound_reached,
+                "idx_rebound_reached": idx_rebound_reached,
                 "t_rebound_reached": t_rebound_reached,
                 "where_rebound": where_rebound,
                 "t_rebound": t_rebound,
