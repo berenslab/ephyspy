@@ -854,7 +854,6 @@ def analyze_trough_details(
     for peak, next_spk in zip(
         valid_peak_indexes, np.append(valid_spike_indexes[1:], end_index)
     ):
-
         downstroke = dvdt[peak:next_spk].argmin() + peak
         target = term_frac * dvdt[downstroke]
 

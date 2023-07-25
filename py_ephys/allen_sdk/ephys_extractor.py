@@ -37,7 +37,7 @@ import logging
 import warnings
 from collections import Counter
 
-import smartseq3.ephys_features as ft
+import py_ephys.allen_sdk.ephys_features as ft
 import numpy as np
 import six
 from pandas import DataFrame
