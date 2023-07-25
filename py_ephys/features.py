@@ -8,6 +8,7 @@ from pandas import DataFrame
 from typing import Tuple, Dict
 from functools import partial
 from scipy import integrate
+from scipy.optimize import curve_fit
 
 from sklearn import linear_model
 
@@ -128,7 +129,7 @@ def get_sweep_num_ap(sweep: efex.EphysSweepFeatureExtractor) -> Tuple[float, Dic
     """
     num_ap, num_ap_info = ephys_feature_init()
     stim_interval = where_stimulus(sweep)
-    peak_i = sweep.spike_feature("peak_i")[stim_interval]
+    peak_i = sweep.spike_feature("peak_index")[stim_interval]
     peak_t = sweep.spike_feature("peak_t")[stim_interval]
     peak_v = sweep.spike_feature("peak_v")[stim_interval]
 
@@ -273,7 +274,7 @@ def get_sweep_v_deflect(sweep: efex.EphysSweepFeatureExtractor) -> Tuple[float, 
 def get_sweep_v_baseline(sweep: efex.EphysSweepFeatureExtractor) -> Tuple[float, Dict]:
     """Extract sweep level baseline voltage feature.
 
-    description: average voltage between baseline_interval (in s) and stimulus onset.
+    description: average voltage in baseline_interval (in s) before stimulus onset.
 
     Args:
         sweep (efex.EphysSweepFeatureExtractor): Sweep to extract feature from.
@@ -282,17 +283,19 @@ def get_sweep_v_baseline(sweep: efex.EphysSweepFeatureExtractor) -> Tuple[float,
         Tuple[float, Dict]: baseline voltage feature and feature metadata
     """
     v_baseline_avg, v_baseline_info = ephys_feature_init()
-    v_baseline_avg = sweep._get_baseline_voltage()
     onset = strip_info(sweep.sweep_feature("stim_onset"))
-    idx_baseline = where_between(sweep.t, sweep.baseline_interval, onset)
-    t_baseline = sweep.t[idx_baseline]
-    v_baseline = sweep.v[idx_baseline]
+    where_baseline = where_between(sweep.t, onset - sweep.baseline_interval, onset)
+    t_baseline = sweep.t[where_baseline]
+    v_baseline = sweep.v[where_baseline]
+    v_baseline_avg = np.mean(v_baseline)
+    # v_baseline_avg = sweep._get_baseline_voltage() # bad since start is set to t[0]
     v_baseline_info.update(
         {
-            "idx_baseline": idx_baseline,
+            "where_baseline": where_baseline,
             "t_baseline": t_baseline,
             "v_baseline": v_baseline,
             "baseline_interval": sweep.baseline_interval,
+            "stim_onset": onset,
         }
     )
     return v_baseline_avg, v_baseline_info
@@ -361,7 +364,7 @@ def get_sweep_time_constant(
 
 
 @ephys_feature
-def get_sweep_spike_freq_adapt(
+def get_sweep_ap_freq_adapt(
     sweep: efex.EphysSweepFeatureExtractor,
 ) -> Union[Dict, float]:
     """Extract sweep level spike frequency adaptation feature.
@@ -374,15 +377,15 @@ def get_sweep_spike_freq_adapt(
     Returns:
         Tuple[float, Dict]: spike freq adaptation feature and feature metadata
     """
-    spike_freq_adapt, spike_freq_adapt_info = ephys_feature_init()
+    ap_freq_adapt, ap_freq_adapt_info = ephys_feature_init()
     if strip_info(sweep.sweep_feature("num_ap")) > 5 and has_stimulus(sweep):
         onset = strip_info(sweep.sweep_feature("stim_onset"))
         end = strip_info(sweep.sweep_feature("stim_end"))
-        t_half = (end - onset) / 2
-        idx_1st_half = where_between(sweep.t, onset, t_half)
-        idx_2nd_half = where_between(sweep.t, t_half, end)
-        t_1st_half = sweep.t[idx_1st_half]
-        t_2nd_half = sweep.t[idx_2nd_half]
+        t_half = (end - onset) / 2 + onset
+        where_1st_half = where_between(sweep.t, onset, t_half)
+        where_2nd_half = where_between(sweep.t, t_half, end)
+        t_1st_half = sweep.t[where_1st_half]
+        t_2nd_half = sweep.t[where_2nd_half]
 
         spike_times = sweep.spike_feature("peak_t")
         spike_times = spike_times[where_stimulus(sweep)]
@@ -391,19 +394,56 @@ def get_sweep_spike_freq_adapt(
         spikes_2nd_half = spike_times[spike_times > t_half]
         num_spikes_1st_half = len(spikes_1st_half)
         num_spikes_2nd_half = len(spikes_2nd_half)
-        spike_freq_adapt = num_spikes_2nd_half / num_spikes_1st_half
+        ap_freq_adapt = num_spikes_2nd_half / num_spikes_1st_half
 
-        spike_freq_adapt_info.update(
+        ap_freq_adapt_info.update(
             {
                 "num_spikes_1st_half": num_spikes_1st_half,
                 "num_spikes_2nd_half": num_spikes_2nd_half,
-                "idx_1st_half": idx_1st_half,
-                "idx_2nd_half": idx_2nd_half,
+                "where_1st_half": where_1st_half,
+                "where_2nd_half": where_2nd_half,
                 "t_1st_half": t_1st_half,
                 "t_2nd_half": t_2nd_half,
             }
         )
-    return spike_freq_adapt, spike_freq_adapt_info
+    return ap_freq_adapt, ap_freq_adapt_info
+
+
+@ephys_feature
+def get_sweep_ap_amp_adapt(
+    sweep: efex.EphysSweepFeatureExtractor,
+) -> Tuple[float, Dict]:
+    """Extract sweep level spike count feature.
+
+    description: spike amplitude adaptation as the slope of a linear fit v_peak(t_peak)
+    during the stimulus interval.
+
+    Args:
+        sweep (efex.EphysSweepFeatureExtractor): Sweep to extract feature from.
+
+    Returns:
+        Tuple[float, Dict]: Spike count feature and feature metadata
+    """
+    ap_amp_adapt, ap_amp_adapt_info = ephys_feature_init()
+    stim_interval = where_stimulus(sweep)
+    peak_t = sweep.spike_feature("peak_t")[stim_interval]
+    peak_v = sweep.spike_feature("peak_v")[stim_interval]
+
+    num_spikes = len(peak_v)
+    if len(peak_v) > 0:
+        y = lambda x, m, b: m * x + b
+        (m, b), e = curve_fit(y, peak_t, peak_v)
+
+        ap_amp_adapt = m
+        ap_amp_adapt_info.update(
+            {
+                "peak_t": peak_t,
+                "peak_v": peak_v,
+                "slope": m,
+                "intercept": b,
+            }
+        )
+    return ap_amp_adapt, ap_amp_adapt_info
 
 
 @ephys_feature
@@ -512,17 +552,20 @@ def get_sweep_sag_area(sweep: efex.EphysSweepFeatureExtractor) -> Tuple[float, D
     """
     sag_area, sag_area_info = ephys_feature_init()
     if is_hyperpolarizing(sweep):
-        idx_sag = get_sweep_sag_idxs(sweep)
-        if np.sum(idx_sag) > 10:  # TODO: what should be min sag duration!?
-            v_sag = sweep.v[idx_sag]
-            t_sag = sweep.t[idx_sag]
+        where_sag = get_sweep_sag_idxs(sweep)
+        v_baseline = sweep.sweep_feature("v_baseline")
+        if np.sum(where_sag) > 10:  # TODO: what should be min sag duration!?
+            v_sag = sweep.v[where_sag]
+            t_sag = sweep.t[where_sag]
+            v_sagline = v_sag[0]
             # Take running average of v?
-            sag_area = -integrate.cumulative_trapezoid(v_sag, t_sag)[-1]
+            sag_area = -integrate.cumulative_trapezoid(v_sag - v_sagline, t_sag)[-1]
             sag_area_info.update(
                 {
-                    "idx_sag": idx_sag,
+                    "where_sag": where_sag,
                     "v_sag": v_sag,
                     "t_sag": t_sag,
+                    "v_sagline": v_sagline,
                 }
             )
     return sag_area, sag_area_info
@@ -542,13 +585,13 @@ def get_sweep_sag_time(sweep: efex.EphysSweepFeatureExtractor) -> Tuple[float, D
     """
     sag_time, sag_time_info = ephys_feature_init()
     if is_hyperpolarizing(sweep):
-        idx_sag = get_sweep_sag_idxs(sweep)
-        if np.sum(idx_sag) > 10:  # TODO: what should be min sag duration!?
-            sag_t_start, sag_t_end = sweep.t[idx_sag][[0, -1]]
+        where_sag = get_sweep_sag_idxs(sweep)
+        if np.sum(where_sag) > 10:  # TODO: what should be min sag duration!?
+            sag_t_start, sag_t_end = sweep.t[where_sag][[0, -1]]
             sag_time = sag_t_end - sag_t_start
             sag_time_info.update(
                 {
-                    "idx_sag": idx_sag,
+                    "where_sag": where_sag,
                     "sag_t_start": sag_t_start,
                     "sag_t_end": sag_t_end,
                 }
@@ -572,13 +615,13 @@ def get_sweep_v_plateau(sweep: efex.EphysSweepFeatureExtractor) -> Tuple[float, 
     if is_hyperpolarizing(sweep):
         end = strip_info(sweep.sweep_feature("stim_end"))
         # same as voltage deflection
-        idx_plateau = where_between(sweep.t, end - 0.1, end)
-        v_plateau = sweep.v[idx_plateau]
-        t_plateau = sweep.t[idx_plateau]
+        where_plateau = where_between(sweep.t, end - 0.1, end)
+        v_plateau = sweep.v[where_plateau]
+        t_plateau = sweep.t[where_plateau]
         v_avg_plateau = ft.average_voltage(v_plateau, t_plateau)
         v_plateau_info.update(
             {
-                "idx_plateau": idx_plateau,
+                "where_plateau": where_plateau,
                 "v_plateau": v_plateau,
                 "t_plateau": t_plateau,
             }
@@ -606,15 +649,22 @@ def get_sweep_rebound(
     if has_rebound(sweep, T_rebound):
         v_baseline = strip_info(sweep.sweep_feature("v_baseline"))
         end = strip_info(sweep.sweep_feature("stim_end"))
-        idx_rebound = where_between(sweep.t, end, end + T_rebound)
-        idx_rebound = np.logical_and(idx_rebound, sweep.v > v_baseline)
-        t_rebound = sweep.t[idx_rebound]
-        rebound = np.max(sweep.v[idx_rebound] - v_baseline)
+        where_rebound = where_between(sweep.t, end, end + T_rebound)
+        where_rebound = np.logical_and(where_rebound, sweep.v > v_baseline)
+        t_rebound = sweep.t[where_rebound]
+        v_rebound = sweep.v[where_rebound]
+        idx_rebound = np.argmax(sweep.v[where_rebound] - v_baseline)
+        idx_rebound = np.where(where_rebound)[0][idx_rebound]
+        max_rebound = sweep.v[idx_rebound]
+        rebound = max_rebound - v_baseline
         rebound_info.update(
             {
                 "idx_rebound": idx_rebound,
                 "t_rebound": t_rebound,
+                "v_rebound": v_rebound,
                 "v_baseline": v_baseline,
+                "max_rebound": max_rebound,
+                "where_rebound": where_rebound,
             }
         )
     return rebound, rebound_info
@@ -641,7 +691,7 @@ def get_sweep_rebound_spikes(
     )
     if has_rebound(sweep, T_rebound):
         t_spike = sweep.spike_feature("peak_t")
-        idx_spike = sweep.spike_feature("peak_i")
+        idx_spike = sweep.spike_feature("peak_index")
         v_spike = sweep.spike_feature("peak_v")
         if len(t_spike) != 0:
             end = strip_info(sweep.sweep_feature("stim_end"))
@@ -682,18 +732,18 @@ def get_sweep_rebound_latency(
     if has_rebound(sweep, T_rebound):
         v_baseline = strip_info(sweep.sweep_feature("v_baseline"))
         end = strip_info(sweep.sweep_feature("stim_end"))
-        idx_rebound = where_between(sweep.t, end, end + T_rebound)
-        idx_rebound = np.logical_and(idx_rebound, sweep.v > v_baseline)
-        t_rebound = sweep.t[idx_rebound]
-        v_rebound = sweep.v[idx_rebound]
-        idx_rebound_reached = np.where(idx_rebound)[0]
-        t_rebound_reached = sweep.t[idx_rebound_reached][0]
+        where_rebound = where_between(sweep.t, end, end + T_rebound)
+        where_rebound = np.logical_and(where_rebound, sweep.v > v_baseline)
+        t_rebound = sweep.t[where_rebound]
+        v_rebound = sweep.v[where_rebound]
+        where_rebound_reached = np.where(where_rebound)[0]
+        t_rebound_reached = sweep.t[where_rebound_reached][0]
         rebound_latency = t_rebound_reached - end
         rebound_latency_info.update(
             {
-                "idx_rebound_reached": idx_rebound_reached,
+                "where_rebound_reached": where_rebound_reached,
                 "t_rebound_reached": t_rebound_reached,
-                "idx_rebound": idx_rebound,
+                "where_rebound": where_rebound,
                 "t_rebound": t_rebound,
                 "v_rebound": v_rebound,
                 "v_baseline": v_baseline,
@@ -723,16 +773,16 @@ def get_sweep_rebound_area(
     if has_rebound(sweep, T_rebound):
         v_baseline = strip_info(sweep.sweep_feature("v_baseline"))
         end = strip_info(sweep.sweep_feature("stim_end"))
-        idx_rebound = where_between(sweep.t, end, end + T_rebound)
-        idx_rebound = np.logical_and(idx_rebound, sweep.v > v_baseline)
-        v_rebound = sweep.v[idx_rebound]
-        t_rebound = sweep.t[idx_rebound]
+        where_rebound = where_between(sweep.t, end, end + T_rebound)
+        where_rebound = np.logical_and(where_rebound, sweep.v > v_baseline)
+        v_rebound = sweep.v[where_rebound]
+        t_rebound = sweep.t[where_rebound]
         rebound_area = integrate.cumulative_trapezoid(
             v_rebound - v_baseline, t_rebound
         )[-1]
         rebound_area_info.update(
             {
-                "idx_rebound": idx_rebound,
+                "where_rebound": where_rebound,
                 "t_rebound": t_rebound,
                 "v_rebound": v_rebound,
                 "v_baseline": v_baseline,
@@ -762,14 +812,14 @@ def get_sweep_rebound_avg(
     if has_rebound(sweep, T_rebound):
         v_baseline = strip_info(sweep.sweep_feature("v_baseline"))
         end = strip_info(sweep.sweep_feature("stim_end"))
-        idx_rebound = where_between(sweep.t, end, end + T_rebound)
-        idx_rebound = np.logical_and(idx_rebound, sweep.v > v_baseline)
-        v_rebound = sweep.v[idx_rebound]
-        t_rebound = sweep.t[idx_rebound]
+        where_rebound = where_between(sweep.t, end, end + T_rebound)
+        where_rebound = np.logical_and(where_rebound, sweep.v > v_baseline)
+        v_rebound = sweep.v[where_rebound]
+        t_rebound = sweep.t[where_rebound]
         v_rebound_avg = ft.average_voltage(v_rebound - v_baseline, t_rebound)
         rebound_avg_info.update(
             {
-                "idx_rebound": idx_rebound,
+                "where_rebound": where_rebound,
                 "t_rebound": t_rebound,
                 "v_rebound": v_rebound,
                 "v_baseline": v_baseline,
@@ -886,7 +936,7 @@ def get_sweep_wildness(sweep: efex.EphysSweepFeatureExtractor) -> Tuple[float, D
     """
     num_wild_spikes, wildness_info = ephys_feature_init()
     stim_interval = where_stimulus(sweep)
-    i_wild_spikes = sweep.spike_feature("peak_i")[~stim_interval]
+    i_wild_spikes = sweep.spike_feature("peak_index")[~stim_interval]
     t_wild_spikes = sweep.spike_feature("peak_t")[~stim_interval]
     v_wild_spikes = sweep.spike_feature("peak_v")[~stim_interval]
     if len(i_wild_spikes) > 0:
@@ -1130,18 +1180,19 @@ def get_fp_sweep_ft_dict(return_ft_info=False):
         "stim_amp": get_sweep_stim_amplitude,  # None
         "stim_onset": get_sweep_stim_onset,  # None
         "stim_end": get_sweep_stim_end,  # None
+        "v_baseline": get_sweep_v_baseline,  # stim_onset (needs to be computed early)
         "v_deflect": get_sweep_v_deflect,  # stim_end
-        "v_baseline": get_sweep_v_baseline,  # stim_onset
         "tau": get_sweep_time_constant,  # v_baseline
         "num_ap": get_sweep_num_ap,  # spike_features
         "ap_freq": get_sweep_ap_freq,  # num_ap, stim_onset, stim_end
-        "spike_freq_adapt": get_sweep_spike_freq_adapt,  # num_ap, stim_onset, stim_end, spike_features
+        "ap_freq_adapt": get_sweep_ap_freq_adapt,  # num_ap, stim_onset, stim_end, spike_features
+        "ap_amp_adapt": get_sweep_ap_amp_adapt,  # spike_features
         "r_input": get_sweep_r_input,  # stim_onset, stim_end, stim_amp, v_baseline, v_deflect
-        "sag": get_sweep_sag,  # None (part of efex)
-        "sag_fraction": get_sweep_sag_fraction,  # None (part of efex)
-        "sag_ratio": get_sweep_sag_ratio,  # None (part of efex)
-        "sag_area": get_sweep_sag_area,  # stim_onset, stim_end, v_deflect
-        "sag_time": get_sweep_sag_time,  # stim_onset, stim_end, v_deflect
+        "sag": get_sweep_sag,  # v_baseline
+        "sag_fraction": get_sweep_sag_fraction,  # v_baseline
+        "sag_ratio": get_sweep_sag_ratio,  # v_baseline
+        "sag_area": get_sweep_sag_area,  # stim_onset, stim_end, v_deflect, v_baseline
+        "sag_time": get_sweep_sag_time,  # stim_onset, stim_end, v_deflect, v_baseline
         "v_plateau": get_sweep_v_plateau,  # stim_end
         "rebound": get_sweep_rebound,  # stim_end, v_baseline
         "rebound_spikes": get_sweep_rebound_spikes,  # stim_end, spike_features
@@ -1760,7 +1811,7 @@ def get_sweepset_wildness(
 
 # spike frequency adaptation
 @ephys_feature
-def get_sweepset_spike_freq_adapt(
+def get_sweepset_ap_freq_adapt(
     sweepset: EphysSweepSetFeatureExtractor,
 ) -> Union[Dict, float]:
     """Extract sweep set level spike frequency adaptation feature.
@@ -1773,20 +1824,20 @@ def get_sweepset_spike_freq_adapt(
     Returns:
         Tuple[float, Dict]: sweep set level spike frequency adaptation feature.
     """
-    spike_freq_adapt, spike_freq_adapt_info = ephys_feature_init()
+    ap_freq_adapt, ap_freq_adapt_info = ephys_feature_init()
     spike_sweep_idx = select_representative_spiking_sweep(sweepset)
-    spike_freq_adapt = (
+    ap_freq_adapt = (
         sweepset.get_sweep_features()
-        .applymap(strip_info)["spike_freq_adapt"]
+        .applymap(strip_info)["ap_freq_adapt"]
         .loc[spike_sweep_idx]
     )
-    spike_freq_adapt_info.update(
+    ap_freq_adapt_info.update(
         {
             "spike_sweep_idx": spike_sweep_idx,
             "selection": parse_ft_desc(select_representative_spiking_sweep),
         }
     )
-    return spike_freq_adapt, spike_freq_adapt_info
+    return ap_freq_adapt, ap_freq_adapt_info
 
 
 # AP Fano factor
@@ -2396,7 +2447,8 @@ def get_fp_sweepset_ft_dict(return_ft_info=False):
         "num_ap": get_sweepset_num_spikes,
         "ap_freq": get_sweepset_ap_freq,
         "wildness": get_sweepset_wildness,
-        "spike_freq_adapt": get_sweepset_spike_freq_adapt,
+        "ap_freq_adapt": get_sweepset_ap_freq_adapt,
+        # "ap_amp_adapt": get_sweepset_ap_amp_adapt, # TODO: implement
         "fano_factor": get_sweepset_fano_factor,
         "ap_fano_factor": get_sweepset_ap_fano_factor,
         "cv": get_sweepset_cv,
