@@ -10,6 +10,129 @@ from py_ephys.utils import where_between, get_ap_ft_at_idx
 ############################
 
 
+def scatter_spike_ft(
+    ax: Axes, sweep: EphysSweepFeatureExtractor, ft: str, **plot_kwargs
+) -> Axes:
+    spike_fts = sweep._spikes_df
+    if spike_fts.size:
+        ax.scatter(
+            spike_fts[f"{ft}_t"],
+            spike_fts[f"{ft}_v"],
+            s=10,
+            label=ft,
+            **plot_kwargs,
+        )
+    return ax
+
+
+def plot_spike_peaks(
+    sweep: EphysSweepFeatureExtractor, ax: Axes, color=None, **plot_kwargs
+) -> Axes:
+    ax = scatter_spike_ft(ax, sweep, "peak", color=color, **plot_kwargs)
+    return ax
+
+
+def plot_spike_troughs(
+    sweep: EphysSweepFeatureExtractor, ax: Axes, color=None, **plot_kwargs
+) -> Axes:
+    ax = scatter_spike_ft(ax, sweep, "trough", color=color, **plot_kwargs)
+    return ax
+
+
+def plot_spike_thresholds(
+    sweep: EphysSweepFeatureExtractor, ax: Axes, color=None, **plot_kwargs
+) -> Axes:
+    ax = scatter_spike_ft(ax, sweep, "threshold", color=color, **plot_kwargs)
+    return ax
+
+
+def plot_spike_upstrokes(
+    sweep: EphysSweepFeatureExtractor, ax: Axes, color=None, **plot_kwargs
+) -> Axes:
+    ax = scatter_spike_ft(ax, sweep, "upstroke", color=color, **plot_kwargs)
+
+
+def plot_spike_downstrokes(
+    sweep: EphysSweepFeatureExtractor, ax: Axes, color=None, **plot_kwargs
+) -> Axes:
+    ax = scatter_spike_ft(ax, sweep, "downstroke", color=color, **plot_kwargs)
+    return ax
+
+
+def plot_spike_widths(
+    sweep: EphysSweepFeatureExtractor, ax: Axes, color=None, **plot_kwargs
+) -> Axes:
+    pass
+
+
+def plot_spike_fast_troughs(
+    sweep: EphysSweepFeatureExtractor, ax: Axes, color=None, **plot_kwargs
+) -> Axes:
+    ax = scatter_spike_ft(ax, sweep, "fast_trough", color=color, **plot_kwargs)
+    return ax
+
+
+def plot_spike_slow_troughs(
+    sweep: EphysSweepFeatureExtractor, ax: Axes, color=None, **plot_kwargs
+) -> Axes:
+    ax = scatter_spike_ft(ax, sweep, "slow_trough", color=color, **plot_kwargs)
+    return ax
+
+
+def plot_spike_adps(
+    sweep: EphysSweepFeatureExtractor, ax: Axes, color=None, **plot_kwargs
+) -> Axes:
+    spike_fts = sweep._spikes_df
+    if spike_fts.size:
+        ax.vlines(
+            0.5 * (spike_fts[f"adp_t"] + spike_fts["fast_trough_t"]),
+            spike_fts["adp_v"],
+            spike_fts["fast_trough_v"],
+            ls="--",
+            lw=1,
+            label="adp",
+        )
+    return ax
+
+
+def plot_spike_ahps(
+    sweep: EphysSweepFeatureExtractor, ax: Axes, color=None, **plot_kwargs
+) -> Axes:
+    spike_fts = sweep._spikes_df
+    if spike_fts.size:
+        ax.vlines(
+            0.5 * (spike_fts[f"fast_trough_t"] + spike_fts["threshold_t"]),
+            spike_fts["fast_trough_v"],
+            spike_fts["threshold_v"],
+            ls="--",
+            lw=1,
+            label="ahp",
+        )
+    return ax
+
+
+def plot_spike_amps(
+    sweep: EphysSweepFeatureExtractor, ax: Axes, color=None, **plot_kwargs
+) -> Axes:
+    pass
+
+
+def get_spike_ft_plot_dict():
+    spike_ft_plot_dict = {
+        "peak": plot_spike_peaks,
+        "trough": plot_spike_troughs,
+        "threshold": plot_spike_thresholds,
+        "upstroke": plot_spike_upstrokes,
+        "downstroke": plot_spike_downstrokes,
+        "width": plot_spike_widths,  # TODO: implement
+        "fast_trough": plot_spike_fast_troughs,
+        "slow_trough": plot_spike_slow_troughs,
+        "adp": plot_spike_adps,
+        "ahp": plot_spike_ahps,  # TODO: Check why nan
+    }
+    return spike_ft_plot_dict
+
+
 def plot_spike_ft_diagnostics(
     sweep: EphysSweepFeatureExtractor, window: Tuple = [0.4, 0.45]
 ) -> Tuple[Figure, Axes]:
@@ -35,39 +158,9 @@ def plot_spike_ft_diagnostics(
     axes["c"].set_xlabel("Time (s)")
 
     # plot spike features
-    spike_fts = sweep._spikes_df
-    fts = [
-        "peak",
-        "trough",
-        "threshold",
-        "upstroke",
-        "downstroke",
-        "fast_trough",
-        "slow_trough",
-        "adp",
-    ]
-    if spike_fts.size:
-        for x in ["a", "b"]:
-            for ft in fts:
-                axes[x].scatter(
-                    spike_fts[f"{ft}_t"],
-                    spike_fts[f"{ft}_v"],
-                    s=10,
-                    label=ft,
-                )
-            for l, f1, f2 in zip(
-                ["ahp", "adp"],  # TODO: "width" is missing!
-                ["fast_trough", "adp"],
-                ["threshold", "fast_trough"],
-            ):
-                axes[x].vlines(
-                    0.5 * (spike_fts[f"{f1}_t"] + spike_fts[f"{f2}_t"]),
-                    spike_fts[f"{f1}_v"],
-                    spike_fts[f"{f2}_v"],
-                    ls="--",
-                    lw=1,
-                    label=l,
-                )
+    for x in ["a", "b"]:
+        for ft, plot_func in get_spike_ft_plot_dict().items():
+            plot_func(sweep, axes[x])
 
     axes["b"].legend(loc="center left", bbox_to_anchor=(1.0, 0.5))
     return fig, axes
@@ -1280,3 +1373,53 @@ def get_sweep_ft_plot_dict():
         "udr": plot_sweep_udr,
     }
     return ft_plot_dict
+
+
+###############################
+### sweepset level features ###
+###############################
+
+
+# def get_sweepset_ft_dict(return_ft_info=False):
+#     _ft_dict = {
+#         "tau": plot_sweepset_tau,
+#         "r_input": plot_sweepset_r_input,
+#         "v_rest": plot_sweepset_v_rest,
+#         "v_baseline": plot_sweepset_v_baseline,
+#         "slow_hyperpolarization": plot_sweepset_slow_hyperpolarization,
+#         "sag": plot_sweepset_sag,
+#         "sag_ratio": plot_sweepset_sag_ratio,
+#         "sag_fraction": plot_sweepset_sag_fraction,
+#         "sag_area": plot_sweepset_sag_area,
+#         "sag_time": plot_sweepset_sag_time,
+#         "rebound": plot_sweepset_rebound,
+#         "rebound_aps": plot_sweepset_rebound_aps,
+#         "rebound_area": plot_sweepset_rebound_area,
+#         "rebound_latency": plot_sweepset_rebound_latency,
+#         "rebound_avg": plot_sweepset_rebound_avg,
+#         "num_ap": plot_sweepset_num_spikes,
+#         "ap_freq": plot_sweepset_ap_freq,
+#         "wildness": plot_sweepset_wildness,
+#         "ap_freq_adapt": plot_sweepset_ap_freq_adapt,
+#         "ap_amp_slope": plot_sweepset_ap_amp_slope,
+#         "fano_factor": plot_sweepset_fano_factor,
+#         "ap_fano_factor": plot_sweepset_ap_fano_factor,
+#         "cv": plot_sweepset_cv,
+#         "ap_cv": plot_sweepset_ap_cv,
+#         "burstiness": plot_sweepset_burstiness,
+#         "isi_adapt": plot_sweepset_isi_adapt,
+#         "isi_adapt_avg": plot_sweepset_isi_adapt_avg,
+#         "ap_amp_adapt": plot_sweepset_ap_amp_adapt,
+#         "ap_amp_adapt_avg": plot_sweepset_ap_amp_adapt_avg,
+#         "latency": plot_sweepset_latency,
+#         "ahp": plot_sweepset_ahp,
+#         "adp": plot_sweepset_adp,
+#         "ap_thresh": plot_sweepset_ap_thresh,
+#         "ap_amp": plot_sweepset_ap_amp,
+#         "ap_width": plot_sweepset_ap_width,
+#         "ap_peak": plot_sweepset_ap_peak,
+#         "ap_trough": plot_sweepset_ap_trough,
+#         "udr": plot_sweepset_ap_udr,
+#         "dfdi": plot_sweepset_dfdi,
+#         "rheobase": plot_sweepset_rheobase,
+#     }
