@@ -170,7 +170,7 @@ def get_sweep_ap_freq(sweep: efex.EphysSweepFeatureExtractor) -> Tuple[float, Di
 
 
 @ephys_feature
-def get_sweep_stim_amplitude(
+def get_sweep_stim_amp(
     sweep: efex.EphysSweepFeatureExtractor,
 ) -> Union[Dict, float]:
     """Extract sweep level stimulus ampltiude feature.
@@ -302,7 +302,7 @@ def get_sweep_v_baseline(sweep: efex.EphysSweepFeatureExtractor) -> Tuple[float,
 
 
 @ephys_feature
-def get_sweep_time_constant(
+def get_sweep_tau(
     sweep: efex.EphysSweepFeatureExtractor,
 ) -> Union[Dict, float]:
     """Extract sweep level time constant feature.
@@ -671,7 +671,7 @@ def get_sweep_rebound(
 
 
 @ephys_feature
-def get_sweep_rebound_spikes(
+def get_sweep_rebound_aps(
     sweep: efex.EphysSweepFeatureExtractor,
     T_rebound: float = 0.3,
 ) -> Tuple[float, Dict]:
@@ -686,9 +686,7 @@ def get_sweep_rebound_spikes(
     Returns:
         Tuple[float, Dict]: num rebound spikes feature and feature metadata
     """
-    num_rebound_spikes, rebound_spike_info = ephys_feature_init(
-        {"T_rebound": T_rebound}
-    )
+    num_rebound_aps, rebound_spike_info = ephys_feature_init({"T_rebound": T_rebound})
     if has_rebound(sweep, T_rebound):
         t_spike = sweep.spike_feature("peak_t")
         idx_spike = sweep.spike_feature("peak_index")
@@ -699,8 +697,8 @@ def get_sweep_rebound_spikes(
             idx_rebound = idx_spike[w_rebound]
             t_rebound = t_spike[w_rebound]
             v_rebound = v_spike[w_rebound]
-            num_rebound_spikes = np.sum(w_rebound)
-            if num_rebound_spikes > 0:
+            num_rebound_aps = np.sum(w_rebound)
+            if num_rebound_aps > 0:
                 rebound_spike_info.update(
                     {
                         "idx_rebound": idx_rebound,
@@ -708,7 +706,7 @@ def get_sweep_rebound_spikes(
                         "v_rebound": v_rebound,
                     }
                 )
-    return num_rebound_spikes, rebound_spike_info
+    return num_rebound_aps, rebound_spike_info
 
 
 @ephys_feature
@@ -816,7 +814,7 @@ def get_sweep_rebound_avg(
         where_rebound = np.logical_and(where_rebound, sweep.v > v_baseline)
         v_rebound = sweep.v[where_rebound]
         t_rebound = sweep.t[where_rebound]
-        v_rebound_avg = ft.average_voltage(v_rebound - v_baseline, t_rebound)
+        v_rebound_avg = ft.average_voltage(v_rebound, t_rebound) - v_baseline
         rebound_avg_info.update(
             {
                 "where_rebound": where_rebound,
@@ -845,7 +843,7 @@ def get_sweep_v_rest(sweep: efex.EphysSweepFeatureExtractor) -> Tuple[float, Dic
     r_input = strip_info(sweep.sweep_feature("r_input"))
     try:
         dc_offset = strip_info(sweep.sweep_feature("dc_offset"))
-        v_rest = v_baseline - r_input * 1000 * dc_offset
+        v_rest = v_baseline - r_input * 1e-3 * dc_offset
         v_rest_info.update(
             {
                 "v_baseline": v_baseline,
@@ -1177,12 +1175,12 @@ def get_sweep_udr(sweep: efex.EphysSweepFeatureExtractor) -> Tuple[float, Dict]:
 ### Feature extraction functions
 def get_fp_sweep_ft_dict(return_ft_info=False):
     fp_ft_dict = {
-        "stim_amp": get_sweep_stim_amplitude,  # None
+        "stim_amp": get_sweep_stim_amp,  # None
         "stim_onset": get_sweep_stim_onset,  # None
         "stim_end": get_sweep_stim_end,  # None
         "v_baseline": get_sweep_v_baseline,  # stim_onset (needs to be computed early)
         "v_deflect": get_sweep_v_deflect,  # stim_end
-        "tau": get_sweep_time_constant,  # v_baseline
+        "tau": get_sweep_tau,  # v_baseline
         "num_ap": get_sweep_num_ap,  # spike_features
         "ap_freq": get_sweep_ap_freq,  # num_ap, stim_onset, stim_end
         "ap_freq_adapt": get_sweep_ap_freq_adapt,  # num_ap, stim_onset, stim_end, spike_features
@@ -1195,7 +1193,7 @@ def get_fp_sweep_ft_dict(return_ft_info=False):
         "sag_time": get_sweep_sag_time,  # stim_onset, stim_end, v_deflect, v_baseline
         "v_plateau": get_sweep_v_plateau,  # stim_end
         "rebound": get_sweep_rebound,  # stim_end, v_baseline
-        "rebound_spikes": get_sweep_rebound_spikes,  # stim_end, spike_features
+        "rebound_aps": get_sweep_rebound_aps,  # stim_end, spike_features
         "rebound_area": get_sweep_rebound_area,  # stim_end, v_baseline
         "rebound_latency": get_sweep_rebound_latency,  # stim_end, v_baseline
         "rebound_avg": get_sweep_rebound_avg,  # stim_end, v_baseline
@@ -1224,7 +1222,7 @@ def get_fp_sweep_ft_dict(return_ft_info=False):
 
 
 @ephys_feature
-def get_sweepset_time_constant(
+def get_sweepset_tau(
     sweepset: EphysSweepSetFeatureExtractor,
 ) -> Union[Dict, float]:
     """Extract sweep set level time constant feature.
@@ -1602,7 +1600,7 @@ def get_sweepset_rebound_ratio(
     )
     rebound_ratio = (
         sweepset.get_sweep_features()
-        .applymap(strip_info)["rebound_spikes"]
+        .applymap(strip_info)["rebound_aps"]
         .iloc[rebound_sweep_idx]
     )
     rebound_ratio_info.update(
@@ -2429,7 +2427,7 @@ def get_sweepset_rheobase(
 
 def get_fp_sweepset_ft_dict(return_ft_info=False):
     fp_ft_dict = {
-        "tau": get_sweepset_time_constant,
+        "tau": get_sweepset_tau,
         "r_input": get_sweepset_r_input,
         "v_rest": get_sweepset_v_rest,
         "v_baseline": get_sweepset_v_baseline,
