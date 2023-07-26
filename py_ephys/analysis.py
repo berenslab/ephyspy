@@ -1335,6 +1335,87 @@ def plot_sweep_udr(
     return ax
 
 
+def plot_sweep_ft_diagnostics(sweep, window=[0.4, 0.45]):
+    mosaic = "aaabb\naaabb\ncccbb"
+    fig, axes = plt.subplot_mosaic(mosaic, figsize=(12, 4), constrained_layout=True)
+    colors = plt.cm.tab20(np.linspace(0, 1, 40))
+
+    # plot sweep
+    axes["a"].plot(sweep.t, sweep.v, color="k")
+    axes["a"].set_ylabel("Voltage (mV)")
+    axes["a"].axvline(window[0], color="grey", alpha=0.5)
+    axes["a"].axvline(window[1], color="grey", alpha=0.5, label="window")
+
+    axes["b"].plot(sweep.t, sweep.v, color="k")
+    axes["b"].set_ylabel("Voltage (mV)")
+    axes["b"].set_xlabel("Time (s)")
+    axes["b"].set_xlim(window)
+
+    axes["c"].plot(sweep.t, sweep.i, color="k")
+    axes["c"].axvline(window[0], color="grey", alpha=0.5)
+    axes["c"].axvline(window[1], color="grey", alpha=0.5, label="window")
+    axes["c"].set_yticks([0, np.max(sweep.i) + np.min(sweep.i)])
+    axes["c"].set_ylabel("Current (pA)")
+    axes["c"].set_xlabel("Time (s)")
+
+    # plot sweep features
+    sweep_fts = sweep._sweep_features
+    if len(sweep_fts) > 1:  # 1 since dc is always present
+        if sum([isinstance(x, dict) for x in sweep_fts.values()]) > 5:
+            # plot detailed diagnostics
+            for c, (ft, plot_func) in enumerate(get_sweep_ft_plot_dict().items()):
+                if "stim" in ft:
+                    ax = axes["c"]
+                    ax.set_ylabel("Current (pA)")
+                    plot_func(sweep, ax, color=colors[c])
+                    # ax.set_xlim(0, 1)
+                    ax.legend(loc="center left", bbox_to_anchor=(1.0, 0.5))
+                else:
+                    for ax in [axes["a"], axes["b"]]:
+                        ax.set_ylabel("Voltage (mV)")
+                        plot_func(sweep, ax, color=colors[c])
+                        ax.set_xlabel("Time (s)")
+                    ax.set_xlim(*window)
+                    ax.legend(loc="center left", bbox_to_anchor=(1.0, 0.5))
+        else:
+            # plot crude diagnostics
+            axes["c"].axhline(sweep_fts["stim_amp"], c="r", ls="--", label="stim amp")
+            axes["c"].axhline(0, c="r", ls="--")
+            axes["c"].axvline(
+                sweep_fts["stim_onset"], c="tab:blue", ls="--", label="stim onset"
+            )
+            axes["c"].axvline(
+                sweep_fts["stim_end"], c="tab:orange", ls="--", label="stim end"
+            )
+            axes["c"].legend()
+
+            t_fts = [
+                "stim_onset",
+                "stim_end",
+                "latency",
+            ]
+            v_fts = [
+                "v_deflect",
+                "v_baseline",
+                "v_plateau",
+                "v_rest",
+                "ap_thresh",
+                "ap_peak",
+                "ap_trough",
+            ]
+            for x in ["a", "b"]:
+                for i, ft in enumerate(t_fts):
+                    axes[x].axvline(sweep_fts[ft], label=ft, ls="--", c=colors[i])
+                for i, ft in enumerate(v_fts):
+                    axes[x].axhline(
+                        sweep_fts[ft], label=ft, ls="--", c=colors[i + len(t_fts)]
+                    )
+
+        axes["b"].legend(loc="center left", bbox_to_anchor=(1.0, 0.5))
+
+    return fig, axes
+
+
 def get_sweep_ft_plot_dict():
     ft_plot_dict = {
         "stim_amp": plot_sweep_stim_amp,
