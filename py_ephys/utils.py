@@ -3,21 +3,26 @@ import numpy as np
 from functools import wraps
 
 import re
-import py_ephys.allen_sdk.ephys_extractor as efex
+from py_ephys.allen_sdk.ephys_extractor import (
+    EphysSweepSetFeatureExtractor as AllenEphysSweepSetFeatureExtractor,
+)
+from py_ephys.allen_sdk.ephys_extractor import EphysSweepFeatureExtractor
 from typing import Callable, Union, Dict, List, Optional, Tuple
 from numpy import ndarray
+from pandas import DataFrame
 
 
-class EphysSweepSetFeatureExtractor(efex.EphysSweepSetFeatureExtractor):
-    """Wrapper around efex.EphysSweepSetFeatureExtractor to support additional functionality.
+class EphysSweepSetFeatureExtractor(AllenEphysSweepSetFeatureExtractor):
+    """Wrapper around EphysSweepSetFeatureExtractor from the AllenSDK to
+    support additional functionality.
 
     Args:
         t_set (ndarray): Time array for set of sweeps.
         v_set (ndarray): Voltage array for set of sweeps.
         i_set (ndarray): Current array for set of sweeps.
         metadata (dict, optional): Metadata for the sweep set. Defaults to None.
-        *args: Additional arguments for efex.EphysSweepSetFeatureExtractor.
-        **kwargs: Additional keyword arguments for efex.EphysSweepSetFeatureExtractor.
+        *args: Additional arguments for AllenEphysSweepSetFeatureExtractor.
+        **kwargs: Additional keyword arguments for AllenEphysSweepSetFeatureExtractor.
 
     Attributes:
         spike_feature_funcs (dict): Dictionary of spike feature functions.
@@ -33,7 +38,7 @@ class EphysSweepSetFeatureExtractor(efex.EphysSweepSetFeatureExtractor):
         t_start: Optional[Union[List, ndarray, float]] = None,
         t_end: Optional[Union[List, ndarray, float]] = None,
         metadata: Dict = {},
-        dc_offset=0,
+        dc_offset: float = 0,
         *args,
         **kwargs
     ):
@@ -66,7 +71,7 @@ class EphysSweepSetFeatureExtractor(efex.EphysSweepSetFeatureExtractor):
         self.set_sweep_feature("dc_offset", self.dc_offset)
         self.cached_sweep_features = None  # for faster retrieval
 
-    def get_sweep_features(self, force_retrieval=False):
+    def get_sweep_features(self, force_retrieval: bool = False) -> DataFrame:
         if self.cached_sweep_features is None or force_retrieval:
             l = []
             for swp in self.sweeps():
@@ -76,34 +81,34 @@ class EphysSweepSetFeatureExtractor(efex.EphysSweepSetFeatureExtractor):
             return pd.DataFrame(l)
         return self.cached_sweep_features
 
-    def get_sweep_feature(self, key):
+    def get_sweep_feature(self, key: str):
         return self.get_sweep_features()[key]
 
     def set_sweep_feature(self, key, value):
         for swp in self.sweeps():
             swp._sweep_features[key] = value
 
-    def get_sweepset_features(self):
-        if self.sweepset_features == {}:
+    def get_sweepset_features(self, force_retrieval: bool = False) -> DataFrame:
+        if self.sweepset_features == {} or force_retrieval:
             self.process()
         return self.sweepset_features
 
-    def get_sweepset_feature(self, key):
+    def get_sweepset_feature(self, key: str) -> Union[Dict, float]:
         return self.get_sweepset_features()[key]
 
-    def add_spike_feature(self, feature_name, feature_func):
+    def add_spike_feature(self, feature_name: str, feature_func: Callable):
         self.spike_feature_funcs[feature_name] = feature_func
 
-    def add_sweep_feature(self, feature_name, feature_func):
+    def add_sweep_feature(self, feature_name: str, feature_func: Callable):
         self.sweep_feature_funcs[feature_name] = feature_func
 
-    def add_sweepset_feature(self, feature_name, feature_func):
+    def add_sweepset_feature(self, feature_name: str, feature_func: Callable):
         self.sweepset_feature_funcs[feature_name] = feature_func
 
-    def process_new_sweepset_feature(self, ft, ft_func):
+    def process_new_sweepset_feature(self, ft: str, ft_func: Callable):
         self.sweepset_features[ft] = ft_func(self)
 
-    def process(self, overwrite_existing=True):
+    def process(self, overwrite_existing: bool = True):
         """Analyze features for all sweeps."""
         for sweep in self._sweeps:
             if overwrite_existing:
@@ -121,49 +126,49 @@ class EphysSweepSetFeatureExtractor(efex.EphysSweepSetFeatureExtractor):
         for ft, ft_func in self.sweepset_feature_funcs.items():
             self.process_new_sweepset_feature(ft, ft_func)
 
-    def set_stimulus_amplitude_calculator(self, func):
+    def set_stimulus_amplitude_calculator(self, func: Callable):
         for sweep in self._sweeps:
             sweep.set_stimulus_amplitude_calculator(func)
 
 
-def has_stimulus(sweep: efex.EphysSweepFeatureExtractor) -> bool:
+def has_stimulus(sweep: EphysSweepFeatureExtractor) -> bool:
     """Check if sweep has stimulus that is non-zero.
 
     Args:
-        sweep (efex.EphysSweepFeatureExtractor): Sweep to check.
+        sweep (EphysSweepFeatureExtractor): Sweep to check.
 
     Returns:
         bool: True if sweep has stimulus."""
     return np.any(sweep.i != 0)
 
 
-def is_hyperpolarizing(sweep: efex.EphysSweepFeatureExtractor) -> bool:
+def is_hyperpolarizing(sweep: EphysSweepFeatureExtractor) -> bool:
     """Check if sweep is hyperpolarizing, i.e. if the stimulus < 0.
 
     Args:
-        sweep (efex.EphysSweepFeatureExtractor): Sweep to check.
+        sweep (EphysSweepFeatureExtractor): Sweep to check.
 
     Returns:
         bool: True if sweep is hyperpolarizing."""
     return np.any(sweep.i < 0)
 
 
-def is_depol(sweep: efex.EphysSweepFeatureExtractor) -> bool:
+def is_depol(sweep: EphysSweepFeatureExtractor) -> bool:
     """Check if sweep is depolarizing, i.e. if the stimulus > 0.
 
     Args:
-        sweep (efex.EphysSweepFeatureExtractor): Sweep to check.
+        sweep (EphysSweepFeatureExtractor): Sweep to check.
 
     Returns:
         bool: True if sweep is depolarizing."""
     return np.any(sweep.i > 0)
 
 
-def where_stimulus(sweep: efex.EphysSweepFeatureExtractor) -> ndarray:
+def where_stimulus(sweep: EphysSweepFeatureExtractor) -> ndarray:
     """Get mask where stimulus is non-zero.
 
     Args:
-        sweep (efex.EphysSweepFeatureExtractor): Sweep to check.
+        sweep (EphysSweepFeatureExtractor): Sweep to check.
 
     Returns:
         ndarray: Mask where stimulus is non-zero."""
@@ -176,13 +181,13 @@ def where_stimulus(sweep: efex.EphysSweepFeatureExtractor) -> ndarray:
     return np.zeros(0, dtype=bool)
 
 
-def has_rebound(sweep: efex.EphysSweepFeatureExtractor, T_rebound: float = 0.3) -> bool:
+def has_rebound(sweep: EphysSweepFeatureExtractor, T_rebound: float = 0.3) -> bool:
     """Check if sweep rebounds.
 
     description: rebound if voltage exceeds baseline after stimulus offset.
 
     Args:
-        sweep (efex.EphysSweepFeatureExtractor): Sweep to check.
+        sweep (EphysSweepFeatureExtractor): Sweep to check.
         T_rebound (float, optional): Time window after stimulus offset in which
             rebound can occur. Defaults to 0.3.
 
@@ -201,7 +206,7 @@ def parse_ft_desc(func: Callable) -> str:
 
     Docstrings should have the following format:
     <Some text>
-    description: <description text>
+    description: <description text>.
     <Some more text>
 
     Args:
@@ -218,16 +223,43 @@ def parse_ft_desc(func: Callable) -> str:
     return ""
 
 
+def parse_ft_deps(func: Callable) -> str:
+    """Parses docstrings for feature dependencies.
+
+    Docstrings should have the following format:
+    <Some text>
+    depends on: <feature dependencies seperated by commas>.
+    <Some more text>
+
+    Args:
+        func (Callable): Function to parse docstring of.
+
+    Returns:
+        string: Other features that the function depends on.
+    """
+    func_doc = func.__doc__
+    pattern = re.compile(r"depends on: (.*)")
+    match = pattern.search(func_doc)
+    if match:
+        dependency_str = match.group(1)[:-1]
+        return [d.strip() for d in dependency_str.split(",")]
+    return ""  # no dependencies where found (while / means ft has no dependencies)
+
+
 where_between = lambda t, t0, tend: np.logical_and(t > t0, t < tend)
 
+get_ap_ft_at_idx = lambda sweep, x, idx: sweep.spike_feature(x, include_clipped=True)[
+    idx
+]
 
-def get_sweep_sag_idxs(sweep: efex.EphysSweepFeatureExtractor):
+
+def get_sweep_sag_idxs(sweep: EphysSweepFeatureExtractor):
     """determine idxs in a sweep that are part of the sag.
 
     description: all idxs below steady state and during stimulus.
 
     Args:
-        sweep (efex.EphysSweepFeatureExtractor): sweep to analyze.
+        sweep (EphysSweepFeatureExtractor): sweep to analyze.
 
     Returns:
         boolean array with length of sweep.t; where sag.
@@ -244,7 +276,6 @@ def get_sweep_sag_idxs(sweep: efex.EphysSweepFeatureExtractor):
     if v_steady - v_deflect < 4:  # The sag should have a minimum depth of 4 mV
         start = strip_info(sweep.sweep_feature("stim_onset"))
         end = strip_info(sweep.sweep_feature("stim_end"))
-        v_steady = strip_info(sweep.sweep_feature("v_deflect"))
         where_stimulus = where_between(sweep.t, start, end)
         return np.logical_and(where_stimulus, sweep.v < v_steady)
     return np.zeros_like(sweep.t, dtype=bool)
@@ -297,7 +328,7 @@ def ephys_feature_init(ft_info_init: Dict = None) -> Tuple[float, Dict]:
 def ephys_feature(feature: Callable) -> Callable:
     @wraps(feature)
     def feature_func(
-        sweep: efex.EphysSweepFeatureExtractor, return_ft_info: bool = False
+        sweep: EphysSweepFeatureExtractor, return_ft_info: bool = False
     ) -> Union[float, Dict]:
         ft_out = feature(sweep)
         if isinstance(ft_out, Tuple):
@@ -311,15 +342,16 @@ def ephys_feature(feature: Callable) -> Callable:
 
 
 @ephys_feature
-def get_example_feature(sweep: efex.EphysSweepFeatureExtractor) -> Tuple[float, Dict]:
+def get_example_feature(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict]:
     """Extracts example ephys feature.
 
+    depends on: feature_1, feature_2, ..., feature_n.
     description: This describes how the features gets computed.
 
     Example function definition
     '''
     @ephys_feature
-    def get_example_feature(sweep: efex.EphysSweepFeatureExtractor)
+    def get_example_feature(sweep: EphysSweepFeatureExtractor)
         ft_value, ft_info = ephys_feature_init()  # init ft, ft_info = float("nan"), {}
 
         # do some feature calculations using sweep.
@@ -331,7 +363,7 @@ def get_example_feature(sweep: efex.EphysSweepFeatureExtractor) -> Tuple[float, 
 
 
     Args:
-        sweep (efex.EphysSweepFeatureExtractor): Sweep to extract feature from.
+        sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
 
     Returns:
         Tuple[float, Dict]: AP feature and optionally info
@@ -361,16 +393,16 @@ class strip_sweep_ft_info:
         assert isinstance(tau, float)
 
     Args:
-        sweep (efex.EphysSweepFeatureExtractor): Sweep to strip metadata from.
+        sweep (EphysSweepFeatureExtractor): Sweep to strip metadata from.
 
     Returns:
-        efex.EphysSweepFeatureExtractor: Sweep with stripped metadata.
+        EphysSweepFeatureExtractor: Sweep with stripped metadata.
     """
 
-    def __init__(self, sweep: efex.EphysSweepFeatureExtractor):
+    def __init__(self, sweep: EphysSweepFeatureExtractor):
         self.sweep = sweep
 
-    def __enter__(self) -> efex.EphysSweepFeatureExtractor:
+    def __enter__(self) -> EphysSweepFeatureExtractor:
         self.sweep_fts = self.sweep._sweep_features.copy()
         self.sweep._sweep_features = {
             k: strip_info(v) for k, v in self.sweep_fts.items()
