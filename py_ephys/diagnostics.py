@@ -1,81 +1,60 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from py_ephys.allen_sdk.ephys_extractor import EphysSweepFeatureExtractor
-from typing import Tuple, Any
+from typing import Tuple, Any, Callable
 from matplotlib.pyplot import Figure, Axes
-from py_ephys.utils import where_between, get_ap_ft_at_idx
+from py_ephys.utils import (
+    where_between,
+    get_ap_ft_at_idx,
+    is_hyperpol,
+    strip_info,
+    EphysSweepSetFeatureExtractor,
+    ensure_ft_info,
+)
+from py_ephys.features import (
+    select_representative_ap_sweep,
+    select_representative_rebound_sweep,
+    select_representative_sag_sweep,
+    select_representative_spiking_sweep,
+)
+import warnings
 
 ############################
 ### spike level features ###
 ############################
 
 
-def scatter_spike_ft(
-    ax: Axes, sweep: EphysSweepFeatureExtractor, ft: str, **plot_kwargs
-) -> Axes:
-    spike_fts = sweep._spikes_df
-    if spike_fts.size:
-        ax.scatter(
-            spike_fts[f"{ft}_t"],
-            spike_fts[f"{ft}_v"],
-            s=10,
-            label=ft,
-            **plot_kwargs,
-        )
-    return ax
+def get_spike_ft_scatter_func(ft: str) -> Callable:
+    def scatter_spike_ft(
+        sweep: EphysSweepFeatureExtractor, ax: Axes, **plot_kwargs
+    ) -> Axes:
+        spike_fts = sweep._spikes_df
+        if spike_fts.size:
+            ax.scatter(
+                spike_fts[f"{ft}_t"],
+                spike_fts[f"{ft}_v"],
+                s=10,
+                label=ft,
+                **plot_kwargs,
+            )
+        return ax
+
+    return scatter_spike_ft
 
 
-def plot_spike_peaks(
-    sweep: EphysSweepFeatureExtractor, ax: Axes, color=None, **plot_kwargs
-) -> Axes:
-    ax = scatter_spike_ft(ax, sweep, "peak", color=color, **plot_kwargs)
-    return ax
-
-
-def plot_spike_troughs(
-    sweep: EphysSweepFeatureExtractor, ax: Axes, color=None, **plot_kwargs
-) -> Axes:
-    ax = scatter_spike_ft(ax, sweep, "trough", color=color, **plot_kwargs)
-    return ax
-
-
-def plot_spike_thresholds(
-    sweep: EphysSweepFeatureExtractor, ax: Axes, color=None, **plot_kwargs
-) -> Axes:
-    ax = scatter_spike_ft(ax, sweep, "threshold", color=color, **plot_kwargs)
-    return ax
-
-
-def plot_spike_upstrokes(
-    sweep: EphysSweepFeatureExtractor, ax: Axes, color=None, **plot_kwargs
-) -> Axes:
-    ax = scatter_spike_ft(ax, sweep, "upstroke", color=color, **plot_kwargs)
-
-
-def plot_spike_downstrokes(
-    sweep: EphysSweepFeatureExtractor, ax: Axes, color=None, **plot_kwargs
-) -> Axes:
-    ax = scatter_spike_ft(ax, sweep, "downstroke", color=color, **plot_kwargs)
-    return ax
+plot_spike_peaks = get_spike_ft_scatter_func("peak")
+plot_spike_troughs = get_spike_ft_scatter_func("trough")
+plot_spike_thresholds = get_spike_ft_scatter_func("threshold")
+plot_spike_upstrokes = get_spike_ft_scatter_func("upstroke")
+plot_spike_downstrokes = get_spike_ft_scatter_func("downstroke")
+plot_spike_fast_troughs = get_spike_ft_scatter_func("fast_trough")
+plot_spike_slow_troughs = get_spike_ft_scatter_func("slow_trough")
 
 
 def plot_spike_widths(
     sweep: EphysSweepFeatureExtractor, ax: Axes, color=None, **plot_kwargs
 ) -> Axes:
-    pass
-
-
-def plot_spike_fast_troughs(
-    sweep: EphysSweepFeatureExtractor, ax: Axes, color=None, **plot_kwargs
-) -> Axes:
-    ax = scatter_spike_ft(ax, sweep, "fast_trough", color=color, **plot_kwargs)
-    return ax
-
-
-def plot_spike_slow_troughs(
-    sweep: EphysSweepFeatureExtractor, ax: Axes, color=None, **plot_kwargs
-) -> Axes:
-    ax = scatter_spike_ft(ax, sweep, "slow_trough", color=color, **plot_kwargs)
+    warnings.warn("spike spike_widths plotting is not yet implemented!")
     return ax
 
 
@@ -114,7 +93,8 @@ def plot_spike_ahps(
 def plot_spike_amps(
     sweep: EphysSweepFeatureExtractor, ax: Axes, color=None, **plot_kwargs
 ) -> Axes:
-    pass
+    warnings.warn("spike spike_amps plotting is not yet implemented!")
+    return ax
 
 
 def get_spike_ft_plot_dict():
@@ -133,7 +113,7 @@ def get_spike_ft_plot_dict():
     return spike_ft_plot_dict
 
 
-def plot_spike_ft_diagnostics(
+def plot_spike_diagnostics(
     sweep: EphysSweepFeatureExtractor, window: Tuple = [0.4, 0.45]
 ) -> Tuple[Figure, Axes]:
     mosaic = "aaabb\naaabb\ncccbb"
@@ -175,7 +155,7 @@ def plot_sweep_stim_amp(
     sweep: EphysSweepFeatureExtractor,
     ax: Axes,
     color: Any = None,
-    include_details=True,
+    include_details=False,
     **plot_kwargs,
 ) -> Axes:
     """Plot diagnostics for the "stim_amp" feature that are returned if return_ft_info=True.
@@ -190,10 +170,10 @@ def plot_sweep_stim_amp(
     Returns:
         Axes: axes with plot.
     """
-    ft = sweep.sweep_feature("stim_amp")
+    ft = ensure_ft_info(sweep.sweep_feature("stim_amp"))
     if not np.isnan(ft["value"]):
         ax.plot(
-            ft["t_stim_amp"],
+            ft["t_amp"],
             ft["value"],
             "x",
             label="stim_amp",
@@ -207,7 +187,7 @@ def plot_sweep_stim_onset(
     sweep: EphysSweepFeatureExtractor,
     ax: Axes,
     color: Any = None,
-    include_details=True,
+    include_details=False,
     **plot_kwargs,
 ) -> Axes:
     """Plot diagnostics for the "stim_onset" feature that are returned if return_ft_info=True.
@@ -222,7 +202,7 @@ def plot_sweep_stim_onset(
     Returns:
         Axes: axes with plot.
     """
-    ft = sweep.sweep_feature("stim_onset")
+    ft = ensure_ft_info(sweep.sweep_feature("stim_onset"))
     if not np.isnan(ft["value"]):
         ax.plot(
             ft["t_onset"],
@@ -239,7 +219,7 @@ def plot_sweep_stim_end(
     sweep: EphysSweepFeatureExtractor,
     ax: Axes,
     color: Any = None,
-    include_details=True,
+    include_details=False,
     **plot_kwargs,
 ) -> Axes:
     """Plot diagnostics for the "stim_end" feature that are returned if return_ft_info=True.
@@ -254,10 +234,42 @@ def plot_sweep_stim_end(
     Returns:
         Axes: axes with plot.
     """
-    ft = sweep.sweep_feature("stim_end")
+    ft = ensure_ft_info(sweep.sweep_feature("stim_end"))
     if not np.isnan(ft["value"]):
         ax.plot(
             ft["t_end"], ft["value"], "x", label="stim_end", color=color, **plot_kwargs
+        )
+    return ax
+
+
+def plot_sweep_ap_latency(
+    sweep: EphysSweepFeatureExtractor,
+    ax: Axes,
+    color=None,
+    include_details=False,
+    **plot_kwargs,
+):
+    """Plot diagnostics for the "ap_latency" feature that are returned if return_ft_info=True.
+
+    Args:
+        sweep (EphysSweepFeatureExtractor): sweep to plot.
+        ax (Axes): axes to plot on.
+        color (Any, optional): color to make feature distinguishable. Defaults to None.
+        detail (bool, optional): whether to plot detailed diagnostics. Defaults to True.
+        **plot_kwargs: kwargs to pass to ax.plot.
+
+    Returns:
+        Axes: axes with plot.
+    """
+    ft = ensure_ft_info(sweep.sweep_feature("ap_latency"))
+    if not np.isnan(ft["value"]):
+        ax.hlines(
+            ft["v_first_spike"],
+            ft["onset"],
+            ft["t_first_spike"],
+            label="ap_latency",
+            color=color,
+            **plot_kwargs,
         )
     return ax
 
@@ -266,7 +278,7 @@ def plot_sweep_v_deflect(
     sweep: EphysSweepFeatureExtractor,
     ax: Axes,
     color: Any = None,
-    include_details=True,
+    include_details=False,
     **plot_kwargs,
 ) -> Axes:
     """Plot diagnostics for the "v_deflect" feature that are returned if return_ft_info=True.
@@ -281,7 +293,7 @@ def plot_sweep_v_deflect(
     Returns:
         Axes: axes with plot.
     """
-    ft = sweep.sweep_feature("v_deflect")
+    ft = ensure_ft_info(sweep.sweep_feature("v_deflect"))
     if not np.isnan(ft["value"]):
         ax.plot(
             ft["t_deflect"],
@@ -304,7 +316,7 @@ def plot_sweep_v_baseline(
     sweep: EphysSweepFeatureExtractor,
     ax: Axes,
     color: Any = None,
-    include_details=True,
+    include_details=False,
     **plot_kwargs,
 ) -> Axes:
     """Plot diagnostics for the "v_baseline" feature that are returned if return_ft_info=True.
@@ -319,7 +331,7 @@ def plot_sweep_v_baseline(
     Returns:
         Axes: axes with plot.
     """
-    ft = sweep.sweep_feature("v_baseline")
+    ft = ensure_ft_info(sweep.sweep_feature("v_baseline"))
     if not np.isnan(ft["value"]):
         ax.plot(
             ft["t_baseline"],
@@ -348,7 +360,7 @@ def plot_sweep_tau(
     sweep: EphysSweepFeatureExtractor,
     ax: Axes,
     color: Any = None,
-    include_details=True,
+    include_details=False,
     **plot_kwargs,
 ) -> Axes:
     """Plot diagnostics for the "tau" feature that are returned if return_ft_info=True.
@@ -363,7 +375,7 @@ def plot_sweep_tau(
     Returns:
         Axes: axes with plot.
     """
-    ft = sweep.sweep_feature("tau")
+    ft = ensure_ft_info(sweep.sweep_feature("tau"))
     if not np.isnan(ft["value"]):
         y = lambda t: ft["y0"] + ft["a"] * np.exp(-ft["inv_tau"] * t)
         where_fit = where_between(sweep.t, ft["fit_start"], ft["fit_end"])
@@ -376,7 +388,7 @@ def plot_sweep_tau(
             color=color,
             **plot_kwargs,
         )
-        ax.plot(t_fit + t_offset, y(t_fit), ls="--", color=color, label="tau fit")
+        ax.plot(t_fit + t_offset, y(t_fit), ls="--", color="k", label="tau fit")
     return ax
 
 
@@ -384,7 +396,7 @@ def plot_sweep_num_ap(
     sweep: EphysSweepFeatureExtractor,
     ax: Axes,
     color: Any = None,
-    include_details=True,
+    include_details=False,
     **plot_kwargs,
 ) -> Axes:
     """Plot diagnostics for the "num_ap" feature that are returned if return_ft_info=True.
@@ -399,7 +411,7 @@ def plot_sweep_num_ap(
     Returns:
         Axes: axes with plot.
     """
-    ft = sweep.sweep_feature("num_ap")
+    ft = ensure_ft_info(sweep.sweep_feature("num_ap"))
     v_baseline = sweep.sweep_feature("v_baseline")["value"]
     if not np.isnan(ft["value"]):
         ax.plot(
@@ -425,7 +437,7 @@ def plot_sweep_ap_freq(
     sweep: EphysSweepFeatureExtractor,
     ax: Axes,
     color: Any = None,
-    include_details=True,
+    include_details=False,
     **plot_kwargs,
 ) -> Axes:
     """Plot diagnostics for the "ap_freq" feature that are returned if return_ft_info=True.
@@ -448,7 +460,7 @@ def plot_sweep_ap_freq_adapt(
     sweep: EphysSweepFeatureExtractor,
     ax: Axes,
     color: Any = None,
-    include_details=True,
+    include_details=False,
     **plot_kwargs,
 ) -> Axes:
     """Plot diagnostics for the "ap_freq_adapt" feature that are returned if return_ft_info=True.
@@ -463,7 +475,7 @@ def plot_sweep_ap_freq_adapt(
     Returns:
         Axes: axes with plot.
     """
-    ft = sweep.sweep_feature("ap_freq_adapt")
+    ft = ensure_ft_info(sweep.sweep_feature("ap_freq_adapt"))
     if not np.isnan(ft["value"]):
         v_baseline = sweep.sweep_feature("v_baseline")["value"]
         peaks_t = sweep.sweep_feature("num_ap")["peak_t"]
@@ -500,7 +512,7 @@ def plot_sweep_r_input(
     sweep: EphysSweepFeatureExtractor,
     ax: Axes,
     color: Any = None,
-    include_details=True,
+    include_details=False,
     **plot_kwargs,
 ) -> Axes:
     """Plot diagnostics for the "r_input" feature that are returned if return_ft_info=True.
@@ -515,7 +527,7 @@ def plot_sweep_r_input(
     Returns:
         Axes: axes with plot.
     """
-    print("r_input plotting is not yet implemented yet!")
+    warnings.warn("r_input sweep plotting is not yet implemented yet!")
     return ax
 
 
@@ -523,7 +535,7 @@ def plot_sweep_ap_amp_slope(
     sweep: EphysSweepFeatureExtractor,
     ax: Axes,
     color: Any = None,
-    include_details=True,
+    include_details=False,
     **plot_kwargs,
 ) -> Axes:
     """Plot diagnostics for the "ap_amp_slope" feature that are returned if return_ft_info=True.
@@ -538,7 +550,7 @@ def plot_sweep_ap_amp_slope(
     Returns:
         Axes: axes with plot.
     """
-    ft = sweep.sweep_feature("ap_amp_slope")
+    ft = ensure_ft_info(sweep.sweep_feature("ap_amp_slope"))
     y = lambda t: ft["intercept"] + ft["slope"] * t
     if not np.isnan(ft["value"]):
         ts = ft["peak_t"]
@@ -551,7 +563,7 @@ def plot_sweep_sag(
     sweep: EphysSweepFeatureExtractor,
     ax: Axes,
     color: Any = None,
-    include_details=True,
+    include_details=False,
     **plot_kwargs,
 ) -> Axes:
     """Plot diagnostics for the "sag" feature that are returned if return_ft_info=True.
@@ -566,7 +578,7 @@ def plot_sweep_sag(
     Returns:
         Axes: axes with plot.
     """
-    print("sag plotting is not yet implemented yet!")
+    warnings.warn("sag sweep plotting is not yet implemented yet!")
     return ax
 
 
@@ -574,7 +586,7 @@ def plot_sweep_sag_fraction(
     sweep: EphysSweepFeatureExtractor,
     ax: Axes,
     color: Any = None,
-    include_details=True,
+    include_details=False,
     **plot_kwargs,
 ) -> Axes:
     """Plot diagnostics for the "sag_fraction" feature that are returned if return_ft_info=True.
@@ -589,7 +601,7 @@ def plot_sweep_sag_fraction(
     Returns:
         Axes: axes with plot.
     """
-    print("sag_fraction plotting is not yet implemented yet!")
+    warnings.warn("sag_fraction sweep plotting is not yet implemented yet!")
     return ax
 
 
@@ -597,7 +609,7 @@ def plot_sweep_sag_ratio(
     sweep: EphysSweepFeatureExtractor,
     ax: Axes,
     color: Any = None,
-    include_details=True,
+    include_details=False,
     **plot_kwargs,
 ) -> Axes:
     """Plot diagnostics for the "sag_ratio" feature that are returned if return_ft_info=True.
@@ -612,7 +624,7 @@ def plot_sweep_sag_ratio(
     Returns:
         Axes: axes with plot.
     """
-    print("sag_ratio plotting is not yet implemented yet!")
+    warnings.warn("sag_ratio sweep plotting is not yet implemented yet!")
     return ax
 
 
@@ -620,7 +632,7 @@ def plot_sweep_sag_area(
     sweep: EphysSweepFeatureExtractor,
     ax: Axes,
     color: Any = None,
-    include_details=True,
+    include_details=False,
     **plot_kwargs,
 ) -> Axes:
     """Plot diagnostics for the "sag_area" feature that are returned if return_ft_info=True.
@@ -635,7 +647,7 @@ def plot_sweep_sag_area(
     Returns:
         Axes: axes with plot.
     """
-    ft = sweep.sweep_feature("sag_area")
+    ft = ensure_ft_info(sweep.sweep_feature("sag_area"))
     if not np.isnan(ft["value"]):
         ax.plot(ft["t_sag"], ft["v_sag"], **plot_kwargs)
         ax.fill_between(
@@ -653,7 +665,7 @@ def plot_sweep_sag_time(
     sweep: EphysSweepFeatureExtractor,
     ax: Axes,
     color: Any = None,
-    include_details=True,
+    include_details=False,
     **plot_kwargs,
 ) -> Axes:
     """Plot diagnostics for the "sag_time" feature that are returned if return_ft_info=True.
@@ -668,7 +680,7 @@ def plot_sweep_sag_time(
     Returns:
         Axes: axes with plot.
     """
-    ft = sweep.sweep_feature("sag_time")
+    ft = ensure_ft_info(sweep.sweep_feature("sag_time"))
     if not np.isnan(ft["value"]):
         ax.hlines(
             sweep.v[ft["where_sag"]][0],
@@ -685,7 +697,7 @@ def plot_sweep_v_plateau(
     sweep: EphysSweepFeatureExtractor,
     ax: Axes,
     color: Any = None,
-    include_details=True,
+    include_details=False,
     **plot_kwargs,
 ) -> Axes:
     """Plot diagnostics for the "v_plateau" feature that are returned if return_ft_info=True.
@@ -700,7 +712,7 @@ def plot_sweep_v_plateau(
     Returns:
         Axes: axes with plot.
     """
-    ft = sweep.sweep_feature("v_plateau")
+    ft = ensure_ft_info(sweep.sweep_feature("v_plateau"))
     if not np.isnan(ft["value"]):
         ax.plot(
             ft["t_plateau"],
@@ -724,7 +736,7 @@ def plot_sweep_rebound(
     sweep: EphysSweepFeatureExtractor,
     ax: Axes,
     color: Any = None,
-    include_details=True,
+    include_details=False,
     **plot_kwargs,
 ) -> Axes:
     """Plot diagnostics for the "rebound" feature that are returned if return_ft_info=True.
@@ -739,15 +751,8 @@ def plot_sweep_rebound(
     Returns:
         Axes: axes with plot.
     """
-    ft = sweep.sweep_feature("rebound")
+    ft = ensure_ft_info(sweep.sweep_feature("rebound"))
     if not np.isnan(ft["value"]):
-        ax.plot(
-            ft["t_rebound"],
-            ft["v_rebound"],
-            label="rebound interval",
-            color=color,
-            **plot_kwargs,
-        )
         ax.vlines(
             sweep.t[ft["idx_rebound"]],
             ft["v_baseline"],
@@ -756,6 +761,14 @@ def plot_sweep_rebound(
             color=color,
             **plot_kwargs,
         )
+        if include_details:
+            ax.plot(
+                ft["t_rebound"],
+                ft["v_rebound"],
+                label="rebound interval",
+                color=color,
+                **plot_kwargs,
+            )
     return ax
 
 
@@ -763,7 +776,7 @@ def plot_sweep_rebound_aps(
     sweep: EphysSweepFeatureExtractor,
     ax: Axes,
     color: Any = None,
-    include_details=True,
+    include_details=False,
     **plot_kwargs,
 ) -> Axes:
     """Plot diagnostics for the "rebound_aps" feature that are returned if return_ft_info=True.
@@ -778,22 +791,22 @@ def plot_sweep_rebound_aps(
     Returns:
         Axes: axes with plot.
     """
-    ft = sweep.sweep_feature("rebound_aps")
-    print("rebound_aps plotting is not yet implemented yet!")
+    ft = ensure_ft_info(sweep.sweep_feature("rebound_aps"))
+    warnings.warn("rebound_aps sweep plotting is not yet implemented yet!")
     if not np.isnan(ft["value"]):
         pass
     return ax
 
 
-def get_sweep_rebound_latency(
+def plot_sweep_rebound_latency(
     sweep: EphysSweepFeatureExtractor,
     ax: Axes,
     color: Any = None,
-    include_details=True,
+    include_details=False,
     **plot_kwargs,
 ) -> Axes:
     # TODO: Check why stim end not quite aligned with v(t)!
-    ft = sweep.sweep_feature("rebound_latency")
+    ft = ensure_ft_info(sweep.sweep_feature("rebound_latency"))
     stim_end = sweep.sweep_feature("stim_end")["value"]
     end_idx = sweep.sweep_feature("stim_end")["idx_end"]
     if not np.isnan(ft["value"]):
@@ -827,7 +840,7 @@ def plot_sweep_rebound_area(
     sweep: EphysSweepFeatureExtractor,
     ax: Axes,
     color: Any = None,
-    include_details=True,
+    include_details=False,
     **plot_kwargs,
 ) -> Axes:
     """Plot diagnostics for the "rebound_area" feature that are returned if return_ft_info=True.
@@ -842,7 +855,7 @@ def plot_sweep_rebound_area(
     Returns:
         Axes: axes with plot.
     """
-    ft = sweep.sweep_feature("rebound_area")
+    ft = ensure_ft_info(sweep.sweep_feature("rebound_area"))
     if not np.isnan(ft["value"]):
         ax.fill_between(
             sweep.t,
@@ -861,7 +874,7 @@ def plot_sweep_rebound_avg(
     sweep: EphysSweepFeatureExtractor,
     ax: Axes,
     color: Any = None,
-    include_details=True,
+    include_details=False,
     **plot_kwargs,
 ) -> Axes:
     """Plot diagnostics for the "rebound_avg" feature that are returned if return_ft_info=True.
@@ -876,7 +889,7 @@ def plot_sweep_rebound_avg(
     Returns:
         Axes: axes with plot.
     """
-    ft = sweep.sweep_feature("rebound_avg")
+    ft = ensure_ft_info(sweep.sweep_feature("rebound_avg"))
     if not np.isnan(ft["value"]):
         ax.plot(
             ft["t_rebound"],
@@ -908,7 +921,7 @@ def plot_sweep_v_rest(
     sweep: EphysSweepFeatureExtractor,
     ax: Axes,
     color: Any = None,
-    include_details=True,
+    include_details=False,
     **plot_kwargs,
 ) -> Axes:
     """Plot diagnostics for the "v_rest" feature that are returned if return_ft_info=True.
@@ -923,7 +936,7 @@ def plot_sweep_v_rest(
     Returns:
         Axes: axes with plot.
     """
-    ft = sweep.sweep_feature("v_rest")
+    ft = ensure_ft_info(sweep.sweep_feature("v_rest"))
     if not np.isnan(ft["value"]):
         ax.plot(
             sweep.t,
@@ -938,7 +951,7 @@ def plot_sweep_num_bursts(
     sweep: EphysSweepFeatureExtractor,
     ax: Axes,
     color: Any = None,
-    include_details=True,
+    include_details=False,
     **plot_kwargs,
 ) -> Axes:
     """Plot diagnostics for the "num_bursts" feature that are returned if return_ft_info=True.
@@ -953,8 +966,8 @@ def plot_sweep_num_bursts(
     Returns:
         Axes: axes with plot.
     """
-    print("num_bursts plotting is not yet implemented yet!")
-    ft = sweep.sweep_feature("num_bursts")
+    warnings.warn("num_bursts sweep plotting is not yet implemented yet!")
+    ft = ensure_ft_info(sweep.sweep_feature("num_bursts"))
     if not np.isnan(ft["value"]):
         pass
     return ax
@@ -964,7 +977,7 @@ def plot_sweep_burstiness(
     sweep: EphysSweepFeatureExtractor,
     ax: Axes,
     color: Any = None,
-    include_details=True,
+    include_details=False,
     **plot_kwargs,
 ) -> Axes:
     """Plot diagnostics for the "burstiness" feature that are returned if return_ft_info=True.
@@ -979,8 +992,8 @@ def plot_sweep_burstiness(
     Returns:
         Axes: axes with plot.
     """
-    print("burstiness plotting is not yet implemented yet!")
-    ft = sweep.sweep_feature("burstiness")
+    warnings.warn("burstiness sweep plotting is not yet implemented yet!")
+    ft = ensure_ft_info(sweep.sweep_feature("burstiness"))
     if not np.isnan(ft["value"]):
         pass
     return ax
@@ -990,7 +1003,7 @@ def plot_sweep_wildness(
     sweep: EphysSweepFeatureExtractor,
     ax: Axes,
     color: Any = None,
-    include_details=True,
+    include_details=False,
     **plot_kwargs,
 ) -> Axes:
     """Plot diagnostics for the "wildness" feature that are returned if return_ft_info=True.
@@ -1005,8 +1018,8 @@ def plot_sweep_wildness(
     Returns:
         Axes: axes with plot.
     """
-    print("wildness plotting is not yet implemented yet!")
-    ft = sweep.sweep_feature("wildness")
+    warnings.warn("wildness sweep plotting is not yet implemented yet!")
+    ft = ensure_ft_info(sweep.sweep_feature("wildness"))
     if not np.isnan(ft["value"]):
         pass
     return ax
@@ -1016,7 +1029,7 @@ def plot_sweep_ahp(
     sweep: EphysSweepFeatureExtractor,
     ax: Axes,
     color: Any = None,
-    include_details=True,
+    include_details=False,
     **plot_kwargs,
 ) -> Axes:
     """Plot diagnostics for the "ahp" feature that are returned if return_ft_info=True.
@@ -1031,7 +1044,7 @@ def plot_sweep_ahp(
     Returns:
         Axes: axes with plot.
     """
-    ft = sweep.sweep_feature("ahp")
+    ft = ensure_ft_info(sweep.sweep_feature("ahp"))
     if not np.isnan(ft["value"]):
         trough_t = get_ap_ft_at_idx(sweep, "fast_trough_t", ft["ap_idx"])
         trough_v = get_ap_ft_at_idx(sweep, "fast_trough_v", ft["ap_idx"])
@@ -1068,7 +1081,7 @@ def plot_sweep_adp(
     sweep: EphysSweepFeatureExtractor,
     ax: Axes,
     color: Any = None,
-    include_details=True,
+    include_details=False,
     **plot_kwargs,
 ) -> Axes:
     """Plot diagnostics for the "adp" feature that are returned if return_ft_info=True.
@@ -1084,7 +1097,7 @@ def plot_sweep_adp(
         Axes: axes with plot.
     """
     # TODO: Check why it is always nan!
-    ft = sweep.sweep_feature("ahp")
+    ft = ensure_ft_info(sweep.sweep_feature("ahp"))
     if not np.isnan(ft["value"]):
         trough_t = get_ap_ft_at_idx(sweep, "fast_trough_t", ft["ap_idx"])
         trough_v = get_ap_ft_at_idx(sweep, "fast_trough_v", ft["ap_idx"])
@@ -1119,7 +1132,7 @@ def plot_sweep_ap_thresh(
     sweep: EphysSweepFeatureExtractor,
     ax: Axes,
     color: Any = None,
-    include_details=True,
+    include_details=False,
     **plot_kwargs,
 ) -> Axes:
     """Plot diagnostics for the "ap_thresh" feature that are returned if return_ft_info=True.
@@ -1134,7 +1147,7 @@ def plot_sweep_ap_thresh(
     Returns:
         Axes: axes with plot.
     """
-    ft = sweep.sweep_feature("ap_thresh")
+    ft = ensure_ft_info(sweep.sweep_feature("ap_thresh"))
     if not np.isnan(ft["value"]):
         thresh_t = get_ap_ft_at_idx(sweep, "threshold_t", ft["ap_idx"])
         thresh_v = get_ap_ft_at_idx(sweep, "threshold_v", ft["ap_idx"])
@@ -1157,7 +1170,7 @@ def plot_sweep_ap_amp(
     sweep: EphysSweepFeatureExtractor,
     ax: Axes,
     color: Any = None,
-    include_details=True,
+    include_details=False,
     **plot_kwargs,
 ) -> Axes:
     """Plot diagnostics for the "ap_amp" feature that are returned if return_ft_info=True.
@@ -1172,7 +1185,7 @@ def plot_sweep_ap_amp(
     Returns:
         Axes: axes with plot.
     """
-    ft = sweep.sweep_feature("ap_amp")
+    ft = ensure_ft_info(sweep.sweep_feature("ap_amp"))
     if not np.isnan(ft["value"]):
         thresh_t = get_ap_ft_at_idx(sweep, "threshold_t", ft["ap_idx"])
         thresh_v = get_ap_ft_at_idx(sweep, "threshold_v", ft["ap_idx"])
@@ -1197,7 +1210,7 @@ def plot_sweep_ap_width(
     sweep: EphysSweepFeatureExtractor,
     ax: Axes,
     color: Any = None,
-    include_details=True,
+    include_details=False,
     **plot_kwargs,
 ) -> Axes:
     """Plot diagnostics for the "ap_width" feature that are returned if return_ft_info=True.
@@ -1212,8 +1225,8 @@ def plot_sweep_ap_width(
     Returns:
         Axes: axes with plot.
     """
-    print("ap_width plotting is not yet implemented yet!")
-    ft = sweep.sweep_feature("ap_width")
+    warnings.warn("ap_width sweep plotting is not yet implemented yet!")
+    ft = ensure_ft_info(sweep.sweep_feature("ap_width"))
     if not np.isnan(ft["value"]):
         pass
     return ax
@@ -1223,7 +1236,7 @@ def plot_sweep_ap_peak(
     sweep: EphysSweepFeatureExtractor,
     ax: Axes,
     color: Any = None,
-    include_details=True,
+    include_details=False,
     **plot_kwargs,
 ) -> Axes:
     """Plot diagnostics for the "ap_peak" feature that are returned if return_ft_info=True.
@@ -1238,7 +1251,7 @@ def plot_sweep_ap_peak(
     Returns:
         Axes: axes with plot.
     """
-    ft = sweep.sweep_feature("ap_peak")
+    ft = ensure_ft_info(sweep.sweep_feature("ap_peak"))
     if not np.isnan(ft["value"]):
         peak_t = get_ap_ft_at_idx(sweep, "peak_t", ft["ap_idx"])
         peak_v = get_ap_ft_at_idx(sweep, "peak_v", ft["ap_idx"])
@@ -1261,7 +1274,7 @@ def plot_sweep_ap_trough(
     sweep: EphysSweepFeatureExtractor,
     ax: Axes,
     color: Any = None,
-    include_details=True,
+    include_details=False,
     **plot_kwargs,
 ) -> Axes:
     """Plot diagnostics for the "ap_trough" feature that are returned if return_ft_info=True.
@@ -1276,7 +1289,7 @@ def plot_sweep_ap_trough(
     Returns:
         Axes: axes with plot.
     """
-    ft = sweep.sweep_feature("ap_trough")
+    ft = ensure_ft_info(sweep.sweep_feature("ap_trough"))
     if not np.isnan(ft["value"]):
         trough_t = get_ap_ft_at_idx(sweep, "fast_trough_t", ft["ap_idx"])
         trough_v = get_ap_ft_at_idx(sweep, "fast_trough_v", ft["ap_idx"])
@@ -1299,7 +1312,7 @@ def plot_sweep_udr(
     sweep: EphysSweepFeatureExtractor,
     ax: Axes,
     color: Any = None,
-    include_details=True,
+    include_details=False,
     **plot_kwargs,
 ) -> Axes:
     """Plot diagnostics for the "udr" feature that are returned if return_ft_info=True.
@@ -1314,7 +1327,7 @@ def plot_sweep_udr(
     Returns:
         Axes: axes with plot.
     """
-    ft = sweep.sweep_feature("udr")
+    ft = ensure_ft_info(sweep.sweep_feature("udr"))
     if not np.isnan(ft["value"]):
         us_t = get_ap_ft_at_idx(sweep, "upstroke_t", ft["ap_idx"])
         us_v = get_ap_ft_at_idx(sweep, "upstroke_v", ft["ap_idx"])
@@ -1335,7 +1348,7 @@ def plot_sweep_udr(
     return ax
 
 
-def plot_sweep_ft_diagnostics(sweep, window=[0.4, 0.45]):
+def plot_sweep_diagnostics(sweep, window=[0.4, 0.45]):
     mosaic = "aaabb\naaabb\ncccbb"
     fig, axes = plt.subplot_mosaic(mosaic, figsize=(12, 4), constrained_layout=True)
     colors = plt.cm.tab20(np.linspace(0, 1, 40))
@@ -1392,7 +1405,7 @@ def plot_sweep_ft_diagnostics(sweep, window=[0.4, 0.45]):
             t_fts = [
                 "stim_onset",
                 "stim_end",
-                "latency",
+                "ap_latency",
             ]
             v_fts = [
                 "v_deflect",
@@ -1421,6 +1434,7 @@ def get_sweep_ft_plot_dict():
         "stim_amp": plot_sweep_stim_amp,
         "stim_onset": plot_sweep_stim_onset,
         "stim_end": plot_sweep_stim_end,
+        "ap_latency": plot_sweep_ap_latency,
         "v_baseline": plot_sweep_v_baseline,
         "v_deflect": plot_sweep_v_deflect,
         "tau": plot_sweep_tau,
@@ -1437,7 +1451,7 @@ def get_sweep_ft_plot_dict():
         "v_plateau": plot_sweep_v_plateau,
         "rebound": plot_sweep_rebound,
         "rebound_aps": plot_sweep_rebound_aps,
-        "rebound_latency": get_sweep_rebound_latency,
+        "rebound_latency": plot_sweep_rebound_latency,
         "rebound_area": plot_sweep_rebound_area,
         "rebound_avg": plot_sweep_rebound_avg,
         "v_rest": plot_sweep_v_rest,
@@ -1461,46 +1475,332 @@ def get_sweep_ft_plot_dict():
 ###############################
 
 
-# def get_sweepset_ft_dict(return_ft_info=False):
-#     _ft_dict = {
-#         "tau": plot_sweepset_tau,
-#         "r_input": plot_sweepset_r_input,
-#         "v_rest": plot_sweepset_v_rest,
-#         "v_baseline": plot_sweepset_v_baseline,
-#         "slow_hyperpolarization": plot_sweepset_slow_hyperpolarization,
-#         "sag": plot_sweepset_sag,
-#         "sag_ratio": plot_sweepset_sag_ratio,
-#         "sag_fraction": plot_sweepset_sag_fraction,
-#         "sag_area": plot_sweepset_sag_area,
-#         "sag_time": plot_sweepset_sag_time,
-#         "rebound": plot_sweepset_rebound,
-#         "rebound_aps": plot_sweepset_rebound_aps,
-#         "rebound_area": plot_sweepset_rebound_area,
-#         "rebound_latency": plot_sweepset_rebound_latency,
-#         "rebound_avg": plot_sweepset_rebound_avg,
-#         "num_ap": plot_sweepset_num_spikes,
-#         "ap_freq": plot_sweepset_ap_freq,
-#         "wildness": plot_sweepset_wildness,
-#         "ap_freq_adapt": plot_sweepset_ap_freq_adapt,
-#         "ap_amp_slope": plot_sweepset_ap_amp_slope,
-#         "fano_factor": plot_sweepset_fano_factor,
-#         "ap_fano_factor": plot_sweepset_ap_fano_factor,
-#         "cv": plot_sweepset_cv,
-#         "ap_cv": plot_sweepset_ap_cv,
-#         "burstiness": plot_sweepset_burstiness,
-#         "isi_adapt": plot_sweepset_isi_adapt,
-#         "isi_adapt_avg": plot_sweepset_isi_adapt_avg,
-#         "ap_amp_adapt": plot_sweepset_ap_amp_adapt,
-#         "ap_amp_adapt_avg": plot_sweepset_ap_amp_adapt_avg,
-#         "latency": plot_sweepset_latency,
-#         "ahp": plot_sweepset_ahp,
-#         "adp": plot_sweepset_adp,
-#         "ap_thresh": plot_sweepset_ap_thresh,
-#         "ap_amp": plot_sweepset_ap_amp,
-#         "ap_width": plot_sweepset_ap_width,
-#         "ap_peak": plot_sweepset_ap_peak,
-#         "ap_trough": plot_sweepset_ap_trough,
-#         "udr": plot_sweepset_ap_udr,
-#         "dfdi": plot_sweepset_dfdi,
-#         "rheobase": plot_sweepset_rheobase,
-#     }
+def get_selected_sweep_plotfunc(ft_name, sweep_ft_plot_func):
+    def plot_sweepset_ft(
+        sweepset: EphysSweepSetFeatureExtractor,
+        ax: Axes,
+        color: Any = None,
+        include_details=False,
+        **plot_kwargs,
+    ) -> Axes:
+        ft = ensure_ft_info(sweepset.get_sweepset_feature(ft_name))
+        if not np.isnan(ft["value"]):
+            idx = ft["selected_idx"]
+            selected_sweep = sweepset.sweeps()[idx]
+            ax = sweep_ft_plot_func(
+                selected_sweep,
+                ax,
+                color=color,
+                include_details=include_details,
+                **plot_kwargs,
+            )
+        return ax
+
+    return plot_sweepset_ft
+
+
+plot_sweepset_tau = get_selected_sweep_plotfunc("tau", plot_sweep_tau)
+
+
+def plot_sweepset_r_input(
+    sweepset: EphysSweepSetFeatureExtractor,
+    ax: Axes,
+    color: Any = None,
+    include_details=False,
+    **plot_kwargs,
+) -> Axes:
+    ft = ensure_ft_info(sweepset.get_sweepset_feature("r_input"))
+    warnings.warn("r_input sweepset plotting is not yet implemented yet!")
+    if not np.isnan(ft["value"]):
+        pass
+    return ax
+
+
+plot_sweepset_v_rest = get_selected_sweep_plotfunc("v_rest", plot_sweep_v_rest)
+plot_sweepset_v_baseline = get_selected_sweep_plotfunc(
+    "v_baseline", plot_sweep_v_baseline
+)
+
+
+def plot_sweepset_slow_hyperpolarization(
+    sweepset: EphysSweepSetFeatureExtractor,
+    ax: Axes,
+    color: Any = None,
+    include_details=False,
+    **plot_kwargs,
+) -> Axes:
+    warnings.warn(
+        "slow_hyperpolarization sweepset plotting is not yet implemented yet!"
+    )
+    ft = ensure_ft_info(sweepset.get_sweepset_feature("slow_hyperpolarization"))
+    if not np.isnan(ft["value"]):
+        pass
+    return ax
+
+
+plot_sweepset_sag = get_selected_sweep_plotfunc("sag", plot_sweep_sag)
+plot_sweepset_sag_ratio = get_selected_sweep_plotfunc("sag_ratio", plot_sweep_sag_ratio)
+plot_sweepset_sag_fraction = get_selected_sweep_plotfunc(
+    "sag_fraction", plot_sweep_sag_fraction
+)
+plot_sweepset_sag_area = get_selected_sweep_plotfunc("sag_area", plot_sweep_sag_area)
+plot_sweepset_sag_time = get_selected_sweep_plotfunc("sag_time", plot_sweep_sag_time)
+plot_sweepset_rebound = get_selected_sweep_plotfunc("rebound", plot_sweep_rebound)
+plot_sweepset_rebound_aps = get_selected_sweep_plotfunc(
+    "rebound_aps", plot_sweep_rebound_aps
+)
+plot_sweepset_rebound_area = get_selected_sweep_plotfunc(
+    "rebound_area", plot_sweep_rebound_area
+)
+plot_sweepset_rebound_latency = get_selected_sweep_plotfunc(
+    "rebound_latency", plot_sweep_rebound_latency
+)
+plot_sweepset_rebound_avg = get_selected_sweep_plotfunc(
+    "rebound_avg", plot_sweep_rebound_avg
+)
+plot_sweepset_num_spikes = get_selected_sweep_plotfunc("num_ap", plot_sweep_num_ap)
+plot_sweepset_ap_freq = get_selected_sweep_plotfunc("ap_freq", plot_sweep_ap_freq)
+plot_sweepset_wildness = get_selected_sweep_plotfunc("wildness", plot_sweep_wildness)
+plot_sweepset_ap_freq_adapt = get_selected_sweep_plotfunc(
+    "ap_freq_adapt", plot_sweep_ap_freq_adapt
+)
+plot_sweepset_ap_amp_slope = get_selected_sweep_plotfunc(
+    "ap_amp_slope", plot_sweep_ap_amp_slope
+)
+# plot_sweepset_fano_factor = get_selected_sweep_plotfunc("fano_factor", plot_sweep_fano_factor)
+# plot_sweepset_ap_fano_factor = get_selected_sweep_plotfunc("ap_fano_factor", plot_sweep_ap_fano_factor)
+# plot_sweepset_cv = get_selected_sweep_plotfunc("cv", plot_sweep_cv)
+# plot_sweepset_ap_cv = get_selected_sweep_plotfunc("ap_cv", plot_sweep_ap_cv)
+plot_sweepset_burstiness = get_selected_sweep_plotfunc(
+    "burstiness", plot_sweep_burstiness
+)
+# plot_sweepset_isi_adapt = get_selected_sweep_plotfunc(
+#     "isi_adapt", plot_sweep_isi_adapt
+# )
+# plot_sweepset_isi_adapt_avg = get_selected_sweep_plotfunc(
+#     "isi_adapt_avg", plot_sweep_isi_adapt_avg
+# )
+# plot_sweepset_ap_amp_adapt = get_selected_sweep_plotfunc(
+#     "ap_amp_adapt", plot_sweep_ap_amp_adapt
+# )
+# plot_sweepset_ap_amp_adapt_avg = get_selected_sweep_plotfunc(
+#     "ap_amp_adapt_avg", plot_sweep_ap_amp_adapt_avg
+# )
+plot_sweepset_ap_latency = get_selected_sweep_plotfunc(
+    "ap_latency", plot_sweep_ap_latency
+)
+plot_sweepset_ahp = get_selected_sweep_plotfunc("ahp", plot_sweep_ahp)
+plot_sweepset_adp = get_selected_sweep_plotfunc("adp", plot_sweep_adp)
+plot_sweepset_ap_thresh = get_selected_sweep_plotfunc("ap_thresh", plot_sweep_ap_thresh)
+plot_sweepset_ap_amp = get_selected_sweep_plotfunc("ap_amp", plot_sweep_ap_amp)
+plot_sweepset_ap_width = get_selected_sweep_plotfunc("ap_width", plot_sweep_ap_width)
+plot_sweepset_ap_peak = get_selected_sweep_plotfunc("ap_peak", plot_sweep_ap_peak)
+plot_sweepset_ap_trough = get_selected_sweep_plotfunc("ap_trough", plot_sweep_ap_trough)
+plot_sweepset_ap_udr = get_selected_sweep_plotfunc("udr", plot_sweep_udr)
+
+
+def plot_sweepset_dfdi(
+    sweepset: EphysSweepSetFeatureExtractor,
+    ax: Axes,
+    color: Any = None,
+    include_details=False,
+    **plot_kwargs,
+) -> Axes:
+    warnings.warn("dfdi sweepset plotting is not yet implemented yet!")
+    ft = ensure_ft_info(sweepset.get_sweepset_feature("dfdi"))
+    if not np.isnan(ft["value"]):
+        pass
+    return ax
+
+
+def plot_sweepset_rheobase(
+    sweepset: EphysSweepSetFeatureExtractor,
+    ax: Axes,
+    color: Any = None,
+    include_details=False,
+    **plot_kwargs,
+) -> Axes:
+    warnings.warn("rheobase sweepset plotting is not yet implemented yet!")
+    ft = ensure_ft_info(sweepset.get_sweepset_feature("rheobase"))
+    if not np.isnan(ft["value"]):
+        pass
+    return ax
+
+
+def get_sweepset_ft_plot_dict():
+    sweepset_ft_plot_dict = {
+        "tau": plot_sweepset_tau,
+        "r_input": plot_sweepset_r_input,
+        "v_rest": plot_sweepset_v_rest,
+        "v_baseline": plot_sweepset_v_baseline,
+        "slow_hyperpolarization": plot_sweepset_slow_hyperpolarization,
+        "sag": plot_sweepset_sag,
+        "sag_ratio": plot_sweepset_sag_ratio,
+        "sag_fraction": plot_sweepset_sag_fraction,
+        "sag_area": plot_sweepset_sag_area,
+        "sag_time": plot_sweepset_sag_time,
+        "rebound": plot_sweepset_rebound,
+        "rebound_aps": plot_sweepset_rebound_aps,
+        "rebound_area": plot_sweepset_rebound_area,
+        "rebound_latency": plot_sweepset_rebound_latency,
+        "rebound_avg": plot_sweepset_rebound_avg,
+        "num_ap": plot_sweepset_num_spikes,
+        "ap_freq": plot_sweepset_ap_freq,
+        "wildness": plot_sweepset_wildness,
+        "ap_freq_adapt": plot_sweepset_ap_freq_adapt,
+        "ap_amp_slope": plot_sweepset_ap_amp_slope,
+        # "fano_factor": plot_sweepset_fano_factor,
+        # "ap_fano_factor": plot_sweepset_ap_fano_factor,
+        # "cv": plot_sweepset_cv,
+        # "ap_cv": plot_sweepset_ap_cv,
+        "burstiness": plot_sweepset_burstiness,
+        # "isi_adapt": plot_sweepset_isi_adapt,
+        # "isi_adapt_avg": plot_sweepset_isi_adapt_avg,
+        # "ap_amp_adapt": plot_sweepset_ap_amp_adapt,
+        # "ap_amp_adapt_avg": plot_sweepset_ap_amp_adapt_avg,
+        "ap_latency": plot_sweepset_ap_latency,
+        "ahp": plot_sweepset_ahp,
+        "adp": plot_sweepset_adp,
+        "ap_thresh": plot_sweepset_ap_thresh,
+        "ap_amp": plot_sweepset_ap_amp,
+        "ap_width": plot_sweepset_ap_width,
+        "ap_peak": plot_sweepset_ap_peak,
+        "ap_trough": plot_sweepset_ap_trough,
+        "udr": plot_sweepset_ap_udr,
+        "dfdi": plot_sweepset_dfdi,
+        "rheobase": plot_sweepset_rheobase,
+    }
+    return sweepset_ft_plot_dict
+
+
+def plot_sweepset_diagnostics(
+    sweepset: EphysSweepSetFeatureExtractor,
+) -> Tuple[Figure, Axes]:
+    """Plot diagnostics overview for the whole sweepset.
+
+    This function is useful to diagnose outliers on the sweepset level.
+
+    Args:
+        sweepset (EphysSweepSetFeatureExtractor): sweepset to diagnose.
+
+    Returns:
+        Fig, Axes: figure and axes with plot.
+    """
+    mosaic = [
+        ["set_fts", "set_fts", "set_fts", "set_fts"],
+        ["fp_trace", "fp_trace", "fp_trace", "rheobase"],
+        ["ap_trace", "ap_trace", "ap_trace", "ap_window"],
+        ["sag_fts", "set_hyperpol_fts", "set_hyperpol_fts", "rebound_fts"],
+    ]
+    fig, axes = plt.subplot_mosaic(mosaic, figsize=(14, 14), constrained_layout=True)
+    onset, end = (
+        sweepset.get_sweep_features()
+        .applymap(strip_info)
+        .iloc[0][["stim_onset", "stim_end"]]
+    )
+    t0, tfin = sweepset.sweeps()[0].t[[0, -1]]
+    for ax in axes.values():
+        ax.set_xlim(t0, tfin)
+
+    axes["set_fts"].plot(sweepset.t.T, sweepset.v.T, color="grey", alpha=0.5)
+    selection_dict = {
+        "rebound": select_representative_rebound_sweep(sweepset),
+        "ap": select_representative_ap_sweep(sweepset),
+        "sag": select_representative_sag_sweep(sweepset),
+        "fp": select_representative_spiking_sweep(sweepset),
+        "tau": sweepset.get_sweepset_feature("tau")["selected_idx"],
+        "wildness": sweepset.get_sweepset_feature("wildness")["selected_idx"],
+    }
+    selected_sweeps = {k: sweepset.sweeps()[v] for k, v in selection_dict.items()}
+    for ft, idx in selection_dict.items():
+        selected_sweep = sweepset.sweeps()[idx]
+        if selected_sweep != []:
+            axes["set_fts"].plot(selected_sweep.t, selected_sweep.v, label=f"{ft}")
+    axes["set_fts"].legend(title="feature sweeps")
+
+    axes["fp_trace"].plot(
+        selected_sweeps["fp"].t,
+        selected_sweeps["fp"].v,
+        color="k",
+    )
+
+    axes["ap_trace"].plot(
+        selected_sweeps["ap"].t,
+        selected_sweeps["ap"].v,
+        color="k",
+    )
+    axes["ap_window"].plot(
+        selected_sweeps["ap"].t,
+        selected_sweeps["ap"].v,
+        color="k",
+    )
+    ap_idx = selected_sweeps["ap"].sweep_feature("ap_peak")["ap_idx"]
+    ap_start = selected_sweeps["ap"].spike_feature("threshold_t")[ap_idx] - 5e-3
+    ap_end = selected_sweeps["ap"].spike_feature("fast_trough_t")[ap_idx] + 5e-3
+    axes["ap_window"].set_xlim(ap_start, ap_end)
+    for ft, plot_func in get_spike_ft_plot_dict().items():
+        plot_func(selected_sweeps["fp"], axes["fp_trace"])
+        plot_func(selected_sweeps["ap"], axes["ap_trace"])
+        plot_func(selected_sweeps["ap"], axes["ap_window"])
+    axes["ap_trace"].axvline(ap_start, color="grey")
+    axes["ap_trace"].axvline(ap_end, color="grey", label="selected ap")
+    axes["ap_trace"].legend()
+
+    sweep_is_hyperpol = [is_hyperpol(s) for s in sweepset.sweeps()]
+    hyperpol_idcs = np.where(sweep_is_hyperpol)[0]
+    axes["set_hyperpol_fts"].plot(
+        sweepset.t[sweep_is_hyperpol].T, sweepset.v[sweep_is_hyperpol].T, color="k"
+    )
+    for idx in hyperpol_idcs:
+        selected_sweep = sweepset.sweeps()[idx]
+        c = "r" if idx == selection_dict["tau"] else "grey"
+        plot_sweep_tau(selected_sweep, axes["set_hyperpol_fts"], color=c)
+    plot_sweepset_v_baseline(sweepset, axes["set_hyperpol_fts"])
+    axes["set_hyperpol_fts"].legend()
+
+    h, l = axes["set_hyperpol_fts"].get_legend_handles_labels()
+    l[selection_dict["tau"] * 2] = "chosen tau"
+    axes["set_hyperpol_fts"].legend(h, l)
+
+    # sag
+    axes["sag_fts"].plot(selected_sweeps["sag"].t, selected_sweeps["sag"].v, color="k")
+    axes["sag_fts"].set_xlim(onset - 0.05, end + 0.05)
+    plot_sweep_sag_area(selected_sweeps["sag"], axes["sag_fts"])
+    plot_sweep_sag_time(selected_sweeps["sag"], axes["sag_fts"])
+    axes["sag_fts"].legend()
+
+    # rebound
+    axes["rebound_fts"].plot(
+        selected_sweeps["rebound"].t, selected_sweeps["rebound"].v, color="k"
+    )
+    axes["rebound_fts"].set_xlim(end - 0.05, None)
+    plot_sweep_rebound(selected_sweeps["rebound"], axes["rebound_fts"])
+    plot_sweep_rebound_latency(selected_sweeps["rebound"], axes["rebound_fts"])
+    plot_sweep_rebound_area(selected_sweeps["rebound"], axes["rebound_fts"])
+    plot_sweep_rebound_avg(selected_sweeps["rebound"], axes["rebound_fts"])
+    axes["rebound_fts"].legend()
+
+    fig.text(
+        -0.02,
+        0.5,
+        "U (mV)",
+        va="center",
+        rotation="vertical",
+        fontsize=16,
+    )
+    fig.text(
+        0.5,
+        -0.02,
+        "t (s)",
+        ha="center",
+        fontsize=16,
+    )
+    axes["set_fts"].set_title("All sweeps")
+    axes["fp_trace"].set_title("Representative spiking sweep")
+    axes["ap_trace"].set_title("Representative AP sweep")
+    axes["ap_window"].set_title("Representative AP")
+    axes["set_hyperpol_fts"].set_title("Hyperpolarization sweeps")
+    axes["sag_fts"].set_title("sag")
+    axes["rebound_fts"].set_title("rebound")
+    axes["rheobase"].set_title("Rheobase")
+    return fig, axes
