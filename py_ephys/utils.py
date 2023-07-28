@@ -40,7 +40,7 @@ class EphysSweepSetFeatureExtractor(AllenEphysSweepSetFeatureExtractor):
         metadata: Dict = {},
         dc_offset: float = 0,
         *args,
-        **kwargs
+        **kwargs,
     ):
         is_array = lambda x: isinstance(x, ndarray) and x is not None
         is_float = lambda x: isinstance(x, float) and x is not None
@@ -70,6 +70,27 @@ class EphysSweepSetFeatureExtractor(AllenEphysSweepSetFeatureExtractor):
 
         self.set_sweep_feature("dc_offset", self.dc_offset)
         self.cached_sweep_features = None  # for faster retrieval
+
+    @property
+    def t(self) -> ndarray:
+        t = np.empty((len(self.sweeps()), len(self.sweeps()[0].t)))
+        for i, swp in enumerate(self.sweeps()):
+            t[i] = swp.t
+        return t
+
+    @property
+    def v(self) -> ndarray:
+        v = np.empty((len(self.sweeps()), len(self.sweeps()[0].v)))
+        for i, swp in enumerate(self.sweeps()):
+            v[i] = swp.v
+        return v
+
+    @property
+    def i(self) -> ndarray:
+        i = np.empty((len(self.sweeps()), len(self.sweeps()[0].i)))
+        for i, swp in enumerate(self.sweeps()):
+            i[i] = swp.i
+        return i
 
     def get_sweep_features(self, force_retrieval: bool = False) -> DataFrame:
         if self.cached_sweep_features is None or force_retrieval:
@@ -142,7 +163,7 @@ def has_stimulus(sweep: EphysSweepFeatureExtractor) -> bool:
     return np.any(sweep.i != 0)
 
 
-def is_hyperpolarizing(sweep: EphysSweepFeatureExtractor) -> bool:
+def is_hyperpol(sweep: EphysSweepFeatureExtractor) -> bool:
     """Check if sweep is hyperpolarizing, i.e. if the stimulus < 0.
 
     Args:
@@ -193,7 +214,7 @@ def has_rebound(sweep: EphysSweepFeatureExtractor, T_rebound: float = 0.3) -> bo
 
     Returns:
         bool: True if sweep rebounds."""
-    if is_hyperpolarizing(sweep):
+    if is_hyperpol(sweep):
         end = strip_info(sweep.sweep_feature("stim_end"))
         v_baseline = strip_info(sweep.sweep_feature("v_baseline"))
         ts_rebound = np.logical_and(sweep.t > end, sweep.t < end + T_rebound)
@@ -216,10 +237,11 @@ def parse_ft_desc(func: Callable) -> str:
         string: Description of the feature that the function extracts.
     """
     func_doc = func.__doc__
-    pattern = re.compile(r"description: (.*)")
-    match = pattern.search(func_doc)
-    if match:
-        return match.group(1)
+    if func_doc is not None:  # if func has no docstring
+        pattern = re.compile(r"description: (.*)")
+        match = pattern.search(func_doc)
+        if match:
+            return match.group(1)
     return ""
 
 
@@ -238,11 +260,12 @@ def parse_ft_deps(func: Callable) -> str:
         string: Other features that the function depends on.
     """
     func_doc = func.__doc__
-    pattern = re.compile(r"depends on: (.*)")
-    match = pattern.search(func_doc)
-    if match:
-        dependency_str = match.group(1)[:-1]
-        return [d.strip() for d in dependency_str.split(",")]
+    if func_doc is not None:  # if func has no docstring
+        pattern = re.compile(r"depends on: (.*)")
+        match = pattern.search(func_doc)
+        if match:
+            dependency_str = match.group(1)[:-1]
+            return [d.strip() for d in dependency_str.split(",")]
     return ""  # no dependencies where found (while / means ft has no dependencies)
 
 
@@ -416,3 +439,28 @@ class strip_sweep_ft_info:
 get_stripped_sweep_fts = lambda sweepset: sweepset.get_sweep_features().applymap(
     strip_info
 )
+
+
+def median_idx(d):
+    if len(d) > 0:
+        is_median = d == d.median()
+        if any(is_median):
+            return int(d.index[is_median].to_numpy())
+        ranks = d.rank(pct=True)
+        close_to_median = abs(ranks - 0.5)
+        return int(np.array([close_to_median.idxmin()]))
+    return slice(0)
+
+
+class FeatureInfoError(ValueError):
+    pass
+
+
+def ensure_ft_info(ft):
+    is_dict = isinstance(ft, dict)
+    if is_dict:
+        if "description" in ft.keys():
+            return ft
+    raise FeatureInfoError(
+        "Feature has no diagnostic info! Ensure return_ft_info=True when it is computed."
+    )
