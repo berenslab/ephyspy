@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from py_ephys.allen_sdk.ephys_extractor import EphysSweepFeatureExtractor
 from typing import Tuple, Any, Callable
+from numpy import ndarray
 from matplotlib.pyplot import Figure, Axes
 from py_ephys.utils import (
     where_between,
@@ -51,14 +52,63 @@ plot_spike_fast_troughs = get_spike_ft_scatter_func("fast_trough")
 plot_spike_slow_troughs = get_spike_ft_scatter_func("slow_trough")
 
 
-def plot_spike_widths(
+def get_fwhm(
+    t: ndarray, v: ndarray, t_start: float, t_end: float
+) -> Tuple[float, float, float]:
+    """Get full width at half maximum of a spike.
+
+    Args:
+        t (ndarray): time array.
+        v (ndarray): voltage array.
+        t_start (float): start time of spike.
+        t_end (float): end time of spike.
+
+    Returns:
+        Tuple[float, float, float]: full width at half maximum,
+            time of half maximum upstroke, time of half maximum downstroke.
+    """
+    in_T = where_between(t, t_start, t_end)
+    v_peak = np.max(v[in_T])
+    v_start = v[in_T][0]
+    t_peak = t[in_T][np.argmax(v[in_T])]
+    upstroke = where_between(t, t_start, t_peak)
+    downstroke = where_between(t, t_peak, t_end)
+    fwhm = v_start + (v_peak - v_start) / 2
+    hm_up_idx = np.argmin(np.abs(v[upstroke] - fwhm))
+    hm_down_idx = np.argmin(np.abs(v[downstroke] - fwhm))
+    hm_up_t = t[upstroke][hm_up_idx]
+    hm_down_t = t[downstroke][hm_down_idx]
+    return fwhm, hm_up_t, hm_down_t
+
+
+def plot_spike_width(
     sweep: EphysSweepFeatureExtractor, ax: Axes, color=None, **plot_kwargs
 ) -> Axes:
-    warnings.warn("spike spike_widths plotting is not yet implemented!")
+    spike_fts = sweep._spikes_df
+    if spike_fts.size:
+        t_threshold = sweep.spike_feature("threshold_t")
+        t_trough = sweep.spike_feature("trough_t")
+
+        fwhm_v = np.zeros_like(t_threshold)
+        hm_up_t = np.zeros_like(t_threshold)
+        hm_down_t = np.zeros_like(t_threshold)
+        for i, (t_th, t_tr) in enumerate(zip(t_threshold, t_trough)):
+            fwhm_i = get_fwhm(sweep.t, sweep.v, t_th, t_tr)
+            fwhm_v[i], hm_up_t[i], hm_down_t[i] = fwhm_i
+
+        ax.hlines(
+            fwhm_v,
+            hm_up_t,
+            hm_down_t,
+            label="width",
+            ls="--",
+            color=color,
+            **plot_kwargs,
+        )
     return ax
 
 
-def plot_spike_adps(
+def plot_spike_adp(
     sweep: EphysSweepFeatureExtractor, ax: Axes, color=None, **plot_kwargs
 ) -> Axes:
     spike_fts = sweep._spikes_df
@@ -74,7 +124,7 @@ def plot_spike_adps(
     return ax
 
 
-def plot_spike_ahps(
+def plot_spike_ahp(
     sweep: EphysSweepFeatureExtractor, ax: Axes, color=None, **plot_kwargs
 ) -> Axes:
     spike_fts = sweep._spikes_df
@@ -90,25 +140,25 @@ def plot_spike_ahps(
     return ax
 
 
-def plot_spike_amps(
+def plot_spike_amp(
     sweep: EphysSweepFeatureExtractor, ax: Axes, color=None, **plot_kwargs
 ) -> Axes:
-    warnings.warn("spike spike_amps plotting is not yet implemented!")
+    warnings.warn("spike spike_amp plotting is not yet implemented!")
     return ax
 
 
-def get_spike_ft_plot_dict():
+def get_available_spike_diagnostics():
     spike_ft_plot_dict = {
         "peak": plot_spike_peaks,
         "trough": plot_spike_troughs,
         "threshold": plot_spike_thresholds,
         "upstroke": plot_spike_upstrokes,
         "downstroke": plot_spike_downstrokes,
-        "width": plot_spike_widths,  # TODO: implement
+        "width": plot_spike_width,
         "fast_trough": plot_spike_fast_troughs,
         "slow_trough": plot_spike_slow_troughs,
-        "adp": plot_spike_adps,
-        "ahp": plot_spike_ahps,  # TODO: Check why nan
+        "adp": plot_spike_adp,
+        "ahp": plot_spike_ahp,  # TODO: Check why nan
     }
     return spike_ft_plot_dict
 
@@ -139,7 +189,7 @@ def plot_spike_diagnostics(
 
     # plot spike features
     for x in ["a", "b"]:
-        for ft, plot_func in get_spike_ft_plot_dict().items():
+        for ft, plot_func in get_available_spike_diagnostics().items():
             plot_func(sweep, axes[x])
 
     axes["b"].legend(loc="center left", bbox_to_anchor=(1.0, 0.5))
@@ -1225,10 +1275,22 @@ def plot_sweep_ap_width(
     Returns:
         Axes: axes with plot.
     """
-    warnings.warn("ap_width sweep plotting is not yet implemented yet!")
     ft = ensure_ft_info(sweep.sweep_feature("ap_width"))
     if not np.isnan(ft["value"]):
-        pass
+        ap_idx = ft["ap_idx"]
+        thresh_t = sweep.spike_feature("threshold_t")[ap_idx]
+        trough_t = sweep.spike_feature("fast_trough_t")[ap_idx]
+        fwhm_v, t_up_fwhm, t_down_fwhm = get_fwhm(sweep.t, sweep.v, thresh_t, trough_t)
+
+        ax.hlines(
+            fwhm_v,
+            t_up_fwhm,
+            t_down_fwhm,
+            ls="--",
+            label="ap_width",
+            color=color,
+            **plot_kwargs,
+        )
     return ax
 
 
@@ -1376,7 +1438,9 @@ def plot_sweep_diagnostics(sweep, window=[0.4, 0.45]):
     if len(sweep_fts) > 1:  # 1 since dc is always present
         if sum([isinstance(x, dict) for x in sweep_fts.values()]) > 5:
             # plot detailed diagnostics
-            for c, (ft, plot_func) in enumerate(get_sweep_ft_plot_dict().items()):
+            for c, (ft, plot_func) in enumerate(
+                get_available_sweep_diagnostics().items()
+            ):
                 if "stim" in ft:
                     ax = axes["c"]
                     ax.set_ylabel("Current (pA)")
@@ -1429,7 +1493,7 @@ def plot_sweep_diagnostics(sweep, window=[0.4, 0.45]):
     return fig, axes
 
 
-def get_sweep_ft_plot_dict():
+def get_available_sweep_diagnostics():
     ft_plot_dict = {
         "stim_amp": plot_sweep_stim_amp,
         "stim_onset": plot_sweep_stim_onset,
@@ -1512,7 +1576,15 @@ def plot_sweepset_r_input(
     ft = ensure_ft_info(sweepset.get_sweepset_feature("r_input"))
     warnings.warn("r_input sweepset plotting is not yet implemented yet!")
     if not np.isnan(ft["value"]):
-        pass
+        i = ft["i_amp"]
+        v = ft["v_deflect"]
+        slope = ft["raw_slope"]
+        intercept = ft["v_intercept"]
+        ax.plot(i, v, "o", color=color, label="I(V)", **plot_kwargs)
+        ax.plot(
+            i, slope * i + intercept, color=color, label="r_input fit", **plot_kwargs
+        )
+        ax.set_xlim(np.min(i) - 5, np.max(i) + 5)
     return ax
 
 
@@ -1609,7 +1681,19 @@ def plot_sweepset_dfdi(
     warnings.warn("dfdi sweepset plotting is not yet implemented yet!")
     ft = ensure_ft_info(sweepset.get_sweepset_feature("dfdi"))
     if not np.isnan(ft["value"]):
-        pass
+        i_fit = ft["i_fit"]
+        f_fit = ft["f_fit"]
+        slope = ft["value"]
+        f_intercept = ft["f_intercept"]
+        f_intercept = ft["f_intercept"]
+        ax.plot(i_fit, f_fit, "o", color=color, label="f(I)", **plot_kwargs)
+        ax.plot(
+            i_fit,
+            slope * i_fit + f_intercept,
+            color=color,
+            label="dfdi fit",
+            **plot_kwargs,
+        )
     return ax
 
 
@@ -1620,14 +1704,63 @@ def plot_sweepset_rheobase(
     include_details=False,
     **plot_kwargs,
 ) -> Axes:
-    warnings.warn("rheobase sweepset plotting is not yet implemented yet!")
     ft = ensure_ft_info(sweepset.get_sweepset_feature("rheobase"))
+    dfdi_ft = ensure_ft_info(sweepset.get_sweepset_feature("dfdi"))
     if not np.isnan(ft["value"]):
-        pass
+        i_intercept = ft["value"]
+        i_sub = ft["i_sub"]
+        i_sup = ft["i_sup"]
+        dfdi = ft["dfdi"]
+        dc_offset = ft["dc_offset"]
+
+        has_spikes = ~np.isnan(dfdi_ft["f"])
+        n_no_spikes = np.sum(~has_spikes)
+        i = dfdi_ft["i"]
+        f = dfdi_ft["f"]
+        f_intercept = dfdi_ft["f_intercept"]
+
+        ax.plot(
+            i[has_spikes][:5],
+            f[has_spikes][:5],
+            "o",
+            color=color,
+            label="f(I)",
+            **plot_kwargs,
+        )
+        ax.plot(
+            i[: n_no_spikes + 5],
+            dfdi * i[: n_no_spikes + 5] + f_intercept,
+            color=color,
+            label="f(I) fit",
+            **plot_kwargs,
+        )
+        ax.axvline(
+            i_intercept + dc_offset,
+            color=color,
+            ls="--",
+            label="rheobase (w.o. dc offset)",
+            **plot_kwargs,
+        )
+        ax.axvline(
+            i_intercept,
+            color=color,
+            label="rheobase (incl. dc offset)",
+            **plot_kwargs,
+        )
+        ax.plot(i_sub, 0, "o", color=color, label="i_sub", **plot_kwargs)
+        ax.plot(
+            i_sup,
+            f[has_spikes][0],
+            "o",
+            color=color,
+            label="i_sup",
+            **plot_kwargs,
+        )
+    ax.set_xlim(i[0] - 5, i[n_no_spikes + 5] + 5)
     return ax
 
 
-def get_sweepset_ft_plot_dict():
+def get_available_sweepset_diagnostics():
     sweepset_ft_plot_dict = {
         "tau": plot_sweepset_tau,
         "r_input": plot_sweepset_r_input,
@@ -1687,7 +1820,7 @@ def plot_sweepset_diagnostics(
         Fig, Axes: figure and axes with plot.
     """
     mosaic = [
-        ["set_fts", "set_fts", "set_fts", "set_fts"],
+        ["set_fts", "set_fts", "set_fts", "r_input"],
         ["fp_trace", "fp_trace", "fp_trace", "rheobase"],
         ["ap_trace", "ap_trace", "ap_trace", "ap_window"],
         ["sag_fts", "set_hyperpol_fts", "set_hyperpol_fts", "rebound_fts"],
@@ -1738,7 +1871,7 @@ def plot_sweepset_diagnostics(
     ap_start = selected_sweeps["ap"].spike_feature("threshold_t")[ap_idx] - 5e-3
     ap_end = selected_sweeps["ap"].spike_feature("fast_trough_t")[ap_idx] + 5e-3
     axes["ap_window"].set_xlim(ap_start, ap_end)
-    for ft, plot_func in get_spike_ft_plot_dict().items():
+    for ft, plot_func in get_available_spike_diagnostics().items():
         plot_func(selected_sweeps["fp"], axes["fp_trace"])
         plot_func(selected_sweeps["ap"], axes["ap_trace"])
         plot_func(selected_sweeps["ap"], axes["ap_window"])
@@ -1795,6 +1928,17 @@ def plot_sweepset_diagnostics(
         ha="center",
         fontsize=16,
     )
+
+    plot_sweepset_rheobase(sweepset, axes["rheobase"])
+    axes["rheobase"].set_xlabel("I (pA)")
+    axes["rheobase"].set_ylabel("f (Hz)")
+    axes["rheobase"].legend()
+
+    plot_sweepset_r_input(sweepset, axes["r_input"])
+    axes["r_input"].set_xlabel("I (pA)")
+    axes["r_input"].set_ylabel("U (mV)")
+    axes["r_input"].legend()
+
     axes["set_fts"].set_title("All sweeps")
     axes["fp_trace"].set_title("Representative spiking sweep")
     axes["ap_trace"].set_title("Representative AP sweep")
