@@ -1,16 +1,16 @@
-import numpy as np
-import py_ephys.allen_sdk.ephys_features as ft
-from py_ephys.utils import *
+from functools import partial
+from typing import Dict, Tuple
 
+import numpy as np
 from numpy import ndarray
 from pandas import DataFrame
-from typing import Tuple, Dict
-from py_ephys.allen_sdk.ephys_extractor import EphysSweepFeatureExtractor
-from functools import partial
 from scipy import integrate
 from scipy.optimize import curve_fit
-
 from sklearn import linear_model
+
+import py_ephys.allen_sdk.ephys_features as ft
+from py_ephys.allen_sdk.ephys_extractor import EphysSweepFeatureExtractor
+from py_ephys.utils import *
 
 # ransac = linear_model.RANSACRegressor()
 ransac = linear_model.LinearRegression()
@@ -113,9 +113,9 @@ def get_sweep_burst_metrics(
     """
     burst_metrics = sweep._process_bursts()
     if len(burst_metrics) == 0:
-        return float("nan") * np.ones(3, dtype=int)
-    idx_burst, idx_burst_start, idx_burst_end = burst_metrics
-    return idx_burst, idx_burst_start, idx_burst_end
+        return float("nan"), slice(0), slice(0)
+    idx_burst, idx_burst_start, idx_burst_end = burst_metrics.T
+    return idx_burst, idx_burst_start.astype(int), idx_burst_end.astype(int)
 
 
 @ephys_feature
@@ -475,8 +475,7 @@ def get_sweep_ap_amp_slope(
     peak_t = sweep.spike_feature("peak_t", include_clipped=True)[stim_interval]
     peak_v = sweep.spike_feature("peak_v", include_clipped=True)[stim_interval]
 
-    num_spikes = len(peak_v)
-    if len(peak_v) > 0:
+    if len(peak_v) > 5:
         y = lambda x, m, b: m * x + b
         (m, b), e = curve_fit(y, peak_t, peak_v)
 
@@ -609,15 +608,16 @@ def get_sweep_sag_area(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict]:
             t_sag = sweep.t[where_sag]
             v_sagline = v_sag[0]
             # Take running average of v?
-            sag_area = -integrate.cumulative_trapezoid(v_sag - v_sagline, t_sag)[-1]
-            sag_area_info.update(
-                {
-                    "where_sag": where_sag,
-                    "v_sag": v_sag,
-                    "t_sag": t_sag,
-                    "v_sagline": v_sagline,
-                }
-            )
+            if len(v_sag) > 10:  # at least 10 points to integrate
+                sag_area = -integrate.cumulative_trapezoid(v_sag - v_sagline, t_sag)[-1]
+                sag_area_info.update(
+                    {
+                        "where_sag": where_sag,
+                        "v_sag": v_sag,
+                        "t_sag": t_sag,
+                        "v_sagline": v_sagline,
+                    }
+                )
     return sag_area, sag_area_info
 
 
@@ -831,17 +831,18 @@ def get_sweep_rebound_area(
         where_rebound = np.logical_and(where_rebound, sweep.v > v_baseline)
         v_rebound = sweep.v[where_rebound]
         t_rebound = sweep.t[where_rebound]
-        rebound_area = integrate.cumulative_trapezoid(
-            v_rebound - v_baseline, t_rebound
-        )[-1]
-        rebound_area_info.update(
-            {
-                "where_rebound": where_rebound,
-                "t_rebound": t_rebound,
-                "v_rebound": v_rebound,
-                "v_baseline": v_baseline,
-            }
-        )
+        if len(v_rebound) > 10:  # at least 10 points to integrate
+            rebound_area = integrate.cumulative_trapezoid(
+                v_rebound - v_baseline, t_rebound
+            )[-1]
+            rebound_area_info.update(
+                {
+                    "where_rebound": where_rebound,
+                    "t_rebound": t_rebound,
+                    "v_rebound": v_rebound,
+                    "v_baseline": v_baseline,
+                }
+            )
     return rebound_area, rebound_area_info
 
 
@@ -930,9 +931,10 @@ def get_sweep_num_bursts(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict
     num_bursts, num_bursts_info = ephys_feature_init()
     if strip_info(sweep.sweep_feature("num_ap")) > 5 and has_stimulus(sweep):
         idx_burst, idx_burst_start, idx_burst_end = get_sweep_burst_metrics(sweep)
-        if not np.isnan(idx_burst):
-            t_burst_start = sweep.t[idx_burst_start]
-            t_burst_end = sweep.t[idx_burst_end]
+        peak_t = sweep.spike_feature("peak_t", include_clipped=True)
+        if not np.isnan(idx_burst).any():
+            t_burst_start = peak_t[idx_burst_start]
+            t_burst_end = peak_t[idx_burst_end]
             num_bursts = len(idx_burst)
             num_bursts = float("nan") if num_bursts == 0 else num_bursts
             num_bursts_info.update(
@@ -963,9 +965,10 @@ def get_sweep_burstiness(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict
     max_burstiness, burstiness_info = ephys_feature_init()
     if strip_info(sweep.sweep_feature("num_ap")) > 5 and has_stimulus(sweep):
         idx_burst, idx_burst_start, idx_burst_end = get_sweep_burst_metrics(sweep)
-        if not np.isnan(idx_burst):
-            t_burst_start = sweep.t[idx_burst_start]
-            t_burst_end = sweep.t[idx_burst_end]
+        peak_t = sweep.spike_feature("peak_t", include_clipped=True)
+        if not np.isnan(idx_burst).any():
+            t_burst_start = peak_t[idx_burst_start]
+            t_burst_end = peak_t[idx_burst_end]
             num_bursts = len(idx_burst)
             max_burstiness = idx_burst.max() if num_bursts > 0 else float("nan")
             burstiness_info.update(
@@ -1015,7 +1018,10 @@ def get_sweep_wildness(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict]:
 def select_representative_ap(sweep: EphysSweepFeatureExtractor) -> int:
     """Select representative AP from which the ap features are extracted.
 
-    description: First AP.
+    description: 2nd AP (if only 1 AP -> select first) during stimulus that has
+    no NaNs in relevant spike features. If all APs have NaNs, return the AP during
+    stimulus that has the least amount of NaNs in the relevant features. This
+    avoids bad threshold detection at onset of stimulus.
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep from which the ap features are extracted.
@@ -1023,7 +1029,40 @@ def select_representative_ap(sweep: EphysSweepFeatureExtractor) -> int:
     Returns:
         int: Index of the sweep from which the rebound features are extracted.
     """
-    return 0
+    relevant_ap_fts = [
+        "ahp",
+        "adp_v",
+        "peak_v",
+        "threshold_v",
+        "trough_v",
+        "width",
+        "slow_trough_v",
+        "fast_trough_v",
+        "downstroke_v",
+        "upstroke_v",
+    ]
+
+    spike_fts = sweep._spikes_df[relevant_ap_fts]
+    peak_t = sweep.spike_feature("peak_t", include_clipped=True)
+    onset = strip_info(sweep.sweep_feature("stim_onset"))
+    end = strip_info(sweep.sweep_feature("stim_end"))
+    is_stim = where_between(peak_t, onset, end)
+
+    if len(peak_t[is_stim]) == 0:  # some sweeps have only wild aps
+        return slice(0)
+
+    has_nan_fts = spike_fts.isna().any(axis=1)
+    if any(~has_nan_fts & is_stim):
+        selected_ap_idxs = spike_fts.index[~has_nan_fts & is_stim]
+    else:
+        num_nan_fts = spike_fts[is_stim].isna().sum(axis=1)
+        # sort by number of NaNs and then by index (ensure ap order stays intact)
+        selected_ap_idxs = num_nan_fts.reset_index().sort_values([0, "index"])["index"]
+
+    if len(selected_ap_idxs) > 1:
+        return selected_ap_idxs[1]
+    else:
+        return selected_ap_idxs[0]
 
 
 @ephys_feature
@@ -1310,9 +1349,14 @@ def get_repr_sweep_ft(
         Tuple[float, Dict]: Feature value and feature metadata.
     """
     ft_selected, ft_info = ephys_feature_init()
-    ft = get_stripped_sweep_fts(sweepset)[ft_name]
+    ft = get_stripped_sweep_fts(sweepset)[ft_name].to_numpy()
     selected_index = sweep_selection_func(sweepset)
-    ft_selected = ft.loc[selected_index]
+    ft_selected = ft[selected_index]
+    if not isinstance(ft_selected, (float, int, np.float64, np.int64)):
+        if isinstance(ft_selected, ndarray):
+            if len(ft_selected) == 0:
+                ft_selected = float("nan")
+
     ft_info.update(
         {
             ft_name: ft,
@@ -1490,7 +1534,9 @@ def get_sweepset_slow_hyperpolarization(
 def select_representative_sag_sweep(sweepset: EphysSweepSetFeatureExtractor) -> int:
     """Select representative sweep from which the sag features are extracted.
 
-    description: Lowest hyperpolarization sweep.
+    description: Lowest hyperpolarization sweep that is not NaN. If 3 lowest
+    sweeps are NaN, then the first sweep is selected, meaning the feature is set
+    to NaN.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -1498,8 +1544,14 @@ def select_representative_sag_sweep(sweepset: EphysSweepSetFeatureExtractor) -> 
     Returns:
         int: Index of the sweep from which the rebound features are extracted.
     """
-    # TODO: implement selection protocol / criterion!
-    return 0  # TODO: select one or multiple? -> median, mean?
+    # TODO: Consult if this is sensible!
+    sag = get_stripped_sweep_fts(sweepset)["sag"]
+    nan_sags = sag.isna()
+    if all(nan_sags[:3]):
+        selected_sweep_idx = 0
+    else:
+        selected_sweep_idx = sag.index[~nan_sags][0]
+    return selected_sweep_idx
 
 
 @ephys_feature
@@ -1516,7 +1568,7 @@ def get_sweepset_sag(sweepset: EphysSweepSetFeatureExtractor) -> Tuple[float, Di
         Tuple[float, Dict]: sweep set level sag feature.
     """
     sag, sag_info = ephys_feature_init()
-    sag_sweep_idx = select_representative_sag_sweep(get_stripped_sweep_fts(sweepset))
+    sag_sweep_idx = select_representative_sag_sweep(sweepset)
     sag = get_stripped_sweep_fts(sweepset)["sag"].iloc[sag_sweep_idx]
     sag_info.update(
         {
@@ -1543,7 +1595,7 @@ def get_sweepset_sag_ratio(
         Tuple[float, Dict]: sweep set level sag ratio feature.
     """
     sag_ratio, sag_ratio_info = ephys_feature_init()
-    sag_sweep_idx = select_representative_sag_sweep(get_stripped_sweep_fts(sweepset))
+    sag_sweep_idx = select_representative_sag_sweep(sweepset)
     sag_ratio = (
         sweepset.get_sweep_features()
         .applymap(strip_info)["sag_ratio"]
@@ -1575,7 +1627,7 @@ def get_sweepset_sag_fraction(
         Tuple[float, Dict]: sweep set level sag fraction feature.
     """
     sag_fraction, sag_fraction_info = ephys_feature_init()
-    sag_sweep_idx = select_representative_sag_sweep(get_stripped_sweep_fts(sweepset))
+    sag_sweep_idx = select_representative_sag_sweep(sweepset)
     sag_fraction = (
         sweepset.get_sweep_features()
         .applymap(strip_info)["sag_fraction"]
@@ -1606,7 +1658,7 @@ def get_sweepset_sag_area(
         Tuple[float, Dict]: sweep set level sag area feature.
     """
     sag_area, sag_area_info = ephys_feature_init()
-    sag_sweep_idx = select_representative_sag_sweep(get_stripped_sweep_fts(sweepset))
+    sag_sweep_idx = select_representative_sag_sweep(sweepset)
     sag_area = (
         sweepset.get_sweep_features()
         .applymap(strip_info)["sag_area"]
@@ -1637,7 +1689,7 @@ def get_sweepset_sag_time(
         Tuple[float, Dict]: sweep set level sag time feature.
     """
     sag_time, sag_time_info = ephys_feature_init()
-    sag_sweep_idx = select_representative_sag_sweep(get_stripped_sweep_fts(sweepset))
+    sag_sweep_idx = select_representative_sag_sweep(sweepset)
     sag_time = (
         sweepset.get_sweep_features()
         .applymap(strip_info)["sag_time"]
@@ -1656,7 +1708,8 @@ def get_sweepset_sag_time(
 def select_representative_rebound_sweep(sweepset: EphysSweepSetFeatureExtractor) -> int:
     """Select representative sweep from which the rebound features are extracted.
 
-    description: Lowest hyperpolarization sweep.
+    description: Lowest hyperpolarization sweep. If 3 lowest sweeps are NaN,
+    then the first sweep is selected, meaning the feature is set to NaN.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -1664,8 +1717,14 @@ def select_representative_rebound_sweep(sweepset: EphysSweepSetFeatureExtractor)
     Returns:
         int: Index of the sweep from which the rebound features are extracted.
     """
-    # TODO: implement selection protocol / criterion!
-    return 0  # TODO: select one or multiple? -> median, mean?
+    # TODO: Consult if this is sensible!
+    rebound = get_stripped_sweep_fts(sweepset)["rebound"]
+    nan_rebound = rebound.isna()
+    if all(nan_rebound[:3]):
+        selected_sweep_idx = 0
+    else:
+        selected_sweep_idx = rebound.index[~nan_rebound][0]
+    return selected_sweep_idx
 
 
 @ephys_feature
@@ -1682,9 +1741,7 @@ def get_sweepset_rebound(sweepset: EphysSweepSetFeatureExtractor) -> Tuple[float
         Tuple[float, Dict]: sweep set level rebound feature.
     """
     rebound, rebound_info = ephys_feature_init()
-    rebound_sweep_idx = select_representative_rebound_sweep(
-        get_stripped_sweep_fts(sweepset)
-    )
+    rebound_sweep_idx = select_representative_rebound_sweep(sweepset)
     rebound = (
         sweepset.get_sweep_features()
         .applymap(strip_info)["rebound"]
@@ -1715,9 +1772,7 @@ def get_sweepset_rebound_aps(
         Tuple[float, Dict]: sweep set level rebound ratio feature.
     """
     rebound_aps, rebound_aps_info = ephys_feature_init()
-    rebound_sweep_idx = select_representative_rebound_sweep(
-        get_stripped_sweep_fts(sweepset)
-    )
+    rebound_sweep_idx = select_representative_rebound_sweep(sweepset)
     rebound_aps = (
         sweepset.get_sweep_features()
         .applymap(strip_info)["rebound_aps"]
@@ -1748,9 +1803,7 @@ def get_sweepset_rebound_area(
         Tuple[float, Dict]: sweep set level rebound area feature.
     """
     rebound_area, rebound_area_info = ephys_feature_init()
-    rebound_sweep_idx = select_representative_rebound_sweep(
-        get_stripped_sweep_fts(sweepset)
-    )
+    rebound_sweep_idx = select_representative_rebound_sweep(sweepset)
     rebound_area = (
         sweepset.get_sweep_features()
         .applymap(strip_info)["rebound_area"]
@@ -1781,9 +1834,7 @@ def get_sweepset_rebound_latency(
         Tuple[float, Dict]: sweep set level rebound latency feature.
     """
     rebound_latency, rebound_latency_info = ephys_feature_init()
-    rebound_sweep_idx = select_representative_rebound_sweep(
-        get_stripped_sweep_fts(sweepset)
-    )
+    rebound_sweep_idx = select_representative_rebound_sweep(sweepset)
     rebound_latency = (
         sweepset.get_sweep_features()
         .applymap(strip_info)["rebound_latency"]
@@ -1814,9 +1865,7 @@ def get_sweepset_rebound_avg(
         Tuple[float, Dict]: sweep set level average rebound feature.
     """
     rebound_avg, rebound_avg_info = ephys_feature_init()
-    rebound_sweep_idx = select_representative_rebound_sweep(
-        get_stripped_sweep_fts(sweepset)
-    )
+    rebound_sweep_idx = select_representative_rebound_sweep(sweepset)
     rebound_avg = (
         sweepset.get_sweep_features()
         .applymap(strip_info)["rebound_avg"]
@@ -1924,8 +1973,11 @@ def get_sweepset_wildness(
     """
 
     def select_wildest_idx(sset):
+        """Select sweep with highest wildness.
+
+        description: sweep with most wild APs."""
         idx = sset.get_sweep_feature("wildness").apply(strip_info).argmax()
-        return idx if idx != -1 else slice(0)
+        return int(idx) if idx != -1 else slice(0)
 
     return get_repr_sweep_ft(
         sweepset,
@@ -2070,12 +2122,41 @@ def get_sweepset_burstiness(
     burstiness[burstiness < 0] = float("nan")  # don't consider negative burstiness
     bursty_traces = burstiness[~burstiness.isna()]
     burstiness = bursty_traces.iloc[:5]  # consider first 5 non-nan traces at most
-    selected_idx = median_idx(burstiness)
-    median_burstiness = burstiness.median()
-    burstiness_info.update(
-        {"bursty_traces": bursty_traces, "selected_idx": selected_idx}
-    )
+    if not burstiness.empty:
+        selected_idx = median_idx(burstiness)
+        median_burstiness = burstiness.median()
+        burstiness_info.update(
+            {"bursty_traces": bursty_traces, "selected_idx": selected_idx}
+        )
     return median_burstiness, burstiness_info
+
+
+@ephys_feature
+def get_sweepset_num_bursts(
+    sweepset: EphysSweepSetFeatureExtractor,
+) -> Tuple[float, Dict]:
+    """Extract sweep set level burstiness feature.
+
+    depends on: num_bursts.
+    description: max num_bursts for the first 5 "bursty" traces.
+
+    Args:
+        sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
+
+    Returns:
+        Tuple[float, Dict]: sweep set level num_bursts feature.
+    """
+    max_num_bursts, num_bursts_info = ephys_feature_init()
+    num_bursts = get_stripped_sweep_fts(sweepset)["num_bursts"]
+    bursty_traces = num_bursts[~num_bursts.isna()]
+    num_bursts = bursty_traces.iloc[:5]  # consider first 5 non-nan traces at most
+    if not num_bursts.empty:
+        selected_idx = num_bursts.argmax()
+        max_num_bursts = num_bursts.max()
+        num_bursts_info.update(
+            {"bursty_traces": bursty_traces, "selected_idx": selected_idx}
+        )
+    return max_num_bursts, num_bursts_info
 
 
 # adaptation index
@@ -2220,7 +2301,8 @@ def select_representative_ap_sweep(sweepset: EphysSweepSetFeatureExtractor) -> i
     """Select representative ap in a sweep from which the AP features are used.
 
     depends on: stim_amp, num_ap.
-    description: First depolarization trace that contains spikes.
+    description: First depolarization trace that contains spikes and which has
+        the least amount of NaNs in the AP features.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -2228,11 +2310,23 @@ def select_representative_ap_sweep(sweepset: EphysSweepSetFeatureExtractor) -> i
     Returns:
         int: Index of the sweep from which the rebound features are extracted.
     """
-    # TODO: implement procedure to select representative AP in each trace for the following AP features
-    # ensure index that gets selected is not affected by clipping (if possible, no nans in spike fts)!
-    is_depol = get_stripped_sweep_fts(sweepset)["stim_amp"] > 0
-    has_spikes = get_stripped_sweep_fts(sweepset)["num_ap"] > 0
-    return is_depol.index[is_depol & has_spikes][0]
+    # TODO: Consult if this is sensible!
+    relevant_ap_fts = [
+        "ap_thresh",
+        "ap_amp",
+        "ap_width",
+        "ap_peak",
+        "ap_trough",
+        "ahp",
+        "adp",
+        "udr",
+    ]
+
+    stripped_fts = get_stripped_sweep_fts(sweepset)
+    is_depol = stripped_fts["stim_amp"] > 0
+    has_spikes = stripped_fts["num_ap"] > 0
+    num_nans = stripped_fts[relevant_ap_fts].isna().sum(axis=1)
+    return num_nans[is_depol & has_spikes].idxmin()
 
 
 # latency
@@ -2426,20 +2520,14 @@ def get_sweepset_dfdi(sweepset: EphysSweepSetFeatureExtractor) -> Tuple[float, D
     """
     dfdi, dfdi_info = ephys_feature_init()
     is_depol = get_stripped_sweep_fts(sweepset)["stim_amp"] > 0
-    i, n_spikes = (
+    i, f = (
         sweepset.get_sweep_features()
         .applymap(strip_info)[is_depol][["stim_amp", "ap_freq"]]
         .to_numpy()
         .T
     )
-    has_spikes = ~np.isnan(n_spikes)
-    if np.sum(has_spikes) > 4 and len(np.unique(n_spikes[:5])) > 3:
-        onset, end = (
-            sweepset.get_sweep_features()
-            .applymap(strip_info)[["stim_onset", "stim_end"]]
-            .iloc[0]
-        )
-        f = n_spikes / (end - onset)
+    has_spikes = ~np.isnan(f)
+    if np.sum(has_spikes) > 4 and len(np.unique(f[:5])) > 3:
         i_s = i[has_spikes][:5]
         f_s = f[has_spikes][:5]
 
@@ -2481,7 +2569,8 @@ def get_sweepset_rheobase(
         .T
     )
     has_spikes = ~np.isnan(ap_freq)
-    i_sub = i[~has_spikes][0]  # last stim < spike threshold
+    # sometimes all depolarization traces spike
+    i_sub = 0 if all(has_spikes) else i[~has_spikes][0]  # last stim < spike threshold
     i_sup = i[has_spikes][0]  # first stim > spike threshold
     dfdi = strip_info(get_sweepset_dfdi(sweepset))
 
@@ -2497,6 +2586,7 @@ def get_sweepset_rheobase(
         {
             "i_sub": i_sub,
             "i_sup": i_sup,
+            "f_sup": ap_freq[has_spikes][0],
             "dfdi": dfdi,
             "dc_offset": dc_offset,
         }
@@ -2531,6 +2621,7 @@ def get_available_sweepset_features(return_ft_info=False):
         "cv": get_sweepset_cv,
         "ap_cv": get_sweepset_ap_cv,
         "burstiness": get_sweepset_burstiness,
+        "num_bursts": get_sweepset_num_bursts,
         "isi_adapt": get_sweepset_isi_adapt,
         "isi_adapt_avg": get_sweepset_isi_adapt_avg,
         "ap_amp_adapt": get_sweepset_ap_amp_adapt,

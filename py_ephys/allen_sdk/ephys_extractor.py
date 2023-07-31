@@ -37,10 +37,11 @@ import logging
 import warnings
 from collections import Counter
 
-import py_ephys.allen_sdk.ephys_features as ft
 import numpy as np
 import six
 from pandas import DataFrame
+
+import py_ephys.allen_sdk.ephys_features as ft
 
 # Constants for stimulus-specific analysis
 RAMPS_START = 1.02

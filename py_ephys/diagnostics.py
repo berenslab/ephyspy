@@ -1,24 +1,26 @@
-import numpy as np
+import warnings
+from typing import Any, Callable, Tuple
+
 import matplotlib.pyplot as plt
-from py_ephys.allen_sdk.ephys_extractor import EphysSweepFeatureExtractor
-from typing import Tuple, Any, Callable
+import numpy as np
+from matplotlib.pyplot import Axes, Figure
 from numpy import ndarray
-from matplotlib.pyplot import Figure, Axes
-from py_ephys.utils import (
-    where_between,
-    get_ap_ft_at_idx,
-    is_hyperpol,
-    strip_info,
-    EphysSweepSetFeatureExtractor,
-    ensure_ft_info,
-)
+
+from py_ephys.allen_sdk.ephys_extractor import EphysSweepFeatureExtractor
 from py_ephys.features import (
     select_representative_ap_sweep,
     select_representative_rebound_sweep,
     select_representative_sag_sweep,
     select_representative_spiking_sweep,
 )
-import warnings
+from py_ephys.utils import (
+    EphysSweepSetFeatureExtractor,
+    ensure_ft_info,
+    get_ap_ft_at_idx,
+    is_hyperpol,
+    strip_info,
+    where_between,
+)
 
 ############################
 ### spike level features ###
@@ -86,14 +88,15 @@ def plot_spike_width(
 ) -> Axes:
     spike_fts = sweep._spikes_df
     if spike_fts.size:
-        t_threshold = sweep.spike_feature("threshold_t")
-        t_trough = sweep.spike_feature("trough_t")
+        t_threshold = sweep.spike_feature("threshold_t", include_clipped=True)
+        t_peak = sweep.spike_feature("peak_t", include_clipped=True)
+        t_next = t_peak + 1.0 * (t_peak - t_threshold)  # T interval w.r.t. threshold
 
         fwhm_v = np.zeros_like(t_threshold)
         hm_up_t = np.zeros_like(t_threshold)
         hm_down_t = np.zeros_like(t_threshold)
-        for i, (t_th, t_tr) in enumerate(zip(t_threshold, t_trough)):
-            fwhm_i = get_fwhm(sweep.t, sweep.v, t_th, t_tr)
+        for i, (t_th, t_n) in enumerate(zip(t_threshold, t_next)):
+            fwhm_i = get_fwhm(sweep.t, sweep.v, t_th, t_n)
             fwhm_v[i], hm_up_t[i], hm_down_t[i] = fwhm_i
 
         ax.hlines(
@@ -502,8 +505,7 @@ def plot_sweep_ap_freq(
     Returns:
         Axes: axes with plot.
     """
-    # feature is the same as num_ap
-    return ax
+    return plot_sweep_num_ap(sweep, ax, color, include_details, **plot_kwargs)
 
 
 def plot_sweep_ap_freq_adapt(
@@ -1016,10 +1018,19 @@ def plot_sweep_num_bursts(
     Returns:
         Axes: axes with plot.
     """
-    warnings.warn("num_bursts sweep plotting is not yet implemented yet!")
     ft = ensure_ft_info(sweep.sweep_feature("num_bursts"))
     if not np.isnan(ft["value"]):
-        pass
+        t_burst_start = ft["t_burst_start"]
+        t_burst_end = ft["t_burst_end"]
+        for i, (t_start, t_end) in enumerate(zip(t_burst_start, t_burst_end)):
+            ax.axvspan(
+                t_start,
+                t_end,
+                alpha=0.5,
+                color=color,
+                label=f"burst {i+1}",
+                **plot_kwargs,
+            )
     return ax
 
 
@@ -1042,10 +1053,19 @@ def plot_sweep_burstiness(
     Returns:
         Axes: axes with plot.
     """
-    warnings.warn("burstiness sweep plotting is not yet implemented yet!")
     ft = ensure_ft_info(sweep.sweep_feature("burstiness"))
     if not np.isnan(ft["value"]):
-        pass
+        t_burst_start = ft["t_burst_start"]
+        t_burst_end = ft["t_burst_end"]
+        for i, (t_start, t_end) in enumerate(zip(t_burst_start, t_burst_end)):
+            ax.axvspan(
+                t_start,
+                t_end,
+                alpha=0.5,
+                color=color,
+                label=f"burst {i+1}",
+                **plot_kwargs,
+            )
     return ax
 
 
@@ -1278,9 +1298,10 @@ def plot_sweep_ap_width(
     ft = ensure_ft_info(sweep.sweep_feature("ap_width"))
     if not np.isnan(ft["value"]):
         ap_idx = ft["ap_idx"]
-        thresh_t = sweep.spike_feature("threshold_t")[ap_idx]
-        trough_t = sweep.spike_feature("fast_trough_t")[ap_idx]
-        fwhm_v, t_up_fwhm, t_down_fwhm = get_fwhm(sweep.t, sweep.v, thresh_t, trough_t)
+        thresh_t = sweep.spike_feature("threshold_t", include_clipped=True)[ap_idx]
+        t_peak = sweep.spike_feature("peak_t", include_clipped=True)[ap_idx]
+        t_next = t_peak + 1.0 * (t_peak - thresh_t)  # T interval w.r.t. threshold
+        fwhm_v, t_up_fwhm, t_down_fwhm = get_fwhm(sweep.t, sweep.v, thresh_t, t_next)
 
         ax.hlines(
             fwhm_v,
@@ -1506,10 +1527,10 @@ def get_available_sweep_diagnostics():
         "ap_freq": plot_sweep_ap_freq,
         "ap_freq_adapt": plot_sweep_ap_freq_adapt,
         "ap_amp_slope": plot_sweep_ap_amp_slope,
-        "r_input": plot_sweep_r_input,
-        "sag": plot_sweep_sag,
-        "sag_fraction": plot_sweep_sag_fraction,
-        "sag_ratio": plot_sweep_sag_ratio,
+        # "r_input": plot_sweep_r_input,
+        # "sag": plot_sweep_sag,
+        # "sag_fraction": plot_sweep_sag_fraction,
+        # "sag_ratio": plot_sweep_sag_ratio,
         "sag_area": plot_sweep_sag_area,
         "sag_time": plot_sweep_sag_time,
         "v_plateau": plot_sweep_v_plateau,
@@ -1646,6 +1667,9 @@ plot_sweepset_ap_amp_slope = get_selected_sweep_plotfunc(
 plot_sweepset_burstiness = get_selected_sweep_plotfunc(
     "burstiness", plot_sweep_burstiness
 )
+plot_sweepset_num_bursts = get_selected_sweep_plotfunc(
+    "num_bursts", plot_sweep_burstiness
+)
 # plot_sweepset_isi_adapt = get_selected_sweep_plotfunc(
 #     "isi_adapt", plot_sweep_isi_adapt
 # )
@@ -1710,53 +1734,59 @@ def plot_sweepset_rheobase(
         i_intercept = ft["value"]
         i_sub = ft["i_sub"]
         i_sup = ft["i_sup"]
+        f_sup = ft["f_sup"]
+
         dfdi = ft["dfdi"]
         dc_offset = ft["dc_offset"]
 
-        has_spikes = ~np.isnan(dfdi_ft["f"])
-        n_no_spikes = np.sum(~has_spikes)
-        i = dfdi_ft["i"]
-        f = dfdi_ft["f"]
-        f_intercept = dfdi_ft["f_intercept"]
+        if not np.isnan(dfdi):
+            has_spikes = ~np.isnan(dfdi_ft["f"])
+            n_no_spikes = np.sum(~has_spikes)
+            i = dfdi_ft["i"]
+            f = dfdi_ft["f"]
+            f_intercept = dfdi_ft["f_intercept"]
+
+            ax.plot(
+                i[has_spikes][:5],
+                f[has_spikes][:5],
+                "o",
+                color=color,
+                label="f(I)",
+                **plot_kwargs,
+            )
+            ax.plot(
+                i[: n_no_spikes + 5],
+                dfdi * i[: n_no_spikes + 5] + f_intercept,
+                color=color,
+                label="f(I) fit",
+                **plot_kwargs,
+            )
+            ax.set_xlim(i[0] - 5, i[n_no_spikes + 5] + 5)
+        else:
+            ax.set_xlim(i_sub - 5, i_sup + 5)
 
         ax.plot(
-            i[has_spikes][:5],
-            f[has_spikes][:5],
+            i_sup,
+            f_sup,
             "o",
             color=color,
-            label="f(I)",
-            **plot_kwargs,
-        )
-        ax.plot(
-            i[: n_no_spikes + 5],
-            dfdi * i[: n_no_spikes + 5] + f_intercept,
-            color=color,
-            label="f(I) fit",
+            label="i_sup",
             **plot_kwargs,
         )
         ax.axvline(
             i_intercept + dc_offset,
             color=color,
             ls="--",
-            label="rheobase (w.o. dc offset)",
+            label="rheobase\n(w.o. dc)",
             **plot_kwargs,
         )
         ax.axvline(
             i_intercept,
             color=color,
-            label="rheobase (incl. dc offset)",
+            label="rheobase\n(incl. dc)",
             **plot_kwargs,
         )
         ax.plot(i_sub, 0, "o", color=color, label="i_sub", **plot_kwargs)
-        ax.plot(
-            i_sup,
-            f[has_spikes][0],
-            "o",
-            color=color,
-            label="i_sup",
-            **plot_kwargs,
-        )
-    ax.set_xlim(i[0] - 5, i[n_no_spikes + 5] + 5)
     return ax
 
 
@@ -1787,6 +1817,7 @@ def get_available_sweepset_diagnostics():
         # "cv": plot_sweepset_cv,
         # "ap_cv": plot_sweepset_ap_cv,
         "burstiness": plot_sweepset_burstiness,
+        "num_bursts": plot_sweepset_num_bursts,
         # "isi_adapt": plot_sweepset_isi_adapt,
         # "isi_adapt_avg": plot_sweepset_isi_adapt_avg,
         # "ap_amp_adapt": plot_sweepset_ap_amp_adapt,
@@ -1848,7 +1879,9 @@ def plot_sweepset_diagnostics(
     for ft, idx in selection_dict.items():
         selected_sweep = sweepset.sweeps()[idx]
         if selected_sweep != []:
-            axes["set_fts"].plot(selected_sweep.t, selected_sweep.v, label=f"{ft}")
+            axes["set_fts"].plot(
+                selected_sweep.t, selected_sweep.v, label=f"{ft} @ idx={idx}"
+            )
     axes["set_fts"].legend(title="feature sweeps")
 
     axes["fp_trace"].plot(

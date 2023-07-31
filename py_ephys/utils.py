@@ -1,15 +1,16 @@
-import pandas as pd
-import numpy as np
-from functools import wraps
-
 import re
+from functools import wraps
+from typing import Callable, Dict, List, Optional, Tuple, Union
+
+import numpy as np
+import pandas as pd
+from numpy import ndarray
+from pandas import DataFrame
+
+from py_ephys.allen_sdk.ephys_extractor import EphysSweepFeatureExtractor
 from py_ephys.allen_sdk.ephys_extractor import (
     EphysSweepSetFeatureExtractor as AllenEphysSweepSetFeatureExtractor,
 )
-from py_ephys.allen_sdk.ephys_extractor import EphysSweepFeatureExtractor
-from typing import Callable, Union, Dict, List, Optional, Tuple
-from numpy import ndarray
-from pandas import DataFrame
 
 
 class EphysSweepSetFeatureExtractor(AllenEphysSweepSetFeatureExtractor):
@@ -92,14 +93,17 @@ class EphysSweepSetFeatureExtractor(AllenEphysSweepSetFeatureExtractor):
             i[i] = swp.i
         return i
 
-    def get_sweep_features(self, force_retrieval: bool = False) -> DataFrame:
+    def get_sweep_features(
+        self, force_retrieval: bool = False, return_ft_info: bool = True
+    ) -> DataFrame:
         if self.cached_sweep_features is None or force_retrieval:
             l = []
             for swp in self.sweeps():
                 swp._sweep_features
                 l.append(swp._sweep_features)
             self.cached_sweep_features = pd.DataFrame(l)
-            return pd.DataFrame(l)
+        if return_ft_info:
+            return self.cached_sweep_features.applymap(strip_info)
         return self.cached_sweep_features
 
     def get_sweep_feature(self, key: str):
@@ -109,10 +113,14 @@ class EphysSweepSetFeatureExtractor(AllenEphysSweepSetFeatureExtractor):
         for swp in self.sweeps():
             swp._sweep_features[key] = value
 
-    def get_sweepset_features(self, force_retrieval: bool = False) -> DataFrame:
+    def get_sweepset_features(
+        self, force_retrieval: bool = False, return_ft_info: bool = True
+    ) -> DataFrame:
         if self.sweepset_features == {} or force_retrieval:
             self.process()
-        return self.sweepset_features
+        if return_ft_info:
+            return self.sweepset_features
+        return {k: strip_info(v) for k, v in self.sweepset_features.items()}
 
     def get_sweepset_feature(self, key: str) -> Union[Dict, float]:
         return self.get_sweepset_features()[key]
