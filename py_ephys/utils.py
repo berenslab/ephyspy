@@ -336,6 +336,19 @@ def strip_info(dct: Union[Dict, float]) -> float:
 def include_info(
     ft: float, ft_info: Dict, return_ft_info: bool = False
 ) -> Union[float, Dict]:
+    """Convenience function to toggle between returning just the feature value
+    or a dictionary containing the feature value and additional diagnostic info.
+
+    Args:
+        ft (float): Feature value.
+        ft_info (Dict): Feature diagnostic info.
+        return_ft_info (bool, optional): Whether to return just the feature value
+            or a dictionary containing the feature value and additional diagnostic
+            info. Defaults to False.
+
+    Returns:
+        Union[float, Dict]: Feature value or dictionary containing feature value
+            and diagnostic info."""
     if return_ft_info:
         ft_dict = {"value": ft}
         ft_dict.update(ft_info)
@@ -344,28 +357,68 @@ def include_info(
 
 
 def ephys_feature_init(ft_info_init: Dict = None) -> Tuple[float, Dict]:
+    """Convenience function to initialize ephys feature.
+
+    Args:
+        ft_info_init (Dict, optional): Initial feature diagnostic info. Defaults to None.
+
+    Returns:
+        Tuple[float, Dict]: Initial feature value and diagnostic info."""
     ft_info_init = {} if ft_info_init is None else ft_info_init
     return float("nan"), ft_info_init
 
 
 def ephys_feature(feature: Callable) -> Callable:
+    """Decorates ephys feature functions.
+
+    This decorator adds functionality to ephys feature functions. It allows
+    to toggle between returning just the value of the copmuted feature and a
+    a dictionary containing the feature value and additional diagnostic info.
+    The metadata can be used to trace how the feature was calculated to help with
+    debugging.
+
+    For an example function definition see `get_example_feature`.
+
+    Args:
+        feature (Callable): Feature function to decorate. Functions should take
+            either a `EphysSweepFeatureExtractor` or `EphysSweepSetFeatureExtractor`
+            as input and return either a float or a tuple of float and dict.
+
+    Returns:
+        Callable: Decorated feature function."""
+
     @wraps(feature)
     def feature_func(
-        sweep: EphysSweepFeatureExtractor, return_ft_info: bool = False
+        sweep_or_sweepset: Union[
+            EphysSweepFeatureExtractor, EphysSweepSetFeatureExtractor
+        ],
+        return_ft_info: bool = False,
+        update_inplace: bool = False,
     ) -> Union[float, Dict]:
-        ft_out = feature(sweep)
+        ft_out = feature(sweep_or_sweepset)
         if isinstance(ft_out, Tuple):
             ft, ft_info = ft_out
         else:
             ft, ft_info = ft_out, {}
         ft_info["description"] = parse_ft_desc(feature)
-        return include_info(ft, ft_info, return_ft_info)
+
+        ft_out = include_info(ft, ft_info, return_ft_info)
+        if update_inplace:
+            if isinstance(sweep_or_sweepset, EphysSweepFeatureExtractor):
+                ft_name = feature.__name__[len("get_sweep_") :]
+                sweep_or_sweepset._sweep_features[ft_name] = ft_out
+            elif isinstance(sweep_or_sweepset, EphysSweepSetFeatureExtractor):
+                ft_name = feature.__name__[len("get_sweepset_") :]
+                sweep_or_sweepset.sweepset_features[ft_name] = ft_out
+        return ft_out
 
     return feature_func
 
 
 @ephys_feature
-def get_example_feature(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict]:
+def get_example_feature(
+    sweep_or_sweepset: Union[EphysSweepFeatureExtractor, EphysSweepSetFeatureExtractor]
+) -> Tuple[float, Dict]:
     """Extracts example ephys feature.
 
     depends on: feature_1, feature_2, ..., feature_n.
@@ -374,7 +427,7 @@ def get_example_feature(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict]
     Example function definition
     '''
     @ephys_feature
-    def get_example_feature(sweep: EphysSweepFeatureExtractor)
+    def get_example_feature(sweep_or_sweepset: Union[EphysSweepFeatureExtractor, EphysSweepSetFeatureExtractor])
         ft_value, ft_info = ephys_feature_init()  # init ft, ft_info = float("nan"), {}
 
         # do some feature calculations using sweep.
@@ -386,7 +439,7 @@ def get_example_feature(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict]
 
 
     Args:
-        sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
+        sweep_or_sweepset (Union[EphysSweepFeatureExtractor, EphysSweepSetFeatureExtractor]): Sweep or sweepset to extract feature from.
 
     Returns:
         Tuple[float, Dict]: AP feature and optionally info
@@ -453,6 +506,8 @@ def median_idx(d):
 
 
 class FeatureInfoError(ValueError):
+    """Error raised when a feature has no diagnostic info."""
+
     pass
 
 
