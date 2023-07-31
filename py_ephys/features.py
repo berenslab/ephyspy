@@ -72,7 +72,7 @@ def get_spike_adp(sweep: EphysSweepFeatureExtractor) -> float:
     return v_adp - v_fast_trough
 
 
-def get_spike_ft_dict() -> Dict[str, callable]:
+def get_available_spike_features() -> Dict[str, callable]:
     """Dictionary of spike level features.
 
     Returns name of feature and function to calculate it.
@@ -1244,7 +1244,7 @@ def get_sweep_udr(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict]:
 
 
 ### Feature extraction functions
-def get_sweep_ft_dict(return_ft_info=False):
+def get_available_sweep_features(return_ft_info=False):
     _ft_dict = {
         "stim_amp": get_sweep_stim_amp,  # None
         "stim_onset": get_sweep_stim_onset,  # None
@@ -2428,7 +2428,7 @@ def get_sweepset_dfdi(sweepset: EphysSweepSetFeatureExtractor) -> Tuple[float, D
     is_depol = get_stripped_sweep_fts(sweepset)["stim_amp"] > 0
     i, n_spikes = (
         sweepset.get_sweep_features()
-        .applymap(strip_info)[is_depol][["stim_amp", "num_ap"]]
+        .applymap(strip_info)[is_depol][["stim_amp", "ap_freq"]]
         .to_numpy()
         .T
     )
@@ -2446,7 +2446,9 @@ def get_sweepset_dfdi(sweepset: EphysSweepSetFeatureExtractor) -> Tuple[float, D
         ransac.fit(i_s.reshape(-1, 1), f_s.reshape(-1, 1))
         dfdi = ransac.coef_[0, 0]
         f_intercept = ransac.intercept_[0]
-        dfdi_info.update({"i_fit": i_s, "f_fit": f_s, "f_intercept": f_intercept})
+        dfdi_info.update(
+            {"i_fit": i_s, "f_fit": f_s, "f": f, "i": i, "f_intercept": f_intercept}
+        )
     return dfdi, dfdi_info
 
 
@@ -2472,13 +2474,13 @@ def get_sweepset_rheobase(
     dc_offset = get_stripped_sweep_fts(sweepset)["dc_offset"].iloc[0]
     rheobase, rheobase_info = ephys_feature_init()
     is_depol = get_stripped_sweep_fts(sweepset)["stim_amp"] > 0
-    i, n_spikes = (
+    i, ap_freq = (
         sweepset.get_sweep_features()
-        .applymap(strip_info)[is_depol][["stim_amp", "num_ap"]]
+        .applymap(strip_info)[is_depol][["stim_amp", "ap_freq"]]
         .to_numpy()
         .T
     )
-    has_spikes = ~np.isnan(n_spikes)
+    has_spikes = ~np.isnan(ap_freq)
     i_sub = i[~has_spikes][0]  # last stim < spike threshold
     i_sup = i[has_spikes][0]  # first stim > spike threshold
     dfdi = strip_info(get_sweepset_dfdi(sweepset))
@@ -2492,12 +2494,17 @@ def get_sweepset_rheobase(
         rheobase = i_sup
     rheobase -= dc_offset
     rheobase_info.update(
-        {"i_sub": i_sub, "i_sup": i_sup, "dfdi": dfdi, "dc_offset": dc_offset}
+        {
+            "i_sub": i_sub,
+            "i_sup": i_sup,
+            "dfdi": dfdi,
+            "dc_offset": dc_offset,
+        }
     )
     return rheobase, rheobase_info
 
 
-def get_sweepset_ft_dict(return_ft_info=False):
+def get_available_sweepset_features(return_ft_info=False):
     _ft_dict = {
         "tau": get_sweepset_tau,
         "r_input": get_sweepset_r_input,
