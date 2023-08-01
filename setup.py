@@ -14,14 +14,12 @@ setup(
     'scipy>=1.9.1',
     'scikit-learn>=1.1.1', # might get rid of this in the future.
     ],
-    setup_requires = {
-    'dev': [
-        'black', 
-        'isort', 
-        'pyright', 
-        'flake8', 
-        'autoflake',
-        ],
-    },
+    setup_requires = [
+    'black', 
+    'isort', 
+    'pyright', 
+    'flake8', 
+    'autoflake',
+    ],
     tests_require = ['pytest'],
 )
