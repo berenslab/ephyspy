@@ -22,7 +22,6 @@ REQUIRES = [
 "scikit-learn>=1.1.1", # might get rid of this in the future.
 ]
 
-
 here = os.path.abspath(os.path.dirname(__file__))
 
 about = {}
@@ -35,7 +34,7 @@ setup(
     version=about["__version__"],
     packages = find_packages(include=["py_ephys", "py_ephys.*"], exclude=["tests", "*.tests", "*.tests.*", "tests.*"]),
     description = "Package to extract summary statistics from electrophysiological data.",
-    author = "jnsbck",
+    author = "Jonas Beck",
     python_requires = ">=3.8",
     install_requires = REQUIRES,
     extras_require = EXTRAS,

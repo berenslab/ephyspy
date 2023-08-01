@@ -4,6 +4,7 @@
     ],
     "exclude": [
         "**/__pycache__",
+        "**/node_modules",
         ".git",
     ],
     "reportUnsupportedDunderAll": false,
