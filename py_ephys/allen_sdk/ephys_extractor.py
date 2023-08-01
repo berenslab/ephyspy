@@ -82,14 +82,22 @@ class EphysSweepFeatureExtractor:
         i : ndarray of currents (pA)
         start : start of time window for feature analysis (optional)
         end : end of time window for feature analysis (optional)
-        filter : cutoff frequency for 4-pole low-pass Bessel filter in kHz (optional, default 10)
-        dv_cutoff : minimum dV/dt to qualify as a spike in V/s (optional, default 20)
-        max_interval : maximum acceptable time between start of spike and time of peak in sec (optional, default 0.005)
-        min_height : minimum acceptable height from threshold to peak in mV (optional, default 2)
-        min_peak : minimum acceptable absolute peak level in mV (optional, default -30)
-        thresh_frac : fraction of average upstroke for threshold calculation (optional, default 0.05)
-        baseline_interval: interval length for baseline voltage calculation (before start if start is defined, default 0.1)
-        baseline_detect_thresh : dV/dt threshold for evaluating flatness of baseline region (optional, default 0.3)
+        filter : cutoff frequency for 4-pole low-pass Bessel filter in kHz
+        (optional, default 10)
+        dv_cutoff : minimum dV/dt to qualify as a spike in V/s (optional,
+        default 20)
+        max_interval : maximum acceptable time between start of spike and
+        time of peak in sec (optional, default 0.005)
+        min_height : minimum acceptable height from threshold to peak in mV
+        (optional, default 2)
+        min_peak : minimum acceptable absolute peak level in mV (optional,
+        default -30)
+        thresh_frac : fraction of average upstroke for threshold calculation
+        (optional, default 0.05)
+        baseline_interval: interval length for baseline voltage calculation
+        (before start if start is defined, default 0.1)
+        baseline_detect_thresh : dV/dt threshold for evaluating flatness of
+        baseline region (optional, default 0.3)
         """
         self.id = id
         self.t = t
@@ -145,7 +153,7 @@ class EphysSweepFeatureExtractor:
             v, t, putative_spikes, peaks, self.filter, dvdt
         )
         thresholds = ft.refine_threshold_indexes(
-            v, t, upstrokes, filter=self.filter, dvdt=dvdt
+            v, t, upstrokes, self.thresh_frac, self.filter, dvdt
         )
         thresholds, peaks, upstrokes, clipped = ft.check_thresholds_and_peaks(
             v,
@@ -153,8 +161,9 @@ class EphysSweepFeatureExtractor:
             thresholds,
             peaks,
             upstrokes,
-            end=self.end,
-            max_interval=self.max_interval,
+            self.end,
+            self.max_interval,
+            dvdt=dvdt,
             filter=self.filter,
         )
         if not thresholds.size:
@@ -518,11 +527,7 @@ class EphysSweepFeatureExtractor:
             start = 0
         start_index = ft.find_time_index(self.t, start)
 
-        end = (
-            self.end - 0.1
-        )  # Let us add -0.1 because we don't expect to find a trough that close to the end of current stimulation
-        # This actually helps us ignore cases where the voltage acts funny (i.e. drops mistakenly taken as trough)
-        # right at current stimulation end.
+        end = self.end
         if not end:
             end = self.t[-1]
         end_index = ft.find_time_index(self.t, end)
@@ -650,9 +655,7 @@ class EphysSweepFeatureExtractor:
         if not start:
             start = 0
 
-        end = (
-            self.end
-        )  # To calculate the steady state, not the peak deflection (see code below)
+        end = self.end
         if not end:
             end = self.t[-1]
 
@@ -699,7 +702,8 @@ class EphysSweepFeatureExtractor:
         Parameters
         ----------
         key : feature name
-        include_clipped: return values for every identified spike, even when clipping means they will be incorrect/undefined
+        include_clipped: return values for every identified spike, even when
+        clipping means they will be incorrect/undefined
 
         Returns
         -------
@@ -708,7 +712,8 @@ class EphysSweepFeatureExtractor:
 
         if not hasattr(self, "_spikes_df"):
             raise AttributeError(
-                "EphysSweepFeatureExtractor instance attribute with spike information does not exist yet - have spikes been processed?"
+                "EphysSweepFeatureExtractor instance attribute with spike "
+                "information does not exist yet - have spikes been processed?"
             )
 
         if len(self._spikes_df) == 0:
@@ -847,16 +852,25 @@ class EphysSweepSetFeatureExtractor:
         t_set : list of ndarray of times in seconds
         v_set : list of ndarray of voltages in mV
         i_set : list of ndarray of currents in pA
-        start : start of time window for feature analysis (optional, can be list)
+        start : start of time window for feature analysis (optional, can be
+        list)
         end : end of time window for feature analysis (optional, can be list)
-        filter : cutoff frequency for 4-pole low-pass Bessel filter in kHz (optional, default 10)
-        dv_cutoff : minimum dV/dt to qualify as a spike in V/s (optional, default 20)
-        max_interval : maximum acceptable time between start of spike and time of peak in sec (optional, default 0.005)
-        min_height : minimum acceptable height from threshold to peak in mV (optional, default 2)
-        min_peak : minimum acceptable absolute peak level in mV (optional, default -30)
-        thresh_frac : fraction of average upstroke for threshold calculation (optional, default 0.05)
-        baseline_interval: interval length for baseline voltage calculation (before start if start is defined, default 0.1)
-        baseline_detect_thresh : dV/dt threshold for evaluating flatness of baseline region (optional, default 0.3)
+        filter : cutoff frequency for 4-pole low-pass Bessel filter in kHz
+        (optional, default 10)
+        dv_cutoff : minimum dV/dt to qualify as a spike in V/s (optional,
+        default 20)
+        max_interval : maximum acceptable time between start of spike and
+        time of peak in sec (optional, default 0.005)
+        min_height : minimum acceptable height from threshold to peak in mV
+        (optional, default 2)
+        min_peak : minimum acceptable absolute peak level in mV (optional,
+        default -30)
+        thresh_frac : fraction of average upstroke for threshold calculation
+        (optional, default 0.05)
+        baseline_interval: interval length for baseline voltage calculation
+        (before start if start is defined, default 0.1)
+        baseline_detect_thresh : dV/dt threshold for evaluating flatness of
+        baseline region (optional, default 0.3)
         """
 
         if t_set is not None and v_set is not None:
@@ -881,8 +895,8 @@ class EphysSweepSetFeatureExtractor:
 
     @classmethod
     def from_sweeps(cls, sweep_list):
-        """Initialize EphysSweepSetFeatureExtractor object with a list of pre-existing
-        sweep feature extractor objects.
+        """Initialize EphysSweepSetFeatureExtractor object with a list of
+        pre-existing sweep feature extractor objects.
         """
 
         obj = cls()
@@ -1021,7 +1035,8 @@ class EphysCellFeatureExtractor:
         self._subthreshold_membrane_property_ext = None
 
     def process(self, keys=None):
-        """Processes features. Can take a specific key (or set of keys) to do a subset of processing."""
+        """Processes features. Can take a specific key (or set of keys) to
+        do a subset of processing."""
 
         dispatch = {
             "ramps": self._analyze_ramps,
@@ -1031,12 +1046,12 @@ class EphysCellFeatureExtractor:
         }
 
         if keys is None:
-            keys = dispatch.keys()
+            keys = list(dispatch.keys())
 
         if type(keys) is not list:
-            keys = [keys]
+            keys = list(keys)
 
-        for k in [j for j in keys if j in dispatch.keys()]:
+        for k in [j for j in keys if j in dispatch]:
             dispatch[k]()
 
     def _analyze_ramps(self):
@@ -1066,7 +1081,8 @@ class EphysCellFeatureExtractor:
         ext = self._short_squares_ext
         ext.process_spikes()
 
-        # Need to count how many had spikes at each amplitude; find most; ties go to lower amplitude
+        # Need to count how many had spikes at each amplitude; find most;
+        # ties go to lower amplitude
         spiking_sweeps = [
             sweep for sweep in ext.sweeps() if sweep.sweep_feature("avg_rate") > 0
         ]
@@ -1174,9 +1190,10 @@ class EphysCellFeatureExtractor:
         calc_subthresh_sweeps = [
             sweep
             for sweep in subthresh_sweeps
-            if sweep.sweep_feature("stim_amp") < self.SUBTHRESH_MAX_AMP
-            and sweep.sweep_feature("stim_amp") > self._subthresh_min_amp
-        ]
+            if self._subthresh_min_amp
+            < sweep.sweep_feature("stim_amp")
+            < self.SUBTHRESH_MAX_AMP
+        ]  # noqa F501
 
         logging.debug("calc_subthresh_sweeps: %d", len(calc_subthresh_sweeps))
         calc_subthresh_ext = EphysSweepSetFeatureExtractor.from_sweeps(
@@ -1259,8 +1276,8 @@ class EphysCellFeatureExtractor:
 
 
 def input_resistance(ext):
-    """Estimate input resistance in MOhms, assuming all sweeps in passed extractor
-    are hyperpolarizing responses."""
+    """Estimate input resistance in MOhms, assuming all sweeps in passed
+    extractor are hyperpolarizing responses."""
 
     sweeps = ext.sweeps()
     if not sweeps:
@@ -1282,8 +1299,8 @@ def input_resistance(ext):
     i = np.array(i_vals)
 
     if len(v) == 1:
-        # If there's just one sweep, we'll have to use its own baseline to estimate
-        # the input resistance
+        # If there's just one sweep, we'll have to use its own baseline to
+        # estimate the input resistance
         v = np.append(v, sweeps[0].sweep_feature("v_baseline"))
         i = np.append(i, 0.0)
 
@@ -1294,7 +1311,8 @@ def input_resistance(ext):
 
 
 def membrane_time_constant(ext):
-    """Average the membrane time constant values estimated from each sweep in passed extractor."""
+    """Average the membrane time constant values estimated from each sweep
+    in passed extractor."""
 
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", category=RuntimeWarning, module="numpy")
@@ -1303,18 +1321,19 @@ def membrane_time_constant(ext):
 
 
 def fit_fi_slope(ext):
-    """Fit the rate and stimulus amplitude to a line and return the slope of the fit."""
+    """Fit the rate and stimulus amplitude to a line and return the slope of
+    the fit."""
     if len(ext.sweeps()) < 2:
         raise ft.FeatureError(
             "Cannot fit f-I curve slope with less than two suprathreshold sweeps"
         )
 
-    x = np.array(map(_step_stim_amp, ext.sweeps()))
+    x = np.array(list(map(_step_stim_amp, ext.sweeps())))
     y = ext.sweep_features("avg_rate")
 
     A = np.vstack([x, np.ones_like(x)]).T
-    m, c = np.linalg.lstsq(A, y)[0]
 
+    m, c = np.linalg.lstsq(A, y)[0]
     return m
 
 

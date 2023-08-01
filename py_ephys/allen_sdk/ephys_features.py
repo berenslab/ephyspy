@@ -1089,7 +1089,7 @@ def norm_diff(a):
 
 
 def norm_sq_diff(a):
-    """Calculate average of (a[i+1] - a[i])^2 / (a[i] + a[i+1])^2."""
+    """Calculate average of (a[i] - a[i+1])^2 / (a[i] + a[i+1])^2."""
     if len(a) <= 1:
         return np.nan
 
@@ -1155,9 +1155,6 @@ def fit_membrane_time_constant(v, t, start, end, min_rsme=1e-4):
         return np.nan, np.nan, np.nan
 
     pred = _exp_curve(t_window, *popt)
-    # print('pred: ', pred)
-    # print('voltage: ', v_window)
-    # print('mean difference: ', np.mean(pred - v_window))
     rsme = np.sqrt(np.abs(np.mean(pred - v_window)))
     if rsme > min_rsme:
         logging.debug("Curve fit for membrane time constant did not meet RSME standard")
@@ -1241,7 +1238,6 @@ def detect_pauses(isis, isi_types, cost_weight=1.0):
         if isi_type == "direct" and isis[i] > 3 * median_direct
     ]
     candidates = detour_candidates + direct_candidates
-    # print('pause candidates: ', candidates)
 
     if not candidates:
         return np.array([])
@@ -1257,23 +1253,16 @@ def detect_pauses(isis, isi_types, cost_weight=1.0):
             break
         cv = non_pause_isis.std() / non_pause_isis.mean()
         benefit = all_cv - cv
-        # print('benefit: ', benefit)
-        # print('cause of warning? (=0?): ', np.abs(non_pause_isis.mean() - pause_isis)[np.abs(non_pause_isis.mean() - pause_isis)==0])
         if 0 in np.abs(non_pause_isis.mean() - pause_isis):
-            # print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
             cost = 1000  # just a huge cost
         else:
             cost = np.sum(
                 non_pause_isis.std() / np.abs(non_pause_isis.mean() - pause_isis)
             )
-        # print('cost: ', cost)
         cost *= cost_weight
         net = benefit - cost
         if net > 0 and net < best_net:
             break
-        # print('net: ', net)
-        # print('best_net: ', best_net)
-        # print(net > best_net)
         if net > best_net:
             best_net = net
         pause_list = np.append(pause_list, i)
@@ -1330,7 +1319,6 @@ def detect_bursts(
     slow_tr_t = slow_tr_t[:-1]
 
     isi_types = np.array(isi_types)  # don't want to change the actual isi types data
-    # print(isi_types)
 
     # Burst transitions can't be at "pause"-like ISIs
     pauses = detect_pauses(isis, isi_types, cost_weight=pause_cost).astype(int)
@@ -1346,7 +1334,6 @@ def detect_bursts(
     # WHERE IS THIS EVER USED????? --> prints warnings too
     # isi_types[(thr_v[:-1] < (slow_tr_v + tol)) & (isi_types == "detour")] = "midburst"
 
-    # print(isi_types)
     # Find transitions from detour -> direct and vice versa for burst boundaries
     into_burst = np.array(
         [
@@ -1357,17 +1344,13 @@ def detect_bursts(
         dtype=int,
     )
     if isi_types[0] == "direct":
-        # print('We"re going directly in a burst')
         into_burst = np.append(np.array([0]), into_burst)
-
-    # print(into_burst)
 
     drop_into = []
     out_of_burst = []
     for j, (into, next) in enumerate(
         zip(into_burst, np.append(into_burst[1:], len(isis)))
     ):
-        # print('j: ', j, 'into: ', into, 'next: ', next)
         for i, isi in enumerate(isi_types[into + 1 : next]):
             if isi == "detour":
                 out_of_burst.append(i + into + 1)
@@ -1385,8 +1368,6 @@ def detect_bursts(
     out_of_burst = np.array(out_of_burst)
     if len(out_of_burst) == len(into_burst) - 1:
         out_of_burst = np.append(out_of_burst, len(isi_types))
-    # print('into_burst: ', into_burst)
-    # print('out_of_burst: ', out_of_burst)
 
     if not (into_burst.size or out_of_burst.size):
         return np.array([])
@@ -1395,20 +1376,12 @@ def detect_bursts(
         raise FeatureError("Inconsistent burst boundary identification")
 
     inout_pairs = list(zip(into_burst, out_of_burst))
-    # print('into_burst: ', into_burst)
-    # print('out_of_burst: ', out_of_burst)
     delta_t = slow_tr_t - fast_tr_t
 
-    # print('delta_t: ', delta_t)
-
     scores = _score_burst_set(inout_pairs, isis, delta_t)
-    # print('Initial scores: ', scores)
     best_score = np.mean(scores)
-    # print('best score: ', best_score)
     worst = np.argmin(scores)
-    # print('index of worst score: ', worst)
     test_bursts = inout_pairs
-    # print('test_bursts: ', test_bursts)
     del test_bursts[worst]
     while len(test_bursts) > 0:
         scores = _score_burst_set(test_bursts, isis, delta_t)
@@ -1420,7 +1393,6 @@ def detect_bursts(
         else:
             break
 
-    # print('best score: ', best_score)
     if best_score < 0:
         return np.array([])
 
@@ -1558,6 +1530,7 @@ def estimate_adjusted_detection_parameters(
 
     if len(v_set) == 0:
         raise FeatureError("t_set and v_set are empty")
+
     start_index = find_time_index(t_set[0], interval_start)
     end_index = find_time_index(t_set[0], interval_end)
 
@@ -1582,12 +1555,7 @@ def estimate_adjusted_detection_parameters(
     all_upstrokes = np.array([])
     for v, t, dv in zip(v_set, t_set, dv_set):
         putative_spikes = detect_putative_spikes(
-            v,
-            t,
-            start=interval_start,
-            end=interval_end,
-            dv_cutoff=new_dv_cutoff,
-            filter=filter,
+            v, t, dv_cutoff=new_dv_cutoff, filter=filter
         )
         peaks = find_peak_indexes(v, t, putative_spikes)
         putative_spikes, peaks = filter_putative_spikes(
