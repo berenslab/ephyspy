@@ -25,13 +25,16 @@ setup(
     "scipy>=1.9.1",
     "scikit-learn>=1.1.1", # might get rid of this in the future.
     ],
-    extras_require = [
-    "black", 
-    "isort", 
-    "pyright", 
-    "flake8", 
-    "autoflake",
-    ],
+    extras_require = {
+        "dev": [
+        "black", 
+        "isort", 
+        "pyright", 
+        "flake8", 
+        "autoflake",
+        "pre-commit",
+        ]
+    },
     tests_require = ["pytest"],
     include_package_data=True,
 )

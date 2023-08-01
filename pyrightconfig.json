@@ -1,0 +1,12 @@
+{
+    "include": [
+        "py_ephys"
+    ],
+    "exclude": [
+        "**/__pycache__",
+        ".git",
+    ],
+    "reportUnsupportedDunderAll": false,
+    "pythonVersion": "3.8",
+    "stubPath": ""
+}
