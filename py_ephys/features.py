@@ -1918,7 +1918,7 @@ def select_representative_spiking_sweep(sweepset: EphysSweepSetFeatureExtractor)
 
 
 @ephys_feature
-def get_sweepset_num_spikes(
+def get_sweepset_num_ap(
     sweepset: EphysSweepSetFeatureExtractor,
 ) -> Tuple[float, Dict]:
     """Extract sweep set level spike count feature.
@@ -2502,7 +2502,7 @@ def get_sweepset_ap_trough(
 
 
 @ephys_feature
-def get_sweepset_ap_udr(sweepset: EphysSweepSetFeatureExtractor) -> Tuple[float, Dict]:
+def get_sweepset_udr(sweepset: EphysSweepSetFeatureExtractor) -> Tuple[float, Dict]:
     """Extract sweep set level AP upstroke to downstroke ratio feature.
 
     depends on: udr.
@@ -2627,7 +2627,7 @@ def get_available_sweepset_features(return_ft_info=False):
         "rebound_area": get_sweepset_rebound_area,
         "rebound_latency": get_sweepset_rebound_latency,
         "rebound_avg": get_sweepset_rebound_avg,
-        "num_ap": get_sweepset_num_spikes,
+        "num_ap": get_sweepset_num_ap,
         "ap_freq": get_sweepset_ap_freq,
         "wildness": get_sweepset_wildness,
         "ap_freq_adapt": get_sweepset_ap_freq_adapt,
@@ -2650,7 +2650,7 @@ def get_available_sweepset_features(return_ft_info=False):
         "ap_width": get_sweepset_ap_width,
         "ap_peak": get_sweepset_ap_peak,
         "ap_trough": get_sweepset_ap_trough,
-        "udr": get_sweepset_ap_udr,
+        "udr": get_sweepset_udr,
         "dfdi": get_sweepset_dfdi,
         "rheobase": get_sweepset_rheobase,
     }

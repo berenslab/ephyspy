@@ -8,7 +8,7 @@
 
 ### Package to extract electrophysiological features from current clamp experiments.
 
-This package provies an API to extract a multitude of features from voltage clamp recordings with the help of the AllenSDK. 
+This package provies an API to extract a multitude of features from voltage clamp recordings with the help of the [AllenSDK](https://allensdk.readthedocs.io/en/latest/allensdk.ephys.html). 
 
 ### Installation
 Clone the package with `https://github.com/berenslab/py_ephys.git` and install using pip via `pip install -e ./py_ephys`.
