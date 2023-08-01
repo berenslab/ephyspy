@@ -11,7 +11,7 @@
 This package provies an API to extract a multitude of features from voltage clamp recordings with the help of the AllenSDK. 
 
 #### Installation
-Coming soon.
+Clone the package with `https://github.com/berenslab/py_ephys.git` and install using pip via `pip install -e ./py_ephys`.
 
 ### Getting started
 To get started see [`example.ipynb`](./example.ipynb).
