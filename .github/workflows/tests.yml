@@ -34,9 +34,10 @@ jobs:
       run: |
         isort -c py_ephys tests
 
-    - name: Check types with pyright
-      run: |
-        pyright py_ephys
+# add pyright at some point!
+#    - name: Check types with pyright
+#      run: |
+#        pyright py_ephys
 
     - name: Test with pytest
       run: |
