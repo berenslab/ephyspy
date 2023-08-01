@@ -12,7 +12,7 @@ setup(
     'numpy>=1.23.5',
     'matplotlib>=3.4.2',
     'scipy>=1.9.1',
-    'sklearn>=0.0', # might get rid of this in the future.
+    'scikit-learn>=1.1.1', # might get rid of this in the future.
     ],
     setup_requires=['black', 'isort', 'pyright', 'flake8', 'autoflake'],
     tests_require=['pytest'],
