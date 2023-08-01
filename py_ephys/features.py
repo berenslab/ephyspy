@@ -1066,12 +1066,14 @@ def get_repr_ap_ft(
     if len(ft) > 0:
         selected_idx = ap_selector(sweep)
         fts_selected = ft[selected_idx]
-        ft_agg = ft_aggregator(ft)
 
-        if not isinstance(ft_agg, (float, int, np.float64, np.int64)):
-            if isinstance(ft_agg, ndarray):
-                if len(ft_agg) == 0:
-                    ft_agg = float("nan")
+        if isinstance(fts_selected, (float, int, np.float64, np.int64)):
+            ft_agg = fts_selected
+        elif isinstance(fts_selected, ndarray):
+            if len(fts_selected.flat) == 0:
+                ft_agg = float("nan")
+            else:
+                ft_agg = ft_aggregator(ft)
 
         ft_info.update(
             {
@@ -1445,7 +1447,7 @@ def get_available_sweep_features(return_ft_info=False):
 
 def default_median_aggregator(fts):
     """description: median."""
-    return np.median(fts)
+    return np.nanmedian(fts)
 
 
 def get_repr_sweep_ft(
@@ -1482,12 +1484,13 @@ def get_repr_sweep_ft(
     ft = get_stripped_sweep_fts(sweepset)[ft_name].to_numpy()
     selected_idx = sweep_selector(sweepset)
     fts_selected = ft[selected_idx]
-    ft_agg = ft_aggregator(ft)
-
-    if not isinstance(ft_agg, (float, int, np.float64, np.int64)):
-        if isinstance(ft_agg, ndarray):
-            if len(ft_agg) == 0:
-                ft_agg = float("nan")
+    if isinstance(fts_selected, (float, int, np.float64, np.int64)):
+        ft_agg = fts_selected
+    elif isinstance(fts_selected, ndarray):
+        if len(fts_selected.flat) == 0:
+            ft_agg = float("nan")
+        else:
+            ft_agg = ft_aggregator(ft)
 
     ft_info.update(
         {
