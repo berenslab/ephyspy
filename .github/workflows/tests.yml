@@ -12,15 +12,12 @@ jobs:
   build:
     name: Tests
     runs-on: ubuntu-20.04
+    timeout-minutes: 10
 
     steps:
-    - uses: actions/checkout@v3
-      with:
-        lfs: true
-
     - uses: actions/setup-python@v4
       with:
-        python-version: '3.7.6'
+        python-version: '3.8.13'
         architecture: 'x64'
 
     - name: Install dependencies
