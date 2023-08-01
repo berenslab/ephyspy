@@ -1031,7 +1031,60 @@ def get_sweep_wildness(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict]:
     return num_wild_spikes, wildness_info
 
 
-def select_representative_ap(sweep: EphysSweepFeatureExtractor) -> int:
+def get_repr_ap_ft(
+    sweep: EphysSweepFeatureExtractor,
+    ft_name: str,
+    ap_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
+) -> Tuple[float, Dict]:
+    """Extract sweep set level feature from representative sweep.
+
+    Args:
+        sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
+        ap_selector (Optional[Callable], optional): Function which selects a
+            representative ap or set of aps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected aps. If none is provided, falls
+            back to selecting all aps.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `np.nanmedian` (equates to pass through for single sweeps).
+
+    Returns:
+        Tuple[float, Dict]: Feature value and feature metadata.
+    """
+    ft = sweep.spike_feature(ft_name, include_clipped=True)
+
+    if ap_selector is None:
+        ap_selector = np.arange(len(ft))
+    if ft_aggregator is None:
+        ft_aggregator = np.nanmedian
+
+    ft_agg, ft_info = ephys_feature_init()
+
+    if len(ft) > 0:
+        selected_idx = ap_selector(sweep)
+        fts_selected = ft[selected_idx]
+        ft_agg = ft_aggregator(ft)
+
+        if not isinstance(ft_agg, (float, int, np.float64, np.int64)):
+            if isinstance(ft_agg, ndarray):
+                if len(ft_agg) == 0:
+                    ft_agg = float("nan")
+
+        ft_info.update(
+            {
+                "selected_idx": selected_idx,
+                "selected_fts": fts_selected,
+                "selection": parse_ft_desc(ap_selector),
+                "aggregation": parse_ft_desc(ft_aggregator),
+            }
+        )
+    return ft_agg, ft_info
+
+
+def default_ap_selector(sweep: EphysSweepFeatureExtractor) -> int:
     """Select representative AP from which the ap features are extracted.
 
     description: 2nd AP (if only 1 AP -> select first) during stimulus that has
@@ -1082,7 +1135,11 @@ def select_representative_ap(sweep: EphysSweepFeatureExtractor) -> int:
 
 
 @ephys_feature
-def get_sweep_ahp(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict]:
+def get_sweep_ahp(
+    sweep: EphysSweepFeatureExtractor,
+    ap_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
+) -> Tuple[float, Dict]:
     """Extract sweep level Afterhyperpolarization feature.
 
     depends on: /.
@@ -1091,26 +1148,31 @@ def get_sweep_ahp(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict]:
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
+        ap_selector (Optional[Callable], optional): Function which selects a
+            representative ap or set of aps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected aps. If none is provided, falls
+            back to `default_ap_selector`.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `np.nanmedian` (equates to pass through for single sweeps).
 
     Returns:
         Tuple[float, Dict]: AHP feature and feature metadata
     """
-    ahp_selected, ahp_info = ephys_feature_init()
-    ahp = sweep.spike_feature("ahp", include_clipped=True)
-    if len(ahp) > 0:
-        select_ap_idx = select_representative_ap(sweep)
-        ahp_selected = ahp[select_ap_idx]
-        ahp_info.update(
-            {
-                "ap_idx": select_ap_idx,
-                "selection": parse_ft_desc(select_representative_ap),
-            }
-        )
-    return ahp_selected, ahp_info
+    if ap_selector is None:
+        ap_selector = default_ap_selector
+
+    return get_repr_ap_ft(sweep, "ahp", ap_selector, ft_aggregator)
 
 
 @ephys_feature
-def get_sweep_adp(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict]:
+def get_sweep_adp(
+    sweep: EphysSweepFeatureExtractor,
+    ap_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
+) -> Tuple[float, Dict]:
     """Extract sweep level Afterdepolarization feature.
 
     depends on: /.
@@ -1118,26 +1180,31 @@ def get_sweep_adp(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict]:
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
+        ap_selector (Optional[Callable], optional): Function which selects a
+            representative ap or set of aps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected aps. If none is provided, falls
+            back to `default_ap_selector`.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `np.nanmedian` (equates to pass through for single sweeps).
 
     Returns:
         Tuple[float, Dict]: ADP feature and feature metadata
     """
-    adp_selected, adp_info = ephys_feature_init()
-    adp = sweep.spike_feature("adp", include_clipped=True)
-    if len(adp) > 0:
-        select_ap_idx = select_representative_ap(sweep)
-        adp_selected = adp[select_ap_idx]
-        adp_info.update(
-            {
-                "ap_idx": select_ap_idx,
-                "selection": parse_ft_desc(select_representative_ap),
-            }
-        )
-    return adp_selected, adp_info
+    if ap_selector is None:
+        ap_selector = default_ap_selector
+
+    return get_repr_ap_ft(sweep, "adp", ap_selector, ft_aggregator)
 
 
 @ephys_feature
-def get_sweep_ap_thresh(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict]:
+def get_sweep_ap_thresh(
+    sweep: EphysSweepFeatureExtractor,
+    ap_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
+) -> Tuple[float, Dict]:
     """Extract sweep level AP threshold feature.
 
     depends on: /.
@@ -1145,26 +1212,31 @@ def get_sweep_ap_thresh(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict]
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
+        ap_selector (Optional[Callable], optional): Function which selects a
+            representative ap or set of aps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected aps. If none is provided, falls
+            back to `default_ap_selector`.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `np.nanmedian` (equates to pass through for single sweeps).
 
     Returns:
         Tuple[float, Dict]: AP threshold feature and feature metadata
     """
-    ap_thresh_selected, ap_tresh_info = ephys_feature_init()
-    ap_thresh = sweep.spike_feature("threshold_v", include_clipped=True)
-    if len(ap_thresh) > 0:
-        select_ap_idx = select_representative_ap(sweep)
-        ap_thresh_selected = ap_thresh[select_ap_idx]
-        ap_tresh_info.update(
-            {
-                "ap_idx": select_ap_idx,
-                "selection": parse_ft_desc(select_representative_ap),
-            }
-        )
-    return ap_thresh_selected, ap_tresh_info
+    if ap_selector is None:
+        ap_selector = default_ap_selector
+
+    return get_repr_ap_ft(sweep, "threshold_v", ap_selector, ft_aggregator)
 
 
 @ephys_feature
-def get_sweep_ap_amp(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict]:
+def get_sweep_ap_amp(
+    sweep: EphysSweepFeatureExtractor,
+    ap_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
+) -> Tuple[float, Dict]:
     """Extract sweep level AP amplitude feature.
 
     depends on: /.
@@ -1172,26 +1244,31 @@ def get_sweep_ap_amp(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict]:
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
+        ap_selector (Optional[Callable], optional): Function which selects a
+            representative ap or set of aps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected aps. If none is provided, falls
+            back to `default_ap_selector`.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `np.nanmedian` (equates to pass through for single sweeps).
 
     Returns:
         Tuple[float, Dict]: AP amplitude feature and feature metadata
     """
-    ap_amp_selected, ap_amp_info = ephys_feature_init()
-    ap_amp = sweep.spike_feature("peak_height", include_clipped=True)
-    if len(ap_amp) > 0:
-        select_ap_idx = select_representative_ap(sweep)
-        ap_amp_selected = ap_amp[select_ap_idx]
-        ap_amp_info.update(
-            {
-                "ap_idx": select_ap_idx,
-                "selection": parse_ft_desc(select_representative_ap),
-            }
-        )
-    return ap_amp_selected, ap_amp_info
+    if ap_selector is None:
+        ap_selector = default_ap_selector
+
+    return get_repr_ap_ft(sweep, "peak_height", ap_selector, ft_aggregator)
 
 
 @ephys_feature
-def get_sweep_ap_width(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict]:
+def get_sweep_ap_width(
+    sweep: EphysSweepFeatureExtractor,
+    ap_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
+) -> Tuple[float, Dict]:
     """Extract sweep level AP width feature.
 
     depends on: /.
@@ -1199,26 +1276,31 @@ def get_sweep_ap_width(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict]:
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
+        ap_selector (Optional[Callable], optional): Function which selects a
+            representative ap or set of aps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected aps. If none is provided, falls
+            back to `default_ap_selector`.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `np.nanmedian` (equates to pass through for single sweeps).
 
     Returns:
         Tuple[float, Dict]: AP width feature and feature metadata
     """
-    ap_width_selected, ap_width_info = ephys_feature_init()
-    ap_width = sweep.spike_feature("width", include_clipped=True)
-    if len(ap_width) > 0:
-        select_ap_idx = select_representative_ap(sweep)
-        ap_width_selected = ap_width[select_ap_idx]
-        ap_width_info.update(
-            {
-                "ap_idx": select_ap_idx,
-                "selection": parse_ft_desc(select_representative_ap),
-            }
-        )
-    return ap_width_selected, ap_width_info
+    if ap_selector is None:
+        ap_selector = default_ap_selector
+
+    return get_repr_ap_ft(sweep, "width", ap_selector, ft_aggregator)
 
 
 @ephys_feature
-def get_sweep_ap_peak(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict]:
+def get_sweep_ap_peak(
+    sweep: EphysSweepFeatureExtractor,
+    ap_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
+) -> Tuple[float, Dict]:
     """Extract sweep level AP peak feature.
 
     depends on: /.
@@ -1226,26 +1308,31 @@ def get_sweep_ap_peak(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict]:
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
+        ap_selector (Optional[Callable], optional): Function which selects a
+            representative ap or set of aps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected aps. If none is provided, falls
+            back to `default_ap_selector`.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `np.nanmedian` (equates to pass through for single sweeps).
 
     Returns:
         Tuple[float, Dict]: AP peak feature and feature metadata
     """
-    ap_peak_selected, ap_peak_info = ephys_feature_init()
-    ap_peak = sweep.spike_feature("peak_v", include_clipped=True)
-    if len(ap_peak) > 0:
-        select_ap_idx = select_representative_ap(sweep)
-        ap_peak_selected = ap_peak[select_ap_idx]
-        ap_peak_info.update(
-            {
-                "ap_idx": select_ap_idx,
-                "selection": parse_ft_desc(select_representative_ap),
-            }
-        )
-    return ap_peak_selected, ap_peak_info
+    if ap_selector is None:
+        ap_selector = default_ap_selector
+
+    return get_repr_ap_ft(sweep, "peak_v", ap_selector, ft_aggregator)
 
 
 @ephys_feature
-def get_sweep_ap_trough(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict]:
+def get_sweep_ap_trough(
+    sweep: EphysSweepFeatureExtractor,
+    ap_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
+) -> Tuple[float, Dict]:
     """Extract sweep level AP trough feature.
 
     depends on: /.
@@ -1253,26 +1340,31 @@ def get_sweep_ap_trough(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict]
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
+        ap_selector (Optional[Callable], optional): Function which selects a
+            representative ap or set of aps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected aps. If none is provided, falls
+            back to `default_ap_selector`.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `np.nanmedian` (equates to pass through for single sweeps).
 
     Returns:
         Tuple[float, Dict]: AP trough feature and feature metadata
     """
-    ap_trough_selected, ap_trough_info = ephys_feature_init()
-    ap_trough = sweep.spike_feature("trough_v", include_clipped=True)
-    if len(ap_trough) > 0:
-        select_ap_idx = select_representative_ap(sweep)
-        ap_trough_selected = ap_trough[select_ap_idx]
-        ap_trough_info.update(
-            {
-                "ap_idx": select_ap_idx,
-                "selection": parse_ft_desc(select_representative_ap),
-            }
-        )
-    return ap_trough_selected, ap_trough_info
+    if ap_selector is None:
+        ap_selector = default_ap_selector
+
+    return get_repr_ap_ft(sweep, "trough_v", ap_selector, ft_aggregator)
 
 
 @ephys_feature
-def get_sweep_udr(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict]:
+def get_sweep_udr(
+    sweep: EphysSweepFeatureExtractor,
+    ap_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
+) -> Tuple[float, Dict]:
     """Extract sweep level Upstroke-to-downstroke ratio feature.
 
     depends on: /.
@@ -1280,22 +1372,25 @@ def get_sweep_udr(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict]:
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
+        ap_selector (Optional[Callable], optional): Function which selects a
+            representative ap or set of aps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected aps. If none is provided, falls
+            back to `default_ap_selector`.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `np.nanmedian` (equates to pass through for single sweeps).
 
     Returns:
         Tuple[float, Dict]: UDR feature and feature metadata
     """
-    udr_selected, udr_info = ephys_feature_init()
-    udr = sweep.spike_feature("upstroke_downstroke_ratio", include_clipped=True)
-    if len(udr) > 0:
-        select_ap_idx = select_representative_ap(sweep)
-        udr_selected = udr[select_ap_idx]
-        udr_info.update(
-            {
-                "ap_idx": select_ap_idx,
-                "selection": parse_ft_desc(select_representative_ap),
-            }
-        )
-    return udr_selected, udr_info
+    if ap_selector is None:
+        ap_selector = default_ap_selector
+
+    return get_repr_ap_ft(
+        sweep, "upstroke_downstroke_ratio", ap_selector, ft_aggregator
+    )
 
 
 ### Feature extraction functions
@@ -1348,44 +1443,68 @@ def get_available_sweep_features(return_ft_info=False):
 ################################
 
 
+def default_median_aggregator(fts):
+    """description: median."""
+    return np.median(fts)
+
+
 def get_repr_sweep_ft(
     sweepset: EphysSweepSetFeatureExtractor,
     ft_name: str,
-    sweep_selection_func: Callable,
+    sweep_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
 ) -> Tuple[float, Dict]:
     """Extract sweep set level feature from representative sweep.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
         ft (str): Feature to extract.
-        sweep_selection_func (Callable): Function that selects representative sweep
-            from sweepset.
+        sweep_selector (Optional[Callable], optional): Function which selects a
+            representative sweep or set of sweeps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected sweeps. If none is provided, falls
+            back to selecting all sweeps.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `np.nanmedian` (equates to pass through for single sweeps).
 
     Returns:
         Tuple[float, Dict]: Feature value and feature metadata.
     """
-    ft_selected, ft_info = ephys_feature_init()
+    if sweep_selector is None:
+        sweep_selector = lambda x: np.arange(len(sweepset.sweeps()))
+    if ft_aggregator is None:
+        ft_aggregator = np.nanmedian
+
+    ft_agg, ft_info = ephys_feature_init()
+
     ft = get_stripped_sweep_fts(sweepset)[ft_name].to_numpy()
-    selected_index = sweep_selection_func(sweepset)
-    ft_selected = ft[selected_index]
-    if not isinstance(ft_selected, (float, int, np.float64, np.int64)):
-        if isinstance(ft_selected, ndarray):
-            if len(ft_selected) == 0:
-                ft_selected = float("nan")
+    selected_idx = sweep_selector(sweepset)
+    fts_selected = ft[selected_idx]
+    ft_agg = ft_aggregator(ft)
+
+    if not isinstance(ft_agg, (float, int, np.float64, np.int64)):
+        if isinstance(ft_agg, ndarray):
+            if len(ft_agg) == 0:
+                ft_agg = float("nan")
 
     ft_info.update(
         {
-            ft_name: ft,
-            "selected_idx": selected_index,
-            "selection": parse_ft_desc(sweep_selection_func),
+            "selected_idx": selected_idx,
+            "selected_fts": fts_selected,
+            "selection": parse_ft_desc(sweep_selector),
+            "aggregation": parse_ft_desc(ft_aggregator),
         }
     )
-    return ft_selected, ft_info
+    return ft_agg, ft_info
 
 
 @ephys_feature
 def get_sweepset_tau(
     sweepset: EphysSweepSetFeatureExtractor,
+    sweep_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
 ) -> Tuple[float, Dict]:
     """Extract sweep set level time constant feature.
 
@@ -1394,17 +1513,28 @@ def get_sweepset_tau(
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
+        sweep_selector (Optional[Callable], optional): Function which selects a
+            representative sweep or set of sweeps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected sweeps. If none is provided, falls
+            back to using `default_time_constant_selector`.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `np.nanmedian` (equates to pass through for single sweeps).
 
     Returns:
-        Tuple[float, Dict]: sweep set level time constant feature.
+        Tuple[float, Dict]: sweep set level sag_time feature.
     """
-    tau, tau_info = ephys_feature_init()
-    taus = get_stripped_sweep_fts(sweepset)["tau"]
-    selected_idx = median_idx(taus)
-    tau = taus.median(skipna=True)
-    tau_info.update({"selected_idx": selected_idx, "taus": taus})
 
-    return tau, tau_info
+    def default_time_constant_selector(sweepset):
+        """description: all hyperpolarizing traces."""
+        return np.where(get_stripped_sweep_fts(sweepset)["stim_amp"] < 0)[0]
+
+    if sweep_selector is None:
+        sweep_selector = default_time_constant_selector
+
+    return get_repr_sweep_ft(sweepset, "tau", sweep_selector, ft_aggregator)
 
 
 # input resistance
@@ -1547,7 +1677,7 @@ def get_sweepset_slow_hyperpolarization(
 
 
 # sag features (steepest hyperpolarizing trace)
-def select_representative_sag_sweep(sweepset: EphysSweepSetFeatureExtractor) -> int:
+def default_sag_sweep_selector(sweepset: EphysSweepSetFeatureExtractor) -> int:
     """Select representative sweep from which the sag features are extracted.
 
     description: Lowest hyperpolarization sweep that is not NaN. If 3 lowest
@@ -1571,7 +1701,11 @@ def select_representative_sag_sweep(sweepset: EphysSweepSetFeatureExtractor) -> 
 
 
 @ephys_feature
-def get_sweepset_sag(sweepset: EphysSweepSetFeatureExtractor) -> Tuple[float, Dict]:
+def get_sweepset_sag(
+    sweepset: EphysSweepSetFeatureExtractor,
+    sweep_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
+) -> Tuple[float, Dict]:
     """Extract sweep set level sag feature.
 
     depends on: sag.
@@ -1579,25 +1713,30 @@ def get_sweepset_sag(sweepset: EphysSweepSetFeatureExtractor) -> Tuple[float, Di
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
+        sweep_selector (Optional[Callable], optional): Function which selects a
+            representative sweep or set of sweeps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected sweeps. If none is provided, falls
+            back to using `default_sag_sweep_selector`.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `np.nanmedian` (equates to pass through for single sweeps).
 
     Returns:
         Tuple[float, Dict]: sweep set level sag feature.
     """
-    sag, sag_info = ephys_feature_init()
-    sag_sweep_idx = select_representative_sag_sweep(sweepset)
-    sag = get_stripped_sweep_fts(sweepset)["sag"].iloc[sag_sweep_idx]
-    sag_info.update(
-        {
-            "selected_idx": sag_sweep_idx,
-            "selection": parse_ft_desc(select_representative_sag_sweep),
-        }
-    )
-    return sag, sag_info
+    if sweep_selector is None:
+        sweep_selector = default_sag_sweep_selector
+
+    return get_repr_sweep_ft(sweepset, "sag", sweep_selector, ft_aggregator)
 
 
 @ephys_feature
 def get_sweepset_sag_ratio(
     sweepset: EphysSweepSetFeatureExtractor,
+    sweep_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
 ) -> Tuple[float, Dict]:
     """Extract sweep set level sag ratio feature.
 
@@ -1606,29 +1745,30 @@ def get_sweepset_sag_ratio(
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
+        sweep_selector (Optional[Callable], optional): Function which selects a
+            representative sweep or set of sweeps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected sweeps. If none is provided, falls
+            back to using `default_sag_sweep_selector`.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `np.nanmedian` (equates to pass through for single sweeps).
 
     Returns:
-        Tuple[float, Dict]: sweep set level sag ratio feature.
+        Tuple[float, Dict]: sweep set level sag_ratio feature.
     """
-    sag_ratio, sag_ratio_info = ephys_feature_init()
-    sag_sweep_idx = select_representative_sag_sweep(sweepset)
-    sag_ratio = (
-        sweepset.get_sweep_features()
-        .applymap(strip_info)["sag_ratio"]
-        .iloc[sag_sweep_idx]
-    )
-    sag_ratio_info.update(
-        {
-            "selected_idx": sag_sweep_idx,
-            "selection": parse_ft_desc(select_representative_sag_sweep),
-        }
-    )
-    return sag_ratio, sag_ratio_info
+    if sweep_selector is None:
+        sweep_selector = default_sag_sweep_selector
+
+    return get_repr_sweep_ft(sweepset, "sag_ratio", sweep_selector, ft_aggregator)
 
 
 @ephys_feature
 def get_sweepset_sag_fraction(
     sweepset: EphysSweepSetFeatureExtractor,
+    sweep_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
 ) -> Tuple[float, Dict]:
     """Extract sweep set level sag fraction feature.
 
@@ -1637,30 +1777,30 @@ def get_sweepset_sag_fraction(
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
-
+        sweep_selector (Optional[Callable], optional): Function which selects a
+            representative sweep or set of sweeps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected sweeps. If none is provided, falls
+            back to using `default_sag_sweep_selector`.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `np.nanmedian` (equates to pass through for single sweeps).
 
     Returns:
-        Tuple[float, Dict]: sweep set level sag fraction feature.
+        Tuple[float, Dict]: sweep set level sag_fraction feature.
     """
-    sag_fraction, sag_fraction_info = ephys_feature_init()
-    sag_sweep_idx = select_representative_sag_sweep(sweepset)
-    sag_fraction = (
-        sweepset.get_sweep_features()
-        .applymap(strip_info)["sag_fraction"]
-        .iloc[sag_sweep_idx]
-    )
-    sag_fraction_info.update(
-        {
-            "selected_idx": sag_sweep_idx,
-            "selection": parse_ft_desc(select_representative_sag_sweep),
-        }
-    )
-    return sag_fraction, sag_fraction_info
+    if sweep_selector is None:
+        sweep_selector = default_sag_sweep_selector
+
+    return get_repr_sweep_ft(sweepset, "sag_fraction", sweep_selector, ft_aggregator)
 
 
 @ephys_feature
 def get_sweepset_sag_area(
     sweepset: EphysSweepSetFeatureExtractor,
+    sweep_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
 ) -> Tuple[float, Dict]:
     """Extract sweep set level sag area feature.
 
@@ -1669,29 +1809,30 @@ def get_sweepset_sag_area(
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
+        sweep_selector (Optional[Callable], optional): Function which selects a
+            representative sweep or set of sweeps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected sweeps. If none is provided, falls
+            back to using `default_sag_sweep_selector`.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `np.nanmedian` (equates to pass through for single sweeps).
 
     Returns:
-        Tuple[float, Dict]: sweep set level sag area feature.
+        Tuple[float, Dict]: sweep set level sag_time feature.
     """
-    sag_area, sag_area_info = ephys_feature_init()
-    sag_sweep_idx = select_representative_sag_sweep(sweepset)
-    sag_area = (
-        sweepset.get_sweep_features()
-        .applymap(strip_info)["sag_area"]
-        .iloc[sag_sweep_idx]
-    )
-    sag_area_info.update(
-        {
-            "selected_idx": sag_sweep_idx,
-            "selection": parse_ft_desc(select_representative_sag_sweep),
-        }
-    )
-    return sag_area, sag_area_info
+    if sweep_selector is None:
+        sweep_selector = default_sag_sweep_selector
+
+    return get_repr_sweep_ft(sweepset, "sag_area", sweep_selector, ft_aggregator)
 
 
 @ephys_feature
 def get_sweepset_sag_time(
     sweepset: EphysSweepSetFeatureExtractor,
+    sweep_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
 ) -> Tuple[float, Dict]:
     """Extract sweep set level sag time feature.
 
@@ -1700,28 +1841,27 @@ def get_sweepset_sag_time(
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
+        sweep_selector (Optional[Callable], optional): Function which selects a
+            representative sweep or set of sweeps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected sweeps. If none is provided, falls
+            back to using `default_sag_sweep_selector`.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `np.nanmedian` (equates to pass through for single sweeps).
 
     Returns:
-        Tuple[float, Dict]: sweep set level sag time feature.
+        Tuple[float, Dict]: sweep set level sag_time feature.
     """
-    sag_time, sag_time_info = ephys_feature_init()
-    sag_sweep_idx = select_representative_sag_sweep(sweepset)
-    sag_time = (
-        sweepset.get_sweep_features()
-        .applymap(strip_info)["sag_time"]
-        .iloc[sag_sweep_idx]
-    )
-    sag_time_info.update(
-        {
-            "selected_idx": sag_sweep_idx,
-            "selection": parse_ft_desc(select_representative_sag_sweep),
-        }
-    )
-    return sag_time, sag_time_info
+    if sweep_selector is None:
+        sweep_selector = default_sag_sweep_selector
+
+    return get_repr_sweep_ft(sweepset, "sag_time", sweep_selector, ft_aggregator)
 
 
 # rebound features (steepest hyperpolarizing trace)
-def select_representative_rebound_sweep(sweepset: EphysSweepSetFeatureExtractor) -> int:
+def default_rebound_sweep_selector(sweepset: EphysSweepSetFeatureExtractor) -> int:
     """Select representative sweep from which the rebound features are extracted.
 
     description: Lowest hyperpolarization sweep. If 3 lowest sweeps are NaN,
@@ -1744,7 +1884,11 @@ def select_representative_rebound_sweep(sweepset: EphysSweepSetFeatureExtractor)
 
 
 @ephys_feature
-def get_sweepset_rebound(sweepset: EphysSweepSetFeatureExtractor) -> Tuple[float, Dict]:
+def get_sweepset_rebound(
+    sweepset: EphysSweepSetFeatureExtractor,
+    sweep_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
+) -> Tuple[float, Dict]:
     """Extract sweep set level rebound feature.
 
     depends on: rebound.
@@ -1752,29 +1896,30 @@ def get_sweepset_rebound(sweepset: EphysSweepSetFeatureExtractor) -> Tuple[float
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
+        sweep_selector (Optional[Callable], optional): Function which selects a
+            representative sweep or set of sweeps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected sweeps. If none is provided, falls
+            back to using `default_rebound_sweep_selector`.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `np.nanmedian` (equates to pass through for single sweeps).
 
     Returns:
-        Tuple[float, Dict]: sweep set level rebound feature.
+        Tuple[float, Dict]: sweep set level rebound_latency feature.
     """
-    rebound, rebound_info = ephys_feature_init()
-    rebound_sweep_idx = select_representative_rebound_sweep(sweepset)
-    rebound = (
-        sweepset.get_sweep_features()
-        .applymap(strip_info)["rebound"]
-        .iloc[rebound_sweep_idx]
-    )
-    rebound_info.update(
-        {
-            "selected_idx": rebound_sweep_idx,
-            "selection": parse_ft_desc(select_representative_rebound_sweep),
-        }
-    )
-    return rebound, rebound_info
+    if sweep_selector is None:
+        sweep_selector = default_rebound_sweep_selector
+
+    return get_repr_sweep_ft(sweepset, "rebound", sweep_selector, ft_aggregator)
 
 
 @ephys_feature
 def get_sweepset_rebound_aps(
     sweepset: EphysSweepSetFeatureExtractor,
+    sweep_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
 ) -> Tuple[float, Dict]:
     """Extract sweep set level rebound ratio feature.
 
@@ -1783,29 +1928,30 @@ def get_sweepset_rebound_aps(
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
+        sweep_selector (Optional[Callable], optional): Function which selects a
+            representative sweep or set of sweeps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected sweeps. If none is provided, falls
+            back to using `default_rebound_sweep_selector`.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `np.nanmedian` (equates to pass through for single sweeps).
 
     Returns:
-        Tuple[float, Dict]: sweep set level rebound ratio feature.
+        Tuple[float, Dict]: sweep set level rebound aps feature.
     """
-    rebound_aps, rebound_aps_info = ephys_feature_init()
-    rebound_sweep_idx = select_representative_rebound_sweep(sweepset)
-    rebound_aps = (
-        sweepset.get_sweep_features()
-        .applymap(strip_info)["rebound_aps"]
-        .iloc[rebound_sweep_idx]
-    )
-    rebound_aps_info.update(
-        {
-            "selected_idx": rebound_sweep_idx,
-            "selection": parse_ft_desc(select_representative_rebound_sweep),
-        }
-    )
-    return rebound_aps, rebound_aps_info
+    if sweep_selector is None:
+        sweep_selector = default_rebound_sweep_selector
+
+    return get_repr_sweep_ft(sweepset, "rebound_latency", sweep_selector, ft_aggregator)
 
 
 @ephys_feature
 def get_sweepset_rebound_area(
     sweepset: EphysSweepSetFeatureExtractor,
+    sweep_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
 ) -> Tuple[float, Dict]:
     """Extract sweep set level rebound area feature.
 
@@ -1814,29 +1960,30 @@ def get_sweepset_rebound_area(
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
+        sweep_selector (Optional[Callable], optional): Function which selects a
+            representative sweep or set of sweeps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected sweeps. If none is provided, falls
+            back to using `default_rebound_sweep_selector`.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `np.nanmedian` (equates to pass through for single sweeps).
 
     Returns:
-        Tuple[float, Dict]: sweep set level rebound area feature.
+        Tuple[float, Dict]: sweep set level rebound_area feature.
     """
-    rebound_area, rebound_area_info = ephys_feature_init()
-    rebound_sweep_idx = select_representative_rebound_sweep(sweepset)
-    rebound_area = (
-        sweepset.get_sweep_features()
-        .applymap(strip_info)["rebound_area"]
-        .iloc[rebound_sweep_idx]
-    )
-    rebound_area_info.update(
-        {
-            "selected_idx": rebound_sweep_idx,
-            "selection": parse_ft_desc(select_representative_rebound_sweep),
-        }
-    )
-    return rebound_area, rebound_area_info
+    if sweep_selector is None:
+        sweep_selector = default_rebound_sweep_selector
+
+    return get_repr_sweep_ft(sweepset, "rebound_area", sweep_selector, ft_aggregator)
 
 
 @ephys_feature
 def get_sweepset_rebound_latency(
     sweepset: EphysSweepSetFeatureExtractor,
+    sweep_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
 ) -> Tuple[float, Dict]:
     """Extract sweep set level rebound latency feature.
 
@@ -1845,29 +1992,30 @@ def get_sweepset_rebound_latency(
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
+        sweep_selector (Optional[Callable], optional): Function which selects a
+            representative sweep or set of sweeps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected sweeps. If none is provided, falls
+            back to using `default_rebound_sweep_selector`.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `np.nanmedian` (equates to pass through for single sweeps).
 
     Returns:
-        Tuple[float, Dict]: sweep set level rebound latency feature.
+        Tuple[float, Dict]: sweep set level rebound_latency feature.
     """
-    rebound_latency, rebound_latency_info = ephys_feature_init()
-    rebound_sweep_idx = select_representative_rebound_sweep(sweepset)
-    rebound_latency = (
-        sweepset.get_sweep_features()
-        .applymap(strip_info)["rebound_latency"]
-        .iloc[rebound_sweep_idx]
-    )
-    rebound_latency_info.update(
-        {
-            "selected_idx": rebound_sweep_idx,
-            "selection": parse_ft_desc(select_representative_rebound_sweep),
-        }
-    )
-    return rebound_latency, rebound_latency_info
+    if sweep_selector is None:
+        sweep_selector = default_rebound_sweep_selector
+
+    return get_repr_sweep_ft(sweepset, "rebound_latency", sweep_selector, ft_aggregator)
 
 
 @ephys_feature
 def get_sweepset_rebound_avg(
     sweepset: EphysSweepSetFeatureExtractor,
+    sweep_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
 ) -> Tuple[float, Dict]:
     """Extract sweep set level average rebound feature.
 
@@ -1876,28 +2024,27 @@ def get_sweepset_rebound_avg(
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
+        sweep_selector (Optional[Callable], optional): Function which selects a
+            representative sweep or set of sweeps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected sweeps. If none is provided, falls
+            back to using `default_rebound_sweep_selector`.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `np.nanmedian` (equates to pass through for single sweeps).
 
     Returns:
-        Tuple[float, Dict]: sweep set level average rebound feature.
+        Tuple[float, Dict]: sweep set level rebound_avg feature.
     """
-    rebound_avg, rebound_avg_info = ephys_feature_init()
-    rebound_sweep_idx = select_representative_rebound_sweep(sweepset)
-    rebound_avg = (
-        sweepset.get_sweep_features()
-        .applymap(strip_info)["rebound_avg"]
-        .iloc[rebound_sweep_idx]
-    )
-    rebound_avg_info.update(
-        {
-            "selected_idx": rebound_sweep_idx,
-            "selection": parse_ft_desc(select_representative_rebound_sweep),
-        }
-    )
-    return rebound_avg, rebound_avg_info
+    if sweep_selector is None:
+        sweep_selector = default_rebound_sweep_selector
+
+    return get_repr_sweep_ft(sweepset, "rebound_avg", sweep_selector, ft_aggregator)
 
 
 # num spikes
-def select_representative_spiking_sweep(sweepset: EphysSweepSetFeatureExtractor) -> int:
+def default_spiking_sweep_selector(sweepset: EphysSweepSetFeatureExtractor) -> int:
     """Select representative sweep from which the spiking related features are extracted.
 
     depends on: num_ap, wildness.
@@ -1920,6 +2067,8 @@ def select_representative_spiking_sweep(sweepset: EphysSweepSetFeatureExtractor)
 @ephys_feature
 def get_sweepset_num_ap(
     sweepset: EphysSweepSetFeatureExtractor,
+    sweep_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
 ) -> Tuple[float, Dict]:
     """Extract sweep set level spike count feature.
 
@@ -1928,25 +2077,31 @@ def get_sweepset_num_ap(
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
+        sweep_selector (Optional[Callable], optional): Function which selects a
+            representative sweep or set of sweeps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected sweeps. If none is provided, falls
+            back to using `default_spiking_sweep_selector`.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `np.nanmedian` (equates to pass through for single sweeps).
 
     Returns:
         Tuple[float, Dict]: sweep set level spike count feature.
     """
-    num_spikes, num_spikes_info = ephys_feature_init()
-    num_spikes = get_stripped_sweep_fts(sweepset)["num_ap"]
-    spike_sweep_idx = select_representative_spiking_sweep(sweepset)
-    num_spikes = num_spikes.loc[spike_sweep_idx]
-    num_spikes_info.update(
-        {
-            "selected_idx": spike_sweep_idx,
-            "selection": parse_ft_desc(select_representative_spiking_sweep),
-        }
-    )
-    return num_spikes, num_spikes_info
+    if sweep_selector is None:
+        sweep_selector = default_spiking_sweep_selector
+
+    return get_repr_sweep_ft(sweepset, "num_ap", sweep_selector, ft_aggregator)
 
 
 @ephys_feature
-def get_sweepset_ap_freq(sweepset: EphysSweepSetFeatureExtractor) -> Tuple[float, Dict]:
+def get_sweepset_ap_freq(
+    sweepset: EphysSweepSetFeatureExtractor,
+    sweep_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
+) -> Tuple[float, Dict]:
     """Extract sweep set level spike rate feature.
 
     depends on: ap_freq.
@@ -1954,27 +2109,31 @@ def get_sweepset_ap_freq(sweepset: EphysSweepSetFeatureExtractor) -> Tuple[float
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
+        sweep_selector (Optional[Callable], optional): Function which selects a
+            representative sweep or set of sweeps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected sweeps. If none is provided, falls
+            back to using `default_spiking_sweep_selector`.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `np.nanmedian` (equates to pass through for single sweeps).
 
     Returns:
         Tuple[float, Dict]: sweep set level spike rate feature.
     """
-    ap_freq, ap_freq_info = ephys_feature_init()
-    ap_freq = get_stripped_sweep_fts(sweepset)["ap_freq"]
-    spike_sweep_idx = select_representative_spiking_sweep(sweepset)
-    ap_freq = ap_freq.loc[spike_sweep_idx]
-    ap_freq_info.update(
-        {
-            "selected_idx": spike_sweep_idx,
-            "selection": parse_ft_desc(select_representative_spiking_sweep),
-        }
-    )
-    return ap_freq, ap_freq_info
+    if sweep_selector is None:
+        sweep_selector = default_spiking_sweep_selector
+
+    return get_repr_sweep_ft(sweepset, "ap_freq", sweep_selector, ft_aggregator)
 
 
 # wildness
 @ephys_feature
 def get_sweepset_wildness(
     sweepset: EphysSweepSetFeatureExtractor,
+    sweep_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
 ) -> Tuple[float, Dict]:
     """Extract sweep set level wildness feature.
 
@@ -1983,6 +2142,15 @@ def get_sweepset_wildness(
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
+        sweep_selector (Optional[Callable], optional): Function which selects a
+            representative sweep or set of sweeps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected sweeps. If none is provided, falls
+            back to using `select_wildest_idx`.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `np.nanmedian` (equates to pass through for single sweeps).
 
     Returns:
         Tuple[float, Dict]: sweep set level wildness feature.
@@ -1995,17 +2163,18 @@ def get_sweepset_wildness(
         idx = sset.get_sweep_feature("wildness").apply(strip_info).argmax()
         return int(idx) if idx != -1 else slice(0)
 
-    return get_repr_sweep_ft(
-        sweepset,
-        "wildness",
-        select_wildest_idx,
-    )
+    if sweep_selector is None:
+        sweep_selector = select_wildest_idx
+
+    return get_repr_sweep_ft(sweepset, "wildness", sweep_selector, ft_aggregator)
 
 
 # spike frequency adaptation
 @ephys_feature
 def get_sweepset_ap_freq_adapt(
     sweepset: EphysSweepSetFeatureExtractor,
+    sweep_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
 ) -> Tuple[float, Dict]:
     """Extract sweep set level spike frequency adaptation feature.
 
@@ -2014,19 +2183,31 @@ def get_sweepset_ap_freq_adapt(
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
+        sweep_selector (Optional[Callable], optional): Function which selects a
+            representative sweep or set of sweeps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected sweeps. If none is provided, falls
+            back to using `default_spiking_sweep_selector`.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `np.nanmedian` (equates to pass through for single sweeps).
 
     Returns:
-        Tuple[float, Dict]: sweep set level spike frequency adaptation feature.
+        Tuple[float, Dict]: sweep set level AP frequency adaption feature.
     """
-    return get_repr_sweep_ft(
-        sweepset, "ap_freq_adapt", select_representative_spiking_sweep
-    )
+    if sweep_selector is None:
+        sweep_selector = default_spiking_sweep_selector
+
+    return get_repr_sweep_ft(sweepset, "ap_freq_adapt", sweep_selector, ft_aggregator)
 
 
 # spike amplitude adaptation
 @ephys_feature
 def get_sweepset_ap_amp_slope(
     sweepset: EphysSweepSetFeatureExtractor,
+    sweep_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
 ) -> Tuple[float, Dict]:
     """Extract sweep set level spike amplitude adaptation feature.
 
@@ -2035,19 +2216,31 @@ def get_sweepset_ap_amp_slope(
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
+        sweep_selector (Optional[Callable], optional): Function which selects a
+            representative sweep or set of sweeps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected sweeps. If none is provided, falls
+            back to using `default_spiking_sweep_selector`.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `np.nanmedian` (equates to pass through for single sweeps).
 
     Returns:
-        Tuple[float, Dict]: sweep set level spike frequency adaptation feature.
+        Tuple[float, Dict]: sweep set level AP amplitude slope feature.
     """
-    return get_repr_sweep_ft(
-        sweepset, "ap_amp_slope", select_representative_spiking_sweep
-    )
+    if sweep_selector is None:
+        sweep_selector = default_spiking_sweep_selector
+
+    return get_repr_sweep_ft(sweepset, "ap_amp_slope", sweep_selector, ft_aggregator)
 
 
 # AP Fano factor
 @ephys_feature
 def get_sweepset_fano_factor(
     sweepset: EphysSweepSetFeatureExtractor,
+    sweep_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
 ) -> Tuple[float, Dict]:
     """Extract sweep set level fano factor feature.
 
@@ -2056,18 +2249,30 @@ def get_sweepset_fano_factor(
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
+        sweep_selector (Optional[Callable], optional): Function which selects a
+            representative sweep or set of sweeps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected sweeps. If none is provided, falls
+            back to using `default_spiking_sweep_selector`.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `np.nanmedian` (equates to pass through for single sweeps).
 
     Returns:
         Tuple[float, Dict]: sweep set level fano factor feature.
     """
-    return get_repr_sweep_ft(
-        sweepset, "fano_factor", select_representative_spiking_sweep
-    )
+    if sweep_selector is None:
+        sweep_selector = default_spiking_sweep_selector
+
+    return get_repr_sweep_ft(sweepset, "fano_factor", sweep_selector, ft_aggregator)
 
 
 @ephys_feature
 def get_sweepset_ap_fano_factor(
     sweepset: EphysSweepSetFeatureExtractor,
+    sweep_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
 ) -> Tuple[float, Dict]:
     """Extract sweep set level ap fano factor feature.
 
@@ -2076,17 +2281,31 @@ def get_sweepset_ap_fano_factor(
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
+        sweep_selector (Optional[Callable], optional): Function which selects a
+            representative sweep or set of sweeps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected sweeps. If none is provided, falls
+            back to using `default_spiking_sweep_selector`.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `np.nanmedian` (equates to pass through for single sweeps).
 
     Returns:
-        Tuple[float, Dict]: sweep set level ap fano factor feature.
+        Tuple[float, Dict]: sweep set level AP fano factor feature.
     """
-    return get_repr_sweep_ft(
-        sweepset, "AP_fano_factor", select_representative_spiking_sweep
-    )
+    if sweep_selector is None:
+        sweep_selector = default_spiking_sweep_selector
+
+    return get_repr_sweep_ft(sweepset, "AP_fano_factor", sweep_selector, ft_aggregator)
 
 
 @ephys_feature
-def get_sweepset_cv(sweepset: EphysSweepSetFeatureExtractor) -> Tuple[float, Dict]:
+def get_sweepset_cv(
+    sweepset: EphysSweepSetFeatureExtractor,
+    sweep_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
+) -> Tuple[float, Dict]:
     """Extract sweep set level coeffficent of variation feature.
 
     depends on: cv.
@@ -2094,15 +2313,31 @@ def get_sweepset_cv(sweepset: EphysSweepSetFeatureExtractor) -> Tuple[float, Dic
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
+        sweep_selector (Optional[Callable], optional): Function which selects a
+            representative sweep or set of sweeps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected sweeps. If none is provided, falls
+            back to using `default_spiking_sweep_selector`.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `np.nanmedian` (equates to pass through for single sweeps).
 
     Returns:
-        Tuple[float, Dict]: sweep set level coeffficent of variation feature.
+        Tuple[float, Dict]: sweep set level coefficient of variation feature.
     """
-    return get_repr_sweep_ft(sweepset, "cv", select_representative_spiking_sweep)
+    if sweep_selector is None:
+        sweep_selector = default_spiking_sweep_selector
+
+    return get_repr_sweep_ft(sweepset, "cv", sweep_selector, ft_aggregator)
 
 
 @ephys_feature
-def get_sweepset_ap_cv(sweepset: EphysSweepSetFeatureExtractor) -> Tuple[float, Dict]:
+def get_sweepset_ap_cv(
+    sweepset: EphysSweepSetFeatureExtractor,
+    sweep_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
+) -> Tuple[float, Dict]:
     """Extract sweep set level AP coefficient of variation feature.
 
     depends on: AP_cv.
@@ -2110,17 +2345,31 @@ def get_sweepset_ap_cv(sweepset: EphysSweepSetFeatureExtractor) -> Tuple[float, 
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
+        sweep_selector (Optional[Callable], optional): Function which selects a
+            representative sweep or set of sweeps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected sweeps. If none is provided, falls
+            back to using `default_spiking_sweep_selector`.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `np.nanmedian` (equates to pass through for single sweeps).
 
     Returns:
         Tuple[float, Dict]: sweep set level AP coefficient of variation feature.
     """
-    return get_repr_sweep_ft(sweepset, "AP_cv", select_representative_spiking_sweep)
+    if sweep_selector is None:
+        sweep_selector = default_spiking_sweep_selector
+
+    return get_repr_sweep_ft(sweepset, "AP_cv", sweep_selector, ft_aggregator)
 
 
 # burstiness
 @ephys_feature
 def get_sweepset_burstiness(
     sweepset: EphysSweepSetFeatureExtractor,
+    sweep_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
 ) -> Tuple[float, Dict]:
     """Extract sweep set level burstiness feature.
 
@@ -2129,27 +2378,43 @@ def get_sweepset_burstiness(
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
+        sweep_selector (Optional[Callable], optional): Function which selects a
+            representative sweep or set of sweeps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected sweeps. If none is provided, falls
+            back to using `default_selector`.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `default_median_aggregator`.
 
     Returns:
         Tuple[float, Dict]: sweep set level burstiness feature.
     """
-    median_burstiness, burstiness_info = ephys_feature_init()
-    burstiness = get_stripped_sweep_fts(sweepset)["burstiness"]
-    burstiness[burstiness < 0] = float("nan")  # don't consider negative burstiness
-    bursty_traces = burstiness[~burstiness.isna()]
-    burstiness = bursty_traces.iloc[:5]  # consider first 5 non-nan traces at most
-    if not burstiness.empty:
-        selected_idx = median_idx(burstiness)
-        median_burstiness = burstiness.median()
-        burstiness_info.update(
-            {"bursty_traces": bursty_traces, "selected_idx": selected_idx}
-        )
-    return median_burstiness, burstiness_info
+
+    def default_selector(sweepset):
+        """description: the first 5 non-nan traces."""
+        fts = get_stripped_sweep_fts(sweepset)["burstiness"]
+        fts[fts < 0] = float("nan")  # don't consider negative burstiness
+        idxs = fts[~fts.isna()].iloc[:5].index
+        if not idxs.empty:
+            return idxs
+        else:
+            slice(0)
+
+    if sweep_selector is None:
+        sweep_selector = default_selector
+    if ft_aggregator is None:
+        ft_aggregator = default_median_aggregator
+
+    return get_repr_sweep_ft(sweepset, "burstiness", sweep_selector, ft_aggregator)
 
 
 @ephys_feature
 def get_sweepset_num_bursts(
     sweepset: EphysSweepSetFeatureExtractor,
+    sweep_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
 ) -> Tuple[float, Dict]:
     """Extract sweep set level burstiness feature.
 
@@ -2158,27 +2423,41 @@ def get_sweepset_num_bursts(
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
+        sweep_selector (Optional[Callable], optional): Function which selects a
+            representative sweep or set of sweeps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected sweeps. If none is provided, falls
+            back to using `nanargmax`.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `np.nanmedian` (equates to pass through for single sweeps).
 
     Returns:
         Tuple[float, Dict]: sweep set level num_bursts feature.
     """
-    max_num_bursts, num_bursts_info = ephys_feature_init()
-    num_bursts = get_stripped_sweep_fts(sweepset)["num_bursts"]
-    bursty_traces = num_bursts[~num_bursts.isna()]
-    num_bursts = bursty_traces.iloc[:5]  # consider first 5 non-nan traces at most
-    if not num_bursts.empty:
-        selected_idx = num_bursts.argmax()
-        max_num_bursts = num_bursts.max()
-        num_bursts_info.update(
-            {"bursty_traces": bursty_traces, "selected_idx": selected_idx}
-        )
-    return max_num_bursts, num_bursts_info
+
+    def default_selector(sweepset):
+        """description: the first 5 non-nan traces."""
+        fts = get_stripped_sweep_fts(sweepset)["num_bursts"]
+        idxs = fts[~fts.isna()].iloc[:5].index
+        if not idxs.empty:
+            return idxs.argmax()
+        else:
+            slice(0)
+
+    if sweep_selector is None:
+        sweep_selector = default_selector
+
+    return get_repr_sweep_ft(sweepset, "num_bursts", sweep_selector, ft_aggregator)
 
 
 # adaptation index
 @ephys_feature
 def get_sweepset_isi_adapt(
     sweepset: EphysSweepSetFeatureExtractor,
+    sweep_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
 ) -> Tuple[float, Dict]:
     """Extract sweep set level Inter spike interval adaptation feature.
 
@@ -2188,31 +2467,38 @@ def get_sweepset_isi_adapt(
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
+        sweep_selector (Optional[Callable], optional): Function which selects a
+            representative sweep or set of sweeps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected sweeps. If none is provided, falls
+            back to using `default_selector`.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `default_median_aggregator`.
 
     Returns:
-        Tuple[float, Dict]: sweep set level Inter spike interval adaptation feature.
+        Tuple[float, Dict]: sweep set level isi adaptation feature.
     """
-    isi_adapt_median, isi_adapt_info = ephys_feature_init()
-    isi_adapt = get_stripped_sweep_fts(sweepset)["isi_adapt"]
-    adaptive_traces = isi_adapt[~isi_adapt.isna()]
-    isi_adapt_traces = adaptive_traces.iloc[
-        :5
-    ]  # consider first 5 non-nan traces at most
-    selected_idx = median_idx(isi_adapt_traces)
-    isi_adapt_median = isi_adapt_traces.median()
-    isi_adapt_info.update(
-        {
-            "isi_adapt": isi_adapt,
-            "adaptive_traces": adaptive_traces,
-            "selected_idx": selected_idx,
-        }
-    )
-    return isi_adapt_median, isi_adapt_info
+
+    def default_selector(sweepset):
+        """description: the first 5 non-nan traces."""
+        fts = get_stripped_sweep_fts(sweepset)["isi_adapt"]
+        return fts[~fts.isna()].iloc[:5].index
+
+    if sweep_selector is None:
+        sweep_selector = default_selector
+    if ft_aggregator is None:
+        ft_aggregator = default_median_aggregator
+
+    return get_repr_sweep_ft(sweepset, "isi_adapt", sweep_selector, ft_aggregator)
 
 
 @ephys_feature
 def get_sweepset_isi_adapt_avg(
     sweepset: EphysSweepSetFeatureExtractor,
+    sweep_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
 ) -> Tuple[float, Dict]:
     """Extract sweep set level average inter spike interval adaptation feature.
 
@@ -2222,31 +2508,40 @@ def get_sweepset_isi_adapt_avg(
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
+        sweep_selector (Optional[Callable], optional): Function which selects a
+            representative sweep or set of sweeps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected sweeps. If none is provided, falls
+            back to using `default_selector`.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `default_median_aggregator`.
 
     Returns:
-        Tuple[float, Dict]: sweep set level average inter spike interval adaptation feature.
+        Tuple[float, Dict]: sweep set level average isi adaptation feature.
     """
-    isi_adapt_avg_median, isi_adapt_avg_info = ephys_feature_init()
-    isi_adapt_avg = get_stripped_sweep_fts(sweepset)["isi_adapt_average"]
-    adaptive_traces = isi_adapt_avg[~isi_adapt_avg.isna()]
-    isi_adapt_avg_traces = adaptive_traces.iloc[
-        :5
-    ]  # consider first 5 non-nan traces at most
-    selected_idx = median_idx(isi_adapt_avg_traces)
-    isi_adapt_avg_median = isi_adapt_avg_traces.median()
-    isi_adapt_avg_info.update(
-        {
-            "isi_adapt_avg": isi_adapt_avg,
-            "selected_idx": selected_idx,
-            "adaptive_traces": adaptive_traces,
-        }
+
+    def default_selector(sweepset):
+        """description: the first 5 non-nan traces."""
+        fts = get_stripped_sweep_fts(sweepset)["isi_adapt_average"]
+        return fts[~fts.isna()].iloc[:5].index
+
+    if sweep_selector is None:
+        sweep_selector = default_selector
+    if ft_aggregator is None:
+        ft_aggregator = default_median_aggregator
+
+    return get_repr_sweep_ft(
+        sweepset, "isi_adapt_average", sweep_selector, ft_aggregator
     )
-    return isi_adapt_avg_median, isi_adapt_avg_info
 
 
 @ephys_feature
 def get_sweepset_ap_amp_adapt(
     sweepset: EphysSweepSetFeatureExtractor,
+    sweep_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
 ) -> Tuple[float, Dict]:
     """Extract sweep set level AP amplitude adaptation feature.
 
@@ -2256,32 +2551,38 @@ def get_sweepset_ap_amp_adapt(
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
+        sweep_selector (Optional[Callable], optional): Function which selects a
+            representative sweep or set of sweeps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected sweeps. If none is provided, falls
+            back to using `default_selector`.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `default_median_aggregator`.
 
     Returns:
-        Tuple[float, Dict]: sweep set level AP amplitude adaptation feature.
+        Tuple[float, Dict]: sweep set level average AP amplitude adaptation feature.
     """
-    ap_amp_adapt_median, ap_amp_adapt_info = ephys_feature_init()
-    ap_amp_adapt = get_stripped_sweep_fts(sweepset)["AP_amp_adapt"]
-    amp_adaptive_traces = ap_amp_adapt[~ap_amp_adapt.isna()]
-    ap_amp_adapt = amp_adaptive_traces.iloc[
-        :5
-    ]  # consider first 5 non-nan traces at most
-    selected_idx = median_idx(ap_amp_adapt)
-    ap_amp_adapt_median = ap_amp_adapt.median()
-    ap_amp_adapt_info.update(
-        {
-            "ap_amp_adapt": ap_amp_adapt_median,
-            "ap_amp_adapt": ap_amp_adapt,
-            "selected_idx": selected_idx,
-            "amp_adaptive_traces": amp_adaptive_traces,
-        }
-    )
-    return ap_amp_adapt_median, ap_amp_adapt_info
+
+    def default_selector(sweepset):
+        """description: the first 5 non-nan traces."""
+        fts = get_stripped_sweep_fts(sweepset)["AP_amp_adapt"]
+        return fts[~fts.isna()].iloc[:5].index
+
+    if sweep_selector is None:
+        sweep_selector = default_selector
+    if ft_aggregator is None:
+        ft_aggregator = default_median_aggregator
+
+    return get_repr_sweep_ft(sweepset, "AP_amp_adapt", sweep_selector, ft_aggregator)
 
 
 @ephys_feature
 def get_sweepset_ap_amp_adapt_avg(
     sweepset: EphysSweepSetFeatureExtractor,
+    sweep_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
 ) -> Tuple[float, Dict]:
     """Extract sweep set level average AP amplitude adaptation feature.
 
@@ -2291,29 +2592,36 @@ def get_sweepset_ap_amp_adapt_avg(
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
+        sweep_selector (Optional[Callable], optional): Function which selects a
+            representative sweep or set of sweeps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected sweeps. If none is provided, falls
+            back to using `default_selector`.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `default_median_aggregator`.
 
     Returns:
-        Tuple[float, Dict]: sweep set level average AP amplitude adaptation feature.
+        Tuple[float, Dict]: sweep set level average AP amplitude adaptation average feature.
     """
-    ap_amp_adapt_avg_median, ap_amp_adapt_avg_info = ephys_feature_init()
-    ap_amp_adapt_avg = get_stripped_sweep_fts(sweepset)["AP_amp_adapt_average"]
-    amp_adaptive_traces = ap_amp_adapt_avg[~ap_amp_adapt_avg.isna()]
-    ap_amp_adapt_avg = amp_adaptive_traces.iloc[
-        :5
-    ]  # consider first 5 non-nan traces at most
-    selected_idx = median_idx(ap_amp_adapt_avg)
-    ap_amp_adapt_avg_median = ap_amp_adapt_avg.median()
-    ap_amp_adapt_avg_info.update(
-        {
-            "ap_amp_adapt_avg": ap_amp_adapt_avg,
-            "selected_idx": selected_idx,
-            "amp_adaptive_traces": amp_adaptive_traces,
-        }
+
+    def default_selector(sweepset):
+        """description: the first 5 non-nan traces."""
+        fts = get_stripped_sweep_fts(sweepset)["AP_amp_adapt_average"]
+        return fts[~fts.isna()].iloc[:5].index
+
+    if sweep_selector is None:
+        sweep_selector = default_selector
+    if ft_aggregator is None:
+        ft_aggregator = default_median_aggregator
+
+    return get_repr_sweep_ft(
+        sweepset, "AP_amp_adapt_average", sweep_selector, ft_aggregator
     )
-    return ap_amp_adapt_avg_median, ap_amp_adapt_avg_info
 
 
-def select_representative_ap_sweep(sweepset: EphysSweepSetFeatureExtractor) -> int:
+def default_ap_sweep_selector(sweepset: EphysSweepSetFeatureExtractor) -> int:
     """Select representative ap in a sweep from which the AP features are used.
 
     depends on: stim_amp, num_ap.
@@ -2349,6 +2657,8 @@ def select_representative_ap_sweep(sweepset: EphysSweepSetFeatureExtractor) -> i
 @ephys_feature
 def get_sweepset_ap_latency(
     sweepset: EphysSweepSetFeatureExtractor,
+    sweep_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
 ) -> Tuple[float, Dict]:
     """Extract sweep set level ap_latency feature.
 
@@ -2357,12 +2667,21 @@ def get_sweepset_ap_latency(
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
+        sweep_selector (Optional[Callable], optional): Function which selects a
+            representative sweep or set of sweeps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected sweeps. If none is provided, falls
+            back to using `default_ap_latency_sweep_selector`.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `np.nanmedian` (equates to pass through for single sweeps).
 
     Returns:
-        Tuple[float, Dict]: sweep set level ap_latency feature.
+        Tuple[float, Dict]: sweep set level AP latency feature.
     """
 
-    def select_repr_ap_latency_sweep(sweepset):
+    def default_ap_latency_sweep_selector(sweepset):
         """
         depends on: stim_amp, ap_latency.
         description: first depolarization trace that has non-nan ap_latency.
@@ -2371,12 +2690,19 @@ def get_sweepset_ap_latency(
         ap_latency = get_stripped_sweep_fts(sweepset)["ap_latency"]
         return is_depol.index[is_depol & ~ap_latency.isna()][0]
 
-    return get_repr_sweep_ft(sweepset, "ap_latency", select_repr_ap_latency_sweep)
+    if sweep_selector is None:
+        sweep_selector = default_ap_latency_sweep_selector
+
+    return get_repr_sweep_ft(sweepset, "ap_latency", sweep_selector, ft_aggregator)
 
 
 # ahp
 @ephys_feature
-def get_sweepset_ahp(sweepset: EphysSweepSetFeatureExtractor) -> Tuple[float, Dict]:
+def get_sweepset_ahp(
+    sweepset: EphysSweepSetFeatureExtractor,
+    sweep_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
+) -> Tuple[float, Dict]:
     """Extract sweep set level Afterhyperpolarization feature.
 
     depends on: ahp.
@@ -2385,16 +2711,32 @@ def get_sweepset_ahp(sweepset: EphysSweepSetFeatureExtractor) -> Tuple[float, Di
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
+        sweep_selector (Optional[Callable], optional): Function which selects a
+            representative sweep or set of sweeps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected sweeps. If none is provided, falls
+            back to using `default_ap_sweep_selector`.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `np.nanmedian` (equates to pass through for single sweeps).
 
     Returns:
-        Tuple[float, Dict]: sweep set level Afterhyperpolarization feature.
+        Tuple[float, Dict]: sweep set level AHP feature.
     """
-    return get_repr_sweep_ft(sweepset, "ahp", select_representative_ap_sweep)
+    if sweep_selector is None:
+        sweep_selector = default_ap_sweep_selector
+
+    return get_repr_sweep_ft(sweepset, "ahp", sweep_selector, ft_aggregator)
 
 
 # adp
 @ephys_feature
-def get_sweepset_adp(sweepset: EphysSweepSetFeatureExtractor) -> Tuple[float, Dict]:
+def get_sweepset_adp(
+    sweepset: EphysSweepSetFeatureExtractor,
+    sweep_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
+) -> Tuple[float, Dict]:
     """Extract sweep set level Afterdepolarization feature.
 
     depends on: adp.
@@ -2403,17 +2745,31 @@ def get_sweepset_adp(sweepset: EphysSweepSetFeatureExtractor) -> Tuple[float, Di
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
+        sweep_selector (Optional[Callable], optional): Function which selects a
+            representative sweep or set of sweeps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected sweeps. If none is provided, falls
+            back to using `default_ap_sweep_selector`.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `np.nanmedian` (equates to pass through for single sweeps).
 
     Returns:
-        Tuple[float, Dict]: sweep set level Afterdepolarization feature.
+        Tuple[float, Dict]: sweep set level ADP feature.
     """
-    return get_repr_sweep_ft(sweepset, "adp", select_representative_ap_sweep)
+    if sweep_selector is None:
+        sweep_selector = default_ap_sweep_selector
+
+    return get_repr_sweep_ft(sweepset, "adp", sweep_selector, ft_aggregator)
 
 
 # AP features
 @ephys_feature
 def get_sweepset_ap_thresh(
     sweepset: EphysSweepSetFeatureExtractor,
+    sweep_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
 ) -> Tuple[float, Dict]:
     """Extract sweep set level AP threshold feature.
 
@@ -2422,15 +2778,31 @@ def get_sweepset_ap_thresh(
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
+        sweep_selector (Optional[Callable], optional): Function which selects a
+            representative sweep or set of sweeps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected sweeps. If none is provided, falls
+            back to using `default_ap_sweep_selector`.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `np.nanmedian` (equates to pass through for single sweeps).
 
     Returns:
         Tuple[float, Dict]: sweep set level AP threshold feature.
     """
-    return get_repr_sweep_ft(sweepset, "ap_thresh", select_representative_ap_sweep)
+    if sweep_selector is None:
+        sweep_selector = default_ap_sweep_selector
+
+    return get_repr_sweep_ft(sweepset, "ap_thresh", sweep_selector, ft_aggregator)
 
 
 @ephys_feature
-def get_sweepset_ap_amp(sweepset: EphysSweepSetFeatureExtractor) -> Tuple[float, Dict]:
+def get_sweepset_ap_amp(
+    sweepset: EphysSweepSetFeatureExtractor,
+    sweep_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
+) -> Tuple[float, Dict]:
     """Extract sweep set level AP amplitude feature.
 
     depends on: ap_amp.
@@ -2439,16 +2811,30 @@ def get_sweepset_ap_amp(sweepset: EphysSweepSetFeatureExtractor) -> Tuple[float,
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
+        sweep_selector (Optional[Callable], optional): Function which selects a
+            representative sweep or set of sweeps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected sweeps. If none is provided, falls
+            back to using `default_ap_sweep_selector`.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `np.nanmedian` (equates to pass through for single sweeps).
 
     Returns:
         Tuple[float, Dict]: sweep set level AP amplitude feature.
     """
-    return get_repr_sweep_ft(sweepset, "ap_amp", select_representative_ap_sweep)
+    if sweep_selector is None:
+        sweep_selector = default_ap_sweep_selector
+
+    return get_repr_sweep_ft(sweepset, "ap_amp", sweep_selector, ft_aggregator)
 
 
 @ephys_feature
 def get_sweepset_ap_width(
     sweepset: EphysSweepSetFeatureExtractor,
+    sweep_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
 ) -> Tuple[float, Dict]:
     """Extract sweep set level AP width feature.
 
@@ -2458,15 +2844,31 @@ def get_sweepset_ap_width(
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
+        sweep_selector (Optional[Callable], optional): Function which selects a
+            representative sweep or set of sweeps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected sweeps. If none is provided, falls
+            back to using `default_ap_sweep_selector`.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `np.nanmedian` (equates to pass through for single sweeps).
 
     Returns:
         Tuple[float, Dict]: sweep set level AP width feature.
     """
-    return get_repr_sweep_ft(sweepset, "ap_width", select_representative_ap_sweep)
+    if sweep_selector is None:
+        sweep_selector = default_ap_sweep_selector
+
+    return get_repr_sweep_ft(sweepset, "ap_width", sweep_selector, ft_aggregator)
 
 
 @ephys_feature
-def get_sweepset_ap_peak(sweepset: EphysSweepSetFeatureExtractor) -> Tuple[float, Dict]:
+def get_sweepset_ap_peak(
+    sweepset: EphysSweepSetFeatureExtractor,
+    sweep_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
+) -> Tuple[float, Dict]:
     """Extract sweep set level AP peak feature.
 
     depends on: ap_peak.
@@ -2475,16 +2877,30 @@ def get_sweepset_ap_peak(sweepset: EphysSweepSetFeatureExtractor) -> Tuple[float
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
+        sweep_selector (Optional[Callable], optional): Function which selects a
+            representative sweep or set of sweeps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected sweeps. If none is provided, falls
+            back to using `default_ap_sweep_selector`.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `np.nanmedian` (equates to pass through for single sweeps).
 
     Returns:
         Tuple[float, Dict]: sweep set level AP peak feature.
     """
-    return get_repr_sweep_ft(sweepset, "ap_peak", select_representative_ap_sweep)
+    if sweep_selector is None:
+        sweep_selector = default_ap_sweep_selector
+
+    return get_repr_sweep_ft(sweepset, "ap_peak", sweep_selector, ft_aggregator)
 
 
 @ephys_feature
 def get_sweepset_ap_trough(
     sweepset: EphysSweepSetFeatureExtractor,
+    sweep_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
 ) -> Tuple[float, Dict]:
     """Extract sweep set level AP trough feature.
 
@@ -2494,15 +2910,31 @@ def get_sweepset_ap_trough(
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
+        sweep_selector (Optional[Callable], optional): Function which selects a
+            representative sweep or set of sweeps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected sweeps. If none is provided, falls
+            back to using `default_ap_sweep_selector`.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `np.nanmedian` (equates to pass through for single sweeps).
 
     Returns:
         Tuple[float, Dict]: sweep set level AP trough feature.
     """
-    return get_repr_sweep_ft(sweepset, "ap_trough", select_representative_ap_sweep)
+    if sweep_selector is None:
+        sweep_selector = default_ap_sweep_selector
+
+    return get_repr_sweep_ft(sweepset, "ap_trough", sweep_selector, ft_aggregator)
 
 
 @ephys_feature
-def get_sweepset_udr(sweepset: EphysSweepSetFeatureExtractor) -> Tuple[float, Dict]:
+def get_sweepset_udr(
+    sweepset: EphysSweepSetFeatureExtractor,
+    sweep_selector: Optional[Callable] = None,
+    ft_aggregator: Optional[Callable] = None,
+) -> Tuple[float, Dict]:
     """Extract sweep set level AP upstroke to downstroke ratio feature.
 
     depends on: udr.
@@ -2511,11 +2943,23 @@ def get_sweepset_udr(sweepset: EphysSweepSetFeatureExtractor) -> Tuple[float, Di
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
+        sweep_selector (Optional[Callable], optional): Function which selects a
+            representative sweep or set of sweeps based on a given criterion.
+            Function expects a EphysSweepSetFeatureExtractor object as input and
+            returns indices for the selected sweeps. If none is provided, falls
+            back to using `default_ap_sweep_selector`.
+        ft_aggregator (Optional[Callable], optional): Function which aggregates
+            a list of feature values into a single value. Function expects a
+            list or ndarray of numbers as input. If none is provided, falls back
+            to `np.nanmedian` (equates to pass through for single sweeps).
 
     Returns:
         Tuple[float, Dict]: sweep set level AP upstroke to downstroke ratio feature.
     """
-    return get_repr_sweep_ft(sweepset, "udr", select_representative_ap_sweep)
+    if sweep_selector is None:
+        sweep_selector = default_ap_sweep_selector
+
+    return get_repr_sweep_ft(sweepset, "udr", sweep_selector, ft_aggregator)
 
 
 # rheobase

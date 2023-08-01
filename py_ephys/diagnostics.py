@@ -24,10 +24,10 @@ from numpy import ndarray
 
 from py_ephys.allen_sdk.ephys_extractor import EphysSweepFeatureExtractor
 from py_ephys.features import (
-    select_representative_ap_sweep,
-    select_representative_rebound_sweep,
-    select_representative_sag_sweep,
-    select_representative_spiking_sweep,
+    default_ap_sweep_selector,
+    default_rebound_sweep_selector,
+    default_sag_sweep_selector,
+    default_spiking_sweep_selector,
 )
 from py_ephys.utils import (
     EphysSweepSetFeatureExtractor,
@@ -1132,10 +1132,10 @@ def plot_sweep_ahp(
     """
     ft = ensure_ft_info(sweep.sweep_feature("ahp"))
     if not np.isnan(ft["value"]):
-        trough_t = get_ap_ft_at_idx(sweep, "fast_trough_t", ft["ap_idx"])
-        trough_v = get_ap_ft_at_idx(sweep, "fast_trough_v", ft["ap_idx"])
-        thresh_t = get_ap_ft_at_idx(sweep, "threshold_t", ft["ap_idx"])
-        thresh_v = get_ap_ft_at_idx(sweep, "threshold_v", ft["ap_idx"])
+        trough_t = get_ap_ft_at_idx(sweep, "fast_trough_t", ft["selected_idx"])
+        trough_v = get_ap_ft_at_idx(sweep, "fast_trough_v", ft["selected_idx"])
+        thresh_t = get_ap_ft_at_idx(sweep, "threshold_t", ft["selected_idx"])
+        thresh_v = get_ap_ft_at_idx(sweep, "threshold_v", ft["selected_idx"])
         stim_onset = sweep.sweep_feature("stim_onset")["value"]
         stim_end = sweep.sweep_feature("stim_end")["value"]
 
@@ -1185,10 +1185,10 @@ def plot_sweep_adp(
     # TODO: Check why it is always nan!
     ft = ensure_ft_info(sweep.sweep_feature("ahp"))
     if not np.isnan(ft["value"]):
-        trough_t = get_ap_ft_at_idx(sweep, "fast_trough_t", ft["ap_idx"])
-        trough_v = get_ap_ft_at_idx(sweep, "fast_trough_v", ft["ap_idx"])
-        adp_t = get_ap_ft_at_idx(sweep, "adp_t", ft["ap_idx"])
-        adp_v = get_ap_ft_at_idx(sweep, "adp_v", ft["ap_idx"])
+        trough_t = get_ap_ft_at_idx(sweep, "fast_trough_t", ft["selected_idx"])
+        trough_v = get_ap_ft_at_idx(sweep, "fast_trough_v", ft["selected_idx"])
+        adp_t = get_ap_ft_at_idx(sweep, "adp_t", ft["selected_idx"])
+        adp_v = get_ap_ft_at_idx(sweep, "adp_v", ft["selected_idx"])
         stim_onset = sweep.sweep_feature("stim_onset")["value"]
         stim_end = sweep.sweep_feature("stim_end")["value"]
 
@@ -1235,8 +1235,8 @@ def plot_sweep_ap_thresh(
     """
     ft = ensure_ft_info(sweep.sweep_feature("ap_thresh"))
     if not np.isnan(ft["value"]):
-        thresh_t = get_ap_ft_at_idx(sweep, "threshold_t", ft["ap_idx"])
-        thresh_v = get_ap_ft_at_idx(sweep, "threshold_v", ft["ap_idx"])
+        thresh_t = get_ap_ft_at_idx(sweep, "threshold_t", ft["selected_idx"])
+        thresh_v = get_ap_ft_at_idx(sweep, "threshold_v", ft["selected_idx"])
         stim_onset = sweep.sweep_feature("stim_onset")["value"]
         stim_end = sweep.sweep_feature("stim_end")["value"]
         ax.plot(thresh_t, thresh_v, "x", color=color, **plot_kwargs)
@@ -1273,10 +1273,10 @@ def plot_sweep_ap_amp(
     """
     ft = ensure_ft_info(sweep.sweep_feature("ap_amp"))
     if not np.isnan(ft["value"]):
-        thresh_t = get_ap_ft_at_idx(sweep, "threshold_t", ft["ap_idx"])
-        thresh_v = get_ap_ft_at_idx(sweep, "threshold_v", ft["ap_idx"])
-        peak_t = get_ap_ft_at_idx(sweep, "peak_t", ft["ap_idx"])
-        peak_v = get_ap_ft_at_idx(sweep, "peak_v", ft["ap_idx"])
+        thresh_t = get_ap_ft_at_idx(sweep, "threshold_t", ft["selected_idx"])
+        thresh_v = get_ap_ft_at_idx(sweep, "threshold_v", ft["selected_idx"])
+        peak_t = get_ap_ft_at_idx(sweep, "peak_t", ft["selected_idx"])
+        peak_v = get_ap_ft_at_idx(sweep, "peak_v", ft["selected_idx"])
         stim_onset = sweep.sweep_feature("stim_onset")["value"]
         stim_end = sweep.sweep_feature("stim_end")["value"]
         ax.plot([thresh_t, peak_t], [thresh_v, peak_v], "x", color=color, **plot_kwargs)
@@ -1313,7 +1313,7 @@ def plot_sweep_ap_width(
     """
     ft = ensure_ft_info(sweep.sweep_feature("ap_width"))
     if not np.isnan(ft["value"]):
-        ap_idx = ft["ap_idx"]
+        ap_idx = ft["selected_idx"]
         thresh_t = sweep.spike_feature("threshold_t", include_clipped=True)[ap_idx]
         t_peak = sweep.spike_feature("peak_t", include_clipped=True)[ap_idx]
         t_next = t_peak + 1.0 * (t_peak - thresh_t)  # T interval w.r.t. threshold
@@ -1352,8 +1352,8 @@ def plot_sweep_ap_peak(
     """
     ft = ensure_ft_info(sweep.sweep_feature("ap_peak"))
     if not np.isnan(ft["value"]):
-        peak_t = get_ap_ft_at_idx(sweep, "peak_t", ft["ap_idx"])
-        peak_v = get_ap_ft_at_idx(sweep, "peak_v", ft["ap_idx"])
+        peak_t = get_ap_ft_at_idx(sweep, "peak_t", ft["selected_idx"])
+        peak_v = get_ap_ft_at_idx(sweep, "peak_v", ft["selected_idx"])
         stim_onset = sweep.sweep_feature("stim_onset")["value"]
         stim_end = sweep.sweep_feature("stim_end")["value"]
         ax.plot(peak_t, peak_v, "x", color=color, **plot_kwargs)
@@ -1390,8 +1390,8 @@ def plot_sweep_ap_trough(
     """
     ft = ensure_ft_info(sweep.sweep_feature("ap_trough"))
     if not np.isnan(ft["value"]):
-        trough_t = get_ap_ft_at_idx(sweep, "fast_trough_t", ft["ap_idx"])
-        trough_v = get_ap_ft_at_idx(sweep, "fast_trough_v", ft["ap_idx"])
+        trough_t = get_ap_ft_at_idx(sweep, "fast_trough_t", ft["selected_idx"])
+        trough_v = get_ap_ft_at_idx(sweep, "fast_trough_v", ft["selected_idx"])
         stim_onset = sweep.sweep_feature("stim_onset")["value"]
         stim_end = sweep.sweep_feature("stim_end")["value"]
         ax.plot(trough_t, trough_v, "x", color=color, **plot_kwargs)
@@ -1428,10 +1428,10 @@ def plot_sweep_udr(
     """
     ft = ensure_ft_info(sweep.sweep_feature("udr"))
     if not np.isnan(ft["value"]):
-        us_t = get_ap_ft_at_idx(sweep, "upstroke_t", ft["ap_idx"])
-        us_v = get_ap_ft_at_idx(sweep, "upstroke_v", ft["ap_idx"])
-        ds_t = get_ap_ft_at_idx(sweep, "downstroke_t", ft["ap_idx"])
-        ds_v = get_ap_ft_at_idx(sweep, "downstroke_v", ft["ap_idx"])
+        us_t = get_ap_ft_at_idx(sweep, "upstroke_t", ft["selected_idx"])
+        us_v = get_ap_ft_at_idx(sweep, "upstroke_v", ft["selected_idx"])
+        ds_t = get_ap_ft_at_idx(sweep, "downstroke_t", ft["selected_idx"])
+        ds_v = get_ap_ft_at_idx(sweep, "downstroke_v", ft["selected_idx"])
         stim_onset = sweep.sweep_feature("stim_onset")["value"]
         stim_end = sweep.sweep_feature("stim_end")["value"]
         ax.plot([us_t, ds_t], [us_v, ds_v], "x", color=color, **plot_kwargs)
@@ -1600,7 +1600,26 @@ def get_selected_sweep_plotfunc(ft_name, sweep_ft_plot_func):
     return plot_sweepset_ft
 
 
-plot_sweepset_tau = get_selected_sweep_plotfunc("tau", plot_sweep_tau)
+def plot_sweepset_tau(
+    sweepset: EphysSweepSetFeatureExtractor,
+    ax: Axes,
+    color: Any = None,
+    include_details=False,
+    **plot_kwargs,
+) -> Axes:
+    ft = ensure_ft_info(sweepset.get_sweepset_feature("tau"))
+    if not np.isnan(ft["value"]):
+        idxs = ft["selected_idx"]
+        for idx in idxs:
+            selected_sweep = sweepset.sweeps()[idx]
+            ax = plot_sweep_tau(
+                selected_sweep,
+                ax,
+                color=color,
+                include_details=include_details,
+                **plot_kwargs,
+            )
+    return ax
 
 
 def plot_sweepset_r_input(
@@ -1611,7 +1630,6 @@ def plot_sweepset_r_input(
     **plot_kwargs,
 ) -> Axes:
     ft = ensure_ft_info(sweepset.get_sweepset_feature("r_input"))
-    warnings.warn("r_input sweepset plotting is not yet implemented yet!")
     if not np.isnan(ft["value"]):
         i = ft["i_amp"]
         v = ft["v_deflect"]
@@ -1884,17 +1902,19 @@ def plot_sweepset_diagnostics(
 
     axes["set_fts"].plot(sweepset.t.T, sweepset.v.T, color="grey", alpha=0.5)
     selection_dict = {
-        "rebound": select_representative_rebound_sweep(sweepset),
-        "ap": select_representative_ap_sweep(sweepset),
-        "sag": select_representative_sag_sweep(sweepset),
-        "fp": select_representative_spiking_sweep(sweepset),
+        "rebound": default_rebound_sweep_selector(sweepset),
+        "ap": default_ap_sweep_selector(sweepset),
+        "sag": default_sag_sweep_selector(sweepset),
+        "fp": default_spiking_sweep_selector(sweepset),
         "tau": sweepset.get_sweepset_feature("tau")["selected_idx"],
         "wildness": sweepset.get_sweepset_feature("wildness")["selected_idx"],
     }
-    selected_sweeps = {k: sweepset.sweeps()[v] for k, v in selection_dict.items()}
+    selected_sweeps = {
+        k: np.array(sweepset.sweeps())[v] for k, v in selection_dict.items()
+    }
     for ft, idx in selection_dict.items():
-        selected_sweep = sweepset.sweeps()[idx]
-        if selected_sweep != []:
+        selected_sweep = np.array(sweepset.sweeps())[idx]
+        if isinstance(selected_sweep, EphysSweepFeatureExtractor):
             axes["set_fts"].plot(
                 selected_sweep.t, selected_sweep.v, label=f"{ft} @ idx={idx}"
             )
@@ -1916,7 +1936,7 @@ def plot_sweepset_diagnostics(
         selected_sweeps["ap"].v,
         color="k",
     )
-    ap_idx = selected_sweeps["ap"].sweep_feature("ap_peak")["ap_idx"]
+    ap_idx = selected_sweeps["ap"].sweep_feature("ap_peak")["selected_idx"]
     ap_start = selected_sweeps["ap"].spike_feature("threshold_t")[ap_idx] - 5e-3
     ap_end = selected_sweeps["ap"].spike_feature("fast_trough_t")[ap_idx] + 5e-3
     axes["ap_window"].set_xlim(ap_start, ap_end)
@@ -1933,16 +1953,14 @@ def plot_sweepset_diagnostics(
     axes["set_hyperpol_fts"].plot(
         sweepset.t[sweep_is_hyperpol].T, sweepset.v[sweep_is_hyperpol].T, color="k"
     )
-    for idx in hyperpol_idcs:
-        selected_sweep = sweepset.sweeps()[idx]
-        c = "r" if idx == selection_dict["tau"] else "grey"
-        plot_sweep_tau(selected_sweep, axes["set_hyperpol_fts"], color=c)
+    for selected_sweep in selected_sweeps["tau"]:
+        plot_sweep_tau(selected_sweep, axes["set_hyperpol_fts"], color="r")
     plot_sweepset_v_baseline(sweepset, axes["set_hyperpol_fts"])
     axes["set_hyperpol_fts"].legend()
 
     h, l = axes["set_hyperpol_fts"].get_legend_handles_labels()
-    l[selection_dict["tau"] * 2] = "chosen tau"
-    axes["set_hyperpol_fts"].legend(h, l)
+    d = {k: v for k, v in zip(l, h)}
+    axes["set_hyperpol_fts"].legend(d.values(), d.keys())
 
     # sag
     axes["sag_fts"].plot(selected_sweeps["sag"].t, selected_sweeps["sag"].v, color="k")
