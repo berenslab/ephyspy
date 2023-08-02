@@ -1485,6 +1485,8 @@ def get_available_sweep_features(return_ft_info=False):
 
 def default_median_aggregator(fts):
     """description: median."""
+    if all(np.isnan(fts)):
+        return float("nan")
     return np.nanmedian(fts)
 
 
@@ -2462,11 +2464,11 @@ def get_sweepset_burstiness(
         """description: the first 5 non-nan traces."""
         fts = get_stripped_sweep_fts(sweepset)["burstiness"]
         fts[fts < 0] = float("nan")  # don't consider negative burstiness
-        idxs = fts[~fts.isna()].iloc[:5].index
-        if not idxs.empty:
-            return idxs
-        else:
-            slice(0)
+        if not fts.isna().all():
+            idxs = fts[~fts.isna()].iloc[:5].index
+            if not idxs.empty:
+                return idxs
+        return slice(0)
 
     if sweep_selector is None:
         sweep_selector = default_selector
@@ -2508,10 +2510,11 @@ def get_sweepset_num_bursts(
         """description: the first 5 non-nan traces."""
         fts = get_stripped_sweep_fts(sweepset)["num_bursts"]
         idxs = fts[~fts.isna()].iloc[:5].index
-        if not idxs.empty:
-            return idxs.argmax()
-        else:
-            slice(0)
+        if not fts.isna().all():
+            idxs = fts[~fts.isna()].iloc[:5].index
+            if not idxs.empty:
+                return idxs
+        return slice(0)
 
     if sweep_selector is None:
         sweep_selector = default_selector
