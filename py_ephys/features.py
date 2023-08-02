@@ -41,6 +41,7 @@ def get_spike_peak_height(sweep: EphysSweepFeatureExtractor) -> float:
 
     depends on: threshold_v, peak_v.
     description: v_peak - threshold_v.
+    units: mV.
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
@@ -59,6 +60,7 @@ def get_spike_ahp(sweep: EphysSweepFeatureExtractor) -> float:
 
     depends on: threshold_v, fast_trough_v.
     description: v_fast_trough - threshold_v.
+    units: mV.
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
@@ -76,6 +78,7 @@ def get_spike_adp(sweep: EphysSweepFeatureExtractor) -> float:
 
     depends on: adp_v, fast_trough_v.
     description: v_adp - v_fast_trough.
+    units: mV.
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
@@ -140,6 +143,7 @@ def get_sweep_num_ap(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict]:
 
     depends on: stim_onset, stim_end.
     description: # peaks during stimulus.
+    units: /.
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
@@ -172,6 +176,7 @@ def get_sweep_ap_freq(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict]:
 
     depends on: num_ap, stim_end, stim_onset.
     description: # peaks during stimulus / stimulus duration.
+    units: Hz.
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
@@ -198,6 +203,7 @@ def get_sweep_stim_amp(
 
     depends on: /.
     description: maximum amplitude of stimulus.
+    units: pA.
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
@@ -225,6 +231,7 @@ def get_sweep_ap_latency(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict
 
     depends on: stim_onset.
     description: time of first spike after stimulus onset.
+    units: s.
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
@@ -259,6 +266,7 @@ def get_sweep_stim_onset(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict
 
     depends on: /.
     description: time of stimulus onset.
+    units: s.
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
@@ -281,6 +289,7 @@ def get_sweep_stim_end(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict]:
 
     depends on: /.
     description: time of stimulus end.
+    units: s.
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
@@ -303,6 +312,7 @@ def get_sweep_v_deflect(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict]
 
     depends on: stim_end.
     description: average voltage during last 100 ms of stimulus.
+    units: mV.
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
@@ -334,6 +344,7 @@ def get_sweep_v_baseline(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict
 
     depends on: stim_onset.
     description: average voltage in baseline_interval (in s) before stimulus onset.
+    units: mV.
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
@@ -368,6 +379,7 @@ def get_sweep_tau(
 
     depends on: v_baseline, stim_onset.
     description: time constant of exponential fit to voltage deflection.
+    units: s.
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
@@ -431,6 +443,7 @@ def get_sweep_ap_freq_adapt(
 
     depends on: stim_onset, stim_end, num_ap.
     description: ratio of spikes in second and first half half of stimulus interval, if there is at least 5 spikes in total.
+    units: /.
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
@@ -479,6 +492,7 @@ def get_sweep_ap_amp_slope(
     depends on: stim_onset, stim_end.
     description: spike amplitude adaptation as the slope of a linear fit v_peak(t_peak)
     during the stimulus interval.
+    units: mV/s.
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
@@ -514,6 +528,7 @@ def get_sweep_r_input(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict]:
     depends on: stim_amp, v_deflect, v_baseline.
     description: sweep level input resistance as (v_deflect - v_baseline / current).
     Should not be used for cell level feature.
+    units: MOhm.
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
@@ -544,6 +559,7 @@ def get_sweep_sag(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict]:
 
     depends on: /.
     description: magnitude of the depolarization peak.
+    units: mV.
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
@@ -567,6 +583,7 @@ def get_sweep_sag_fraction(
 
     depends on: /.
     description: fraction that membrane potential relaxes back to baseline.
+    units: /.
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
@@ -588,6 +605,7 @@ def get_sweep_sag_ratio(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict]
 
     depends on: /.
     description: ratio of steady state voltage decrease to the largest voltage decrease.
+    units: /.
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
@@ -609,6 +627,7 @@ def get_sweep_sag_area(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict]:
 
     depends on: v_deflect, stim_onset, stim_end.
     description: area under the sag.
+    units: mV*s.
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
@@ -643,6 +662,7 @@ def get_sweep_sag_time(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict]:
 
     depends on: v_deflect, stim_onset, stim_end.
     description: duration of the sag.
+    units: s.
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
@@ -672,6 +692,7 @@ def get_sweep_v_plateau(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict]
 
     depends on: stim_end.
     description: average voltage during the plateau.
+    units: mV.
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
@@ -706,6 +727,7 @@ def get_sweep_rebound(
 
     depends on: v_baseline, stim_end.
     description: V_max during stimulus_end and stimulus_end + T_rebound - V_baseline.
+    units: mV.
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
@@ -748,6 +770,7 @@ def get_sweep_rebound_aps(
 
     depends on: stim_end.
     description: number of spikes during stimulus_end and stimulus_end + T_rebound.
+    units: /.
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
@@ -789,6 +812,7 @@ def get_sweep_rebound_latency(
     depends on: v_baseline, stim_end.
     description: duration from stimulus_end to when the voltage reaches above
     baseline for the first time. t_rebound = t_off + rebound_latency.
+    units: s.
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
@@ -831,6 +855,7 @@ def get_sweep_rebound_area(
     depends on: v_baseline, stim_end.
     description: area between rebound curve and baseline voltage from stimulus_end
     to stimulus_end + T_rebound.
+    units: mV*s.
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
@@ -872,6 +897,7 @@ def get_sweep_rebound_avg(
     depends on: v_baseline, stim_end.
     description: average voltage between stimulus_end
     and stimulus_end + T_rebound - baseline voltage.
+    units: mV.
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
@@ -906,6 +932,7 @@ def get_sweep_v_rest(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict]:
 
     depends on: v_baseline, r_input, dc_offset.
     description: v_rest = v_baseline - r_input*dc_offset.
+    units: mV.
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
@@ -937,6 +964,7 @@ def get_sweep_num_bursts(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict
 
     depends on: num_ap.
     description: Number of detected bursts.
+    units: /.
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
@@ -971,6 +999,7 @@ def get_sweep_burstiness(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict
 
     depends on: num_ap.
     description: max "burstiness" index across detected bursts.
+    units: /.
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
@@ -1005,6 +1034,7 @@ def get_sweep_wildness(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict]:
 
     depends on: /.
     description: Wildness is the number of spikes that occur outside of the stimulus interval.
+    units: /.
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
@@ -1079,8 +1109,8 @@ def get_repr_ap_ft(
             {
                 "selected_idx": selected_idx,
                 "selected_fts": fts_selected,
-                "selection": parse_ft_desc(ap_selector),
-                "aggregation": parse_ft_desc(ft_aggregator),
+                "selection": parse_desc(ap_selector),
+                "aggregation": parse_desc(ft_aggregator),
             }
         )
     return ft_agg, ft_info
@@ -1147,6 +1177,7 @@ def get_sweep_ahp(
     depends on: /.
     description: Afterhyperpolarization (AHP) for representative AP. Difference
     between the fast trough and the threshold.
+    units: mV.
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
@@ -1179,6 +1210,7 @@ def get_sweep_adp(
 
     depends on: /.
     description: Afterdepolarization (ADP) for representative AP. Difference between the ADP and the fast trough.
+    units: mV.
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
@@ -1211,6 +1243,7 @@ def get_sweep_ap_thresh(
 
     depends on: /.
     description: AP threshold for representative AP.
+    units: mV.
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
@@ -1243,6 +1276,7 @@ def get_sweep_ap_amp(
 
     depends on: /.
     description: AP amplitude for representative AP.
+    units: mV.
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
@@ -1275,6 +1309,7 @@ def get_sweep_ap_width(
 
     depends on: /.
     description: AP width for representative AP.
+    units: s.
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
@@ -1307,6 +1342,7 @@ def get_sweep_ap_peak(
 
     depends on: /.
     description: AP peak for representative AP.
+    units: mV.
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
@@ -1339,6 +1375,7 @@ def get_sweep_ap_trough(
 
     depends on: /.
     description: AP trough for representative AP.
+    units: mV.
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
@@ -1371,6 +1408,7 @@ def get_sweep_udr(
 
     depends on: /.
     description: Upstroke-to-downstroke ratio for representative AP.
+    units: /.
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
@@ -1496,8 +1534,8 @@ def get_repr_sweep_ft(
         {
             "selected_idx": selected_idx,
             "selected_fts": fts_selected,
-            "selection": parse_ft_desc(sweep_selector),
-            "aggregation": parse_ft_desc(ft_aggregator),
+            "selection": parse_desc(sweep_selector),
+            "aggregation": parse_desc(ft_aggregator),
         }
     )
     return ft_agg, ft_info
@@ -1513,6 +1551,7 @@ def get_sweepset_tau(
 
     depends on: /.
     description: median of the membrane time constants from all hyperpolarizing traces.
+    units: s.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -1546,7 +1585,8 @@ def get_sweepset_r_input(sweepset: EphysSweepSetFeatureExtractor) -> Tuple[float
     """Extract sweep set level input resistance feature.
 
     depends on: v_deflect, stim_amp.
-    description: fitted slope of v_deflect(v_input) in MOhms.
+    description: fitted slope of v_deflect(v_input).
+    units: MOhm.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -1595,6 +1635,7 @@ def get_sweepset_v_baseline(
     depends on: stim_amp, v_baseline.
     description: median of the baseline potentials from all hyperpolarizing
     traces.
+    units: mV.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -1623,7 +1664,8 @@ def get_sweepset_v_rest(sweepset: EphysSweepSetFeatureExtractor) -> Tuple[float,
 
     depends on: dc_offset, r_input, v_baseline, stim_amp.
     description: median of the resting potentials from all hyperpolarizing
-    traces. v_rest = v_baseline - r_input * dc
+    traces. v_rest = v_baseline - r_input * dc.
+    units: mV.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -1660,6 +1702,7 @@ def get_sweepset_slow_hyperpolarization(
 
     depends on: v_baseline, stim_amp.
     description: difference between the max and min baseline voltages.
+    units: mV.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -1713,6 +1756,7 @@ def get_sweepset_sag(
 
     depends on: sag.
     description: sag voltage for a representative sweep.
+    units: mV.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -1743,8 +1787,9 @@ def get_sweepset_sag_ratio(
 ) -> Tuple[float, Dict]:
     """Extract sweep set level sag ratio feature.
 
-    depends on: sag_ratio
+    depends on: sag_ratio.
     description: sag ratio for a representative sweep.
+    units: /.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -1777,6 +1822,7 @@ def get_sweepset_sag_fraction(
 
     depends on: sag_fraction.
     description: sag fraction for a representative sweep.
+    units: /.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -1809,6 +1855,7 @@ def get_sweepset_sag_area(
 
     depends on: sag_area.
     description: sag area for a representative sweep.
+    units: mV*s.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -1841,6 +1888,7 @@ def get_sweepset_sag_time(
 
     depends on: sag_time.
     description: sag time for a representative sweep.
+    units: s.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -1896,6 +1944,7 @@ def get_sweepset_rebound(
 
     depends on: rebound.
     description: rebound voltage for a representative sweep.
+    units: mV.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -1928,6 +1977,7 @@ def get_sweepset_rebound_aps(
 
     depends on: rebound_aps.
     description: rebound ratio for a representative sweep.
+    units: /.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -1960,6 +2010,7 @@ def get_sweepset_rebound_area(
 
     depends on: rebound_area.
     description: rebound area for a representative sweep.
+    units: mV*s.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -1992,6 +2043,7 @@ def get_sweepset_rebound_latency(
 
     depends on: rebound_latency.
     description: rebound latency for a representative sweep.
+    units: s.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -2024,6 +2076,7 @@ def get_sweepset_rebound_avg(
 
     depends on: rebound_avg.
     description: average rebound for a representative sweep.
+    units: mV.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -2077,6 +2130,7 @@ def get_sweepset_num_ap(
 
     depends on: num_ap.
     description: number of spikes for a representative sweep.
+    units: /.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -2109,6 +2163,7 @@ def get_sweepset_ap_freq(
 
     depends on: ap_freq.
     description: spike rate for a representative sweep.
+    units: Hz.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -2142,6 +2197,7 @@ def get_sweepset_wildness(
 
     depends on: wildness.
     description: wildness for a representative sweep.
+    units: /.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -2183,6 +2239,7 @@ def get_sweepset_ap_freq_adapt(
 
     depends on: ap_freq_adapt.
     description: spike frequency adaptation for a representative sweep.
+    units: /.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -2216,6 +2273,7 @@ def get_sweepset_ap_amp_slope(
 
     depends on: ap_amp_slope.
     description: spike amplitude adaptation for a representative sweep.
+    units: mV/s.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -2240,15 +2298,16 @@ def get_sweepset_ap_amp_slope(
 
 # AP Fano factor
 @ephys_feature
-def get_sweepset_fano_factor(
+def get_sweepset_isi_fano_factor(
     sweepset: EphysSweepSetFeatureExtractor,
     sweep_selector: Optional[Callable] = None,
     ft_aggregator: Optional[Callable] = None,
 ) -> Tuple[float, Dict]:
-    """Extract sweep set level fano factor feature.
+    """Extract sweep set level isi fano factor feature.
 
-    depends on: fano_factor.
+    depends on: isi_fano_factor.
     description: Fano factor for a representative sweep.
+    units: s.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -2263,12 +2322,12 @@ def get_sweepset_fano_factor(
             to `np.nanmedian` (equates to pass through for single sweeps).
 
     Returns:
-        Tuple[float, Dict]: sweep set level fano factor feature.
+        Tuple[float, Dict]: sweep set level isi fano factor feature.
     """
     if sweep_selector is None:
         sweep_selector = default_spiking_sweep_selector
 
-    return get_repr_sweep_ft(sweepset, "fano_factor", sweep_selector, ft_aggregator)
+    return get_repr_sweep_ft(sweepset, "isi_fano_factor", sweep_selector, ft_aggregator)
 
 
 @ephys_feature
@@ -2281,6 +2340,7 @@ def get_sweepset_ap_fano_factor(
 
     depends on: AP_fano_factor.
     description: AP Fano factor for a representative sweep.
+    units: mV.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -2304,15 +2364,16 @@ def get_sweepset_ap_fano_factor(
 
 
 @ephys_feature
-def get_sweepset_cv(
+def get_sweepset_isi_cv(
     sweepset: EphysSweepSetFeatureExtractor,
     sweep_selector: Optional[Callable] = None,
     ft_aggregator: Optional[Callable] = None,
 ) -> Tuple[float, Dict]:
     """Extract sweep set level coeffficent of variation feature.
 
-    depends on: cv.
-    description: CV for a representative sweep.
+    depends on: isi_cv.
+    description: ISI CV for a representative sweep.
+    units: /.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -2332,7 +2393,7 @@ def get_sweepset_cv(
     if sweep_selector is None:
         sweep_selector = default_spiking_sweep_selector
 
-    return get_repr_sweep_ft(sweepset, "cv", sweep_selector, ft_aggregator)
+    return get_repr_sweep_ft(sweepset, "isi_cv", sweep_selector, ft_aggregator)
 
 
 @ephys_feature
@@ -2345,6 +2406,7 @@ def get_sweepset_ap_cv(
 
     depends on: AP_cv.
     description: AP CV for a representative sweep.
+    units: /.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -2378,6 +2440,7 @@ def get_sweepset_burstiness(
 
     depends on: burstiness.
     description: median burstiness for the first 5 "bursty" traces.
+    units: /.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -2423,6 +2486,7 @@ def get_sweepset_num_bursts(
 
     depends on: num_bursts.
     description: max num_bursts for the first 5 "bursty" traces.
+    units: /.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -2467,6 +2531,7 @@ def get_sweepset_isi_adapt(
     depends on: isi_adapt.
     description: median of the ISI adaptation of the first 5 traces
     that show adaptation.
+    units: /.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -2508,6 +2573,7 @@ def get_sweepset_isi_adapt_avg(
     depends on: isi_adapt_average.
     description: median of the ISI adaptation average of the first 5 traces
     that show adaptation.
+    units: /.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -2551,6 +2617,7 @@ def get_sweepset_ap_amp_adapt(
     depends on: AP_amp_adapt.
     description: median of the AP amplitude adaptation of the first 5 traces
     that show adaptation.
+    units: /.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -2592,6 +2659,7 @@ def get_sweepset_ap_amp_adapt_avg(
     depends on: AP_amp_adapt_average.
     description: median of the AP amplitude adaptation average of the first 5
     traces that show adaptation.
+    units: /.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -2629,7 +2697,7 @@ def default_ap_sweep_selector(sweepset: EphysSweepSetFeatureExtractor) -> int:
 
     depends on: stim_amp, num_ap.
     description: First depolarization trace that contains spikes and which has
-        the least amount of NaNs in the AP features.
+    the least amount of NaNs in the AP features.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -2667,6 +2735,7 @@ def get_sweepset_ap_latency(
 
     depends on: stim_amp, ap_latency.
     description: ap_latency of the first depolarization trace that contains spikes in ms.
+    units: s.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -2711,6 +2780,7 @@ def get_sweepset_ahp(
     depends on: ahp.
     description: AHP (fast_trough_v - threshold_v) of a representative spike of
     a representative depolarization trace.
+    units: mV.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -2745,6 +2815,7 @@ def get_sweepset_adp(
     depends on: adp.
     description: ADP (adp_v - fast_trough_v) of a representative spike of a
     representative depolarization trace.
+    units: mV.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -2778,6 +2849,7 @@ def get_sweepset_ap_thresh(
 
     depends on: ap_thresh.
     description: AP threshold of a representative spike of a representative depolarization trace.
+    units: mV.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -2811,6 +2883,7 @@ def get_sweepset_ap_amp(
     depends on: ap_amp.
     description: AP amplitude of a representative spike of a representative
     depolarization trace.
+    units: /.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -2844,6 +2917,7 @@ def get_sweepset_ap_width(
     depends on: ap_width.
     description: AP width of a representative spike of a representative
     depolarization trace.
+    units: s.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -2877,6 +2951,7 @@ def get_sweepset_ap_peak(
     depends on: ap_peak.
     description: Peak of AP of a representative spike of a representative
     depolarization trace.
+    units: mV.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -2910,6 +2985,7 @@ def get_sweepset_ap_trough(
     depends on: ap_trough.
     description: AP trough of a representative spike of a representative
     depolarization trace.
+    units: mV.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -2943,6 +3019,7 @@ def get_sweepset_udr(
     depends on: udr.
     description: AP upstroke-downstroke ratio of a representative spike of a
     representative depolarization trace.
+    units: /.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -2974,6 +3051,7 @@ def get_sweepset_dfdi(sweepset: EphysSweepSetFeatureExtractor) -> Tuple[float, D
     description: df/di (slope) for the first 5 depolarization traces that
     contain spikes. If there are more than 2 duplicates in the number of spikes
     -> nan. Frequncy = num_spikes / T_stim.
+    units: Hz/pA.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -3015,6 +3093,7 @@ def get_sweepset_rheobase(
     current where the fitted line crosses the current axis. The fitted intercept
     must lie between the stimulus of the first depolarization trace that contains
     spikes and the last depolarization that does not.
+    units: pA.
 
     Args:
         sweepset (EphysSweepSetFeatureExtractor): Sweep set to extract feature from.
@@ -3079,9 +3158,9 @@ def get_available_sweepset_features(return_ft_info=False):
         "wildness": get_sweepset_wildness,
         "ap_freq_adapt": get_sweepset_ap_freq_adapt,
         "ap_amp_slope": get_sweepset_ap_amp_slope,
-        "fano_factor": get_sweepset_fano_factor,
+        "isi_fano_factor": get_sweepset_isi_fano_factor,
         "ap_fano_factor": get_sweepset_ap_fano_factor,
-        "cv": get_sweepset_cv,
+        "isi_cv": get_sweepset_isi_cv,
         "ap_cv": get_sweepset_ap_cv,
         "burstiness": get_sweepset_burstiness,
         "num_bursts": get_sweepset_num_bursts,

@@ -246,13 +246,61 @@ def has_rebound(sweep: EphysSweepFeatureExtractor, T_rebound: float = 0.3) -> bo
     return False
 
 
-def parse_ft_desc(func: Callable) -> str:
-    """Parses docstrings for feature descriptions.
+def parse_func_doc_attrs(func: Callable) -> Dict:
+    """Parses docstrings for attributes.
+
+    Docstrings should have the following format:
+    <Some text>
+    attr: <attr text>.
+    attr: <attr text>.
+    ...
+    <Some more text>
+
+    IMPORTANT: EACH ATTRIBUTE MUST END WITH A "."
+
+    Args:
+        func (Callable): Function to parse docstring of.
+
+    Returns:
+        doc_attrs: all attributes found in document string.
+    """
+    func_doc = func.__doc__
+
+    pattern = r"([\w\s]+):"
+    matches = re.findall(pattern, func_doc)
+    attrs = [m.strip() for m in matches]
+    if "Args" in attrs:
+        attrs = attrs[: attrs.index("Args")]
+
+    doc_attrs = {}
+    for attr in attrs:
+        doc_attrs[attr] = ""
+        if func_doc is not None:  # if func has no docstring
+            regex = re.compile(f"{attr}: (.*)")
+            match = regex.search(func_doc)
+            if match:
+                doc_attrs[attr] = match.group(1)[:-1]
+    return doc_attrs
+
+
+def parse_desc(func: Callable) -> str:
+    attrs = parse_func_doc_attrs(func)
+    if "description" in attrs:
+        return attrs["description"]
+    return ""
+
+
+def parse_feature_doc(func: Callable) -> str:
+    """Parses docstrings for feature attribute.
 
     Docstrings should have the following format:
     <Some text>
     description: <description text>.
+    depends on: <list of features that this feature depends on>.
+    units: <units of the feature>.
     <Some more text>
+
+    IMPORTANT: EACH ATTRIBUTE MUST END WITH A "."
 
     Args:
         func (Callable): Function to parse docstring of.
@@ -260,37 +308,19 @@ def parse_ft_desc(func: Callable) -> str:
     Returns:
         string: Description of the feature that the function extracts.
     """
-    func_doc = func.__doc__
-    if func_doc is not None:  # if func has no docstring
-        pattern = re.compile(r"description: (.*)")
-        match = pattern.search(func_doc)
-        if match:
-            return match.group(1)
-    return ""
+    split_func_name = func.__name__.split("_")
+    fttype = split_func_name[1]
+    ftname = "_".join(split_func_name[2:])
 
+    ftinfo = {"fttype": fttype, "ftname": ftname}
+    all_attrs = parse_func_doc_attrs(func)
+    ft_attrs = ["description", "units", "depends on"]
+    ftinfo.update({k: v for k, v in all_attrs.items() if k in ft_attrs})
+    if "depends on" in ftinfo:
+        # "" means no deps where found, vs "/" ft has no deps)
+        ftinfo["depends on"] = [d.strip() for d in ftinfo["depends on"].split(",")]
 
-def parse_ft_deps(func: Callable) -> str:
-    """Parses docstrings for feature dependencies.
-
-    Docstrings should have the following format:
-    <Some text>
-    depends on: <feature dependencies seperated by commas>.
-    <Some more text>
-
-    Args:
-        func (Callable): Function to parse docstring of.
-
-    Returns:
-        string: Other features that the function depends on.
-    """
-    func_doc = func.__doc__
-    if func_doc is not None:  # if func has no docstring
-        pattern = re.compile(r"depends on: (.*)")
-        match = pattern.search(func_doc)
-        if match:
-            dependency_str = match.group(1)[:-1]
-            return [d.strip() for d in dependency_str.split(",")]
-    return ""  # no dependencies where found (while / means ft has no dependencies)
+    return ftinfo
 
 
 where_between = lambda t, t0, tend: np.logical_and(t > t0, t < tend)
@@ -424,7 +454,7 @@ def ephys_feature(feature: Callable) -> Callable:
             ft, ft_info = ft_out
         else:
             ft, ft_info = ft_out, {}
-        ft_info["description"] = parse_ft_desc(feature)
+        ft_info.update(parse_feature_doc(feature))
 
         ft_out = include_info(ft, ft_info, return_ft_info)
         if update_inplace:
@@ -445,13 +475,14 @@ def get_example_feature(
 ) -> Tuple[float, Dict]:
     """Extracts example ephys feature.
 
+    units: unit of the feature.
     depends on: feature_1, feature_2, ..., feature_n.
     description: This describes how the features gets computed.
 
     Example function definition
     '''
     @ephys_feature
-    def get_example_feature(sweep_or_sweepset: Union[EphysSweepFeatureExtractor, EphysSweepSetFeatureExtractor])
+    def get_[spike/sweep/sweepset]_[feature_name](sweep_or_sweepset: Union[EphysSweepFeatureExtractor, EphysSweepSetFeatureExtractor])
         ft_value, ft_info = ephys_feature_init()  # init ft, ft_info = float("nan"), {}
 
         # do some feature calculations using sweep.
@@ -460,7 +491,6 @@ def get_example_feature(
 
         return ft_value, ft_info
     '''
-
 
     Args:
         sweep_or_sweepset (Union[EphysSweepFeatureExtractor, EphysSweepSetFeatureExtractor]): Sweep or sweepset to extract feature from.

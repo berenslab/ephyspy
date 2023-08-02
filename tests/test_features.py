@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from py_ephys.features import *
-from py_ephys.utils import parse_ft_deps, parse_ft_desc, strip_info
+from py_ephys.utils import parse_feature_doc, strip_info
 from tests.test_utils import (
     depol_test_sweep,
     hyperpol_test_sweep,
@@ -44,23 +44,24 @@ def test_feature_naming_scheme(ft_func):
     available features should be named in the following way:
     get_[spike/sweep/sweepset]_[feature_name].
     """
-    func_name_parts = ft_func.__name__.split("_")
-    ftype = func_name_parts[1]
-    get_fttype = "_".join(func_name_parts[:2])
-    ft_name = "_".join(func_name_parts[2:])
-    assert get_fttype.startswith("get_")
+    ft_attrs = parse_feature_doc(ft_func)
+    ft_func_name = ft_func.__name__
+    ftname = ft_attrs["ftname"]
+    ftype = ft_attrs["fttype"]
+
+    assert ft_func_name.startswith("get_")
     assert ftype in ["spike", "sweep", "sweepset"]
     if ftype == "spike":
-        assert ft_name in get_available_spike_features()
-        dct_ft_func = get_available_spike_features()[ft_name]
+        assert ftname in get_available_spike_features()
+        dct_ft_func = get_available_spike_features()[ftname]
         assert dct_ft_func.__name__ == ft_func.__name__
     elif ftype == "sweep":
-        assert ft_name in get_available_sweep_features().keys()
-        dct_ft_func = get_available_sweep_features()[ft_name]
+        assert ftname in get_available_sweep_features().keys()
+        dct_ft_func = get_available_sweep_features()[ftname]
         assert dct_ft_func.__name__ == ft_func.__name__
     elif ftype == "sweepset":
-        assert ft_name in get_available_sweepset_features().keys()
-        dct_ft_func = get_available_sweepset_features()[ft_name]
+        assert ftname in get_available_sweepset_features().keys()
+        dct_ft_func = get_available_sweepset_features()[ftname]
         assert dct_ft_func.__name__ == ft_func.__name__
 
 
@@ -74,8 +75,10 @@ def test_feature_naming_scheme(ft_func):
 def test_feature_can_be_parsed(ft_func):
     """Test if sweep level and sweepset level feature can be parsed by description
     and dependency parsers."""
-    parse_ft_desc(ft_func)
-    parse_ft_deps(ft_func)
+    ft_attrs = parse_feature_doc(ft_func)
+    assert "depends on" in ft_attrs.keys()
+    assert "description" in ft_attrs.keys()
+    assert "units" in ft_attrs.keys()
 
 
 ############################
@@ -155,9 +158,11 @@ def test_ephyssweepsetfeatureextractor(return_ft_info):
     n_sweeps, num_sweep_fts = test_sweepset.get_sweep_features().shape
     num_sweepset_fts = len(test_sweepset.get_sweepset_features())
     assert n_sweeps == len(test_sweepset.sweeps())
-    assert (
-        num_sweep_fts == len(test_sweepset.sweep_feature_funcs) + 1 + 15
-    )  # +1 for dc_offset, + 25 for AllenSDK features
+
+    all_features = set(test_sweepset.get_sweep_features().columns)
+    added_features = set(test_sweepset.sweep_feature_funcs.keys())
+    allensdk_fts = all_features.difference(added_features).difference({"dc_offset"})
+    assert len(allensdk_fts) == 14  # + 14 for AllenSDK features
     assert num_sweepset_fts == len(test_sweepset.sweepset_feature_funcs)
 
 
