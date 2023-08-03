@@ -49,13 +49,14 @@ def get_spike_ft_scatter_func(ft: str) -> Callable:
     ) -> Axes:
         spike_fts = sweep._spikes_df
         if spike_fts.size:
-            ax.scatter(
-                spike_fts[f"{ft}_t"],
-                spike_fts[f"{ft}_v"],
-                s=10,
-                label=ft,
-                **plot_kwargs,
-            )
+            if not np.all(spike_fts[f"{ft}_v"]):
+                ax.scatter(
+                    spike_fts[f"{ft}_t"],
+                    spike_fts[f"{ft}_v"],
+                    s=10,
+                    label=ft,
+                    **plot_kwargs,
+                )
         return ax
 
     return scatter_spike_ft
@@ -104,26 +105,29 @@ def plot_spike_width(
 ) -> Axes:
     spike_fts = sweep._spikes_df
     if spike_fts.size:
-        t_threshold = sweep.spike_feature("threshold_t", include_clipped=True)
-        t_peak = sweep.spike_feature("peak_t", include_clipped=True)
-        t_next = t_peak + 1.0 * (t_peak - t_threshold)  # T interval w.r.t. threshold
+        if not np.all(spike_fts["width"]):
+            t_threshold = sweep.spike_feature("threshold_t", include_clipped=True)
+            t_peak = sweep.spike_feature("peak_t", include_clipped=True)
+            t_next = t_peak + 1.0 * (
+                t_peak - t_threshold
+            )  # T interval w.r.t. threshold
 
-        fwhm_v = np.zeros_like(t_threshold)
-        hm_up_t = np.zeros_like(t_threshold)
-        hm_down_t = np.zeros_like(t_threshold)
-        for i, (t_th, t_n) in enumerate(zip(t_threshold, t_next)):
-            fwhm_i = get_fwhm(sweep.t, sweep.v, t_th, t_n)
-            fwhm_v[i], hm_up_t[i], hm_down_t[i] = fwhm_i
+            fwhm_v = np.zeros_like(t_threshold)
+            hm_up_t = np.zeros_like(t_threshold)
+            hm_down_t = np.zeros_like(t_threshold)
+            for i, (t_th, t_n) in enumerate(zip(t_threshold, t_next)):
+                fwhm_i = get_fwhm(sweep.t, sweep.v, t_th, t_n)
+                fwhm_v[i], hm_up_t[i], hm_down_t[i] = fwhm_i
 
-        ax.hlines(
-            fwhm_v,
-            hm_up_t,
-            hm_down_t,
-            label="width",
-            ls="--",
-            color=color,
-            **plot_kwargs,
-        )
+            ax.hlines(
+                fwhm_v,
+                hm_up_t,
+                hm_down_t,
+                label="width",
+                ls="--",
+                color=color,
+                **plot_kwargs,
+            )
     return ax
 
 
@@ -132,14 +136,15 @@ def plot_spike_adp(
 ) -> Axes:
     spike_fts = sweep._spikes_df
     if spike_fts.size:
-        ax.vlines(
-            0.5 * (spike_fts[f"adp_t"] + spike_fts["fast_trough_t"]),
-            spike_fts["adp_v"],
-            spike_fts["fast_trough_v"],
-            ls="--",
-            lw=1,
-            label="adp",
-        )
+        if not np.all(spike_fts["adp_v"]):
+            ax.vlines(
+                0.5 * (spike_fts[f"adp_t"] + spike_fts["fast_trough_t"]),
+                spike_fts["adp_v"],
+                spike_fts["fast_trough_v"],
+                ls="--",
+                lw=1,
+                label="adp",
+            )
     return ax
 
 
@@ -148,14 +153,15 @@ def plot_spike_ahp(
 ) -> Axes:
     spike_fts = sweep._spikes_df
     if spike_fts.size:
-        ax.vlines(
-            0.5 * (spike_fts[f"fast_trough_t"] + spike_fts["threshold_t"]),
-            spike_fts["fast_trough_v"],
-            spike_fts["threshold_v"],
-            ls="--",
-            lw=1,
-            label="ahp",
-        )
+        if not np.all(spike_fts["fast_trough_v"]):
+            ax.vlines(
+                0.5 * (spike_fts[f"fast_trough_t"] + spike_fts["threshold_t"]),
+                spike_fts["fast_trough_v"],
+                spike_fts["threshold_v"],
+                ls="--",
+                lw=1,
+                label="ahp",
+            )
     return ax
 
 

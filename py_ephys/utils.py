@@ -155,7 +155,7 @@ class EphysSweepSetFeatureExtractor(AllenEphysSweepSetFeatureExtractor):
 
     def process(self, overwrite_existing: bool = True):
         """Analyze features for all sweeps."""
-        for sweep in self._sweeps:
+        for i, sweep in enumerate(self._sweeps):
             if overwrite_existing:
                 sweep._sweep_features = {"dc_offset": self.dc_offset}
                 sweep.spike_features = {}

@@ -353,8 +353,14 @@ def get_sweep_v_baseline(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict
         Tuple[float, Dict]: baseline voltage feature and feature metadata
     """
     v_baseline_avg, v_baseline_info = ephys_feature_init()
+
     onset = strip_info(sweep.sweep_feature("stim_onset"))
-    where_baseline = where_between(sweep.t, onset - sweep.baseline_interval, onset)
+    if np.isnan(onset):
+        baseline_interval = float("nan")
+        where_baseline = np.ones_like(sweep.t, dtype=bool)  # for I=0pA
+    else:
+        baseline_interval = sweep.baseline_interval
+        where_baseline = where_between(sweep.t, onset - baseline_interval, onset)
     t_baseline = sweep.t[where_baseline]
     v_baseline = sweep.v[where_baseline]
     v_baseline_avg = np.mean(v_baseline)
@@ -364,7 +370,7 @@ def get_sweep_v_baseline(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict
             "where_baseline": where_baseline,
             "t_baseline": t_baseline,
             "v_baseline": v_baseline,
-            "baseline_interval": sweep.baseline_interval,
+            "baseline_interval": baseline_interval,
             "stim_onset": onset,
         }
     )
