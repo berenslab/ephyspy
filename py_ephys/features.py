@@ -25,6 +25,7 @@ from scipy.optimize import curve_fit
 from sklearn import linear_model
 
 import py_ephys.allen_sdk.ephys_features as ft
+from py_ephys.allen_sdk.ephys_features import FeatureError
 from py_ephys.allen_sdk.ephys_extractor import EphysSweepFeatureExtractor
 from py_ephys.utils import *
 
@@ -141,7 +142,7 @@ def get_sweep_burst_metrics(
 def get_sweep_num_ap(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict]:
     """Extract sweep level spike count feature.
 
-    depends on: stim_onset, stim_end.
+    depends on: /.
     description: # peaks during stimulus.
     units: /.
 
@@ -174,7 +175,7 @@ def get_sweep_num_ap(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict]:
 def get_sweep_ap_freq(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict]:
     """Extract sweep level spike rate feature.
 
-    depends on: num_ap, stim_end, stim_onset.
+    depends on: num_ap.
     description: # peaks during stimulus / stimulus duration.
     units: Hz.
 
@@ -407,7 +408,7 @@ def get_sweep_tau(
             sweep.v[onset_idx:] <= frac * (v_peak - v_baseline) + v_baseline
         )
         if not search_result.size:
-            raise ft.FeatureError("could not find interval for time constant estimate")
+            raise FeatureError("could not find interval for time constant estimate")
 
         fit_start = sweep.t[search_result[0] + onset_idx]
         fit_end = sweep.t[peak_index]
@@ -575,9 +576,12 @@ def get_sweep_sag(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict]:
     """
     sag, sag_info = ephys_feature_init()
     if is_hyperpol(sweep):
-        with strip_sweep_ft_info(sweep) as fsweep:
-            sag_fts = fsweep.estimate_sag()
-        sag = sag_fts[0]
+        try:  # sometimes fails if stim just below 0pA
+            with strip_sweep_ft_info(sweep) as fsweep:
+                sag_fts = fsweep.estimate_sag()
+            sag = sag_fts[0]
+        except FeatureError:
+            pass
     return sag, sag_info
 
 
@@ -599,9 +603,12 @@ def get_sweep_sag_fraction(
     """
     sag_fraction, sag_fraction_info = ephys_feature_init()
     if is_hyperpol(sweep):
-        with strip_sweep_ft_info(sweep) as fsweep:
-            sag_fts = fsweep.estimate_sag()
-        sag_fraction = sag_fts[1]
+        try:  # sometimes fails if stim just below 0pA
+            with strip_sweep_ft_info(sweep) as fsweep:
+                sag_fts = fsweep.estimate_sag()
+            sag_fraction = sag_fts[1]
+        except FeatureError:
+            pass
     return sag_fraction, sag_fraction_info
 
 
@@ -621,9 +628,12 @@ def get_sweep_sag_ratio(sweep: EphysSweepFeatureExtractor) -> Tuple[float, Dict]
     """
     sag_ratio, sag_ratio_info = ephys_feature_init()
     if is_hyperpol(sweep):
-        with strip_sweep_ft_info(sweep) as fsweep:
-            sag_fts = fsweep.estimate_sag()
-        sag_ratio = sag_fts[2]
+        try:  # sometimes fails if stim just below 0pA
+            with strip_sweep_ft_info(sweep) as fsweep:
+                sag_fts = fsweep.estimate_sag()
+            sag_ratio = sag_fts[2]
+        except FeatureError:
+            pass
     return sag_ratio, sag_ratio_info
 
 
@@ -750,20 +760,21 @@ def get_sweep_rebound(
         where_rebound = np.logical_and(where_rebound, sweep.v > v_baseline)
         t_rebound = sweep.t[where_rebound]
         v_rebound = sweep.v[where_rebound]
-        idx_rebound = np.argmax(sweep.v[where_rebound] - v_baseline)
-        idx_rebound = np.where(where_rebound)[0][idx_rebound]
-        max_rebound = sweep.v[idx_rebound]
-        rebound = max_rebound - v_baseline
-        rebound_info.update(
-            {
-                "idx_rebound": idx_rebound,
-                "t_rebound": t_rebound,
-                "v_rebound": v_rebound,
-                "v_baseline": v_baseline,
-                "max_rebound": max_rebound,
-                "where_rebound": where_rebound,
-            }
-        )
+        if len(v_rebound) > 10:  # at least 10 time points with rebound
+            idx_rebound = np.argmax(sweep.v[where_rebound] - v_baseline)
+            idx_rebound = np.where(where_rebound)[0][idx_rebound]
+            max_rebound = sweep.v[idx_rebound]
+            rebound = max_rebound - v_baseline
+            rebound_info.update(
+                {
+                    "idx_rebound": idx_rebound,
+                    "t_rebound": t_rebound,
+                    "v_rebound": v_rebound,
+                    "v_baseline": v_baseline,
+                    "max_rebound": max_rebound,
+                    "where_rebound": where_rebound,
+                }
+            )
     return rebound, rebound_info
 
 
@@ -835,19 +846,20 @@ def get_sweep_rebound_latency(
         where_rebound = np.logical_and(where_rebound, sweep.v > v_baseline)
         t_rebound = sweep.t[where_rebound]
         v_rebound = sweep.v[where_rebound]
-        idx_rebound_reached = np.where(where_rebound)[0]
-        t_rebound_reached = sweep.t[idx_rebound_reached][0]
-        rebound_latency = t_rebound_reached - end
-        rebound_latency_info.update(
-            {
-                "idx_rebound_reached": idx_rebound_reached,
-                "t_rebound_reached": t_rebound_reached,
-                "where_rebound": where_rebound,
-                "t_rebound": t_rebound,
-                "v_rebound": v_rebound,
-                "v_baseline": v_baseline,
-            }
-        )
+        if len(v_rebound) > 10:  # at least 10 time points with rebound
+            idx_rebound_reached = np.where(where_rebound)[0]
+            t_rebound_reached = sweep.t[idx_rebound_reached][0]
+            rebound_latency = t_rebound_reached - end
+            rebound_latency_info.update(
+                {
+                    "idx_rebound_reached": idx_rebound_reached,
+                    "t_rebound_reached": t_rebound_reached,
+                    "where_rebound": where_rebound,
+                    "t_rebound": t_rebound,
+                    "v_rebound": v_rebound,
+                    "v_baseline": v_baseline,
+                }
+            )
     return rebound_latency, rebound_latency_info
 
 
@@ -920,15 +932,16 @@ def get_sweep_rebound_avg(
         where_rebound = np.logical_and(where_rebound, sweep.v > v_baseline)
         v_rebound = sweep.v[where_rebound]
         t_rebound = sweep.t[where_rebound]
-        v_rebound_avg = ft.average_voltage(v_rebound, t_rebound) - v_baseline
-        rebound_avg_info.update(
-            {
-                "where_rebound": where_rebound,
-                "t_rebound": t_rebound,
-                "v_rebound": v_rebound,
-                "v_baseline": v_baseline,
-            }
-        )
+        if len(v_rebound) > 10:  # at least 10 rebound points
+            v_rebound_avg = ft.average_voltage(v_rebound, t_rebound) - v_baseline
+            rebound_avg_info.update(
+                {
+                    "where_rebound": where_rebound,
+                    "t_rebound": t_rebound,
+                    "v_rebound": v_rebound,
+                    "v_baseline": v_baseline,
+                }
+            )
     return v_rebound_avg, rebound_avg_info
 
 
@@ -1149,7 +1162,6 @@ def default_ap_selector(sweep: EphysSweepFeatureExtractor) -> int:
         "upstroke_v",
     ]
 
-    spike_fts = sweep._spikes_df[relevant_ap_fts]
     peak_t = sweep.spike_feature("peak_t", include_clipped=True)
     onset = strip_info(sweep.sweep_feature("stim_onset"))
     end = strip_info(sweep.sweep_feature("stim_end"))
@@ -1158,6 +1170,7 @@ def default_ap_selector(sweep: EphysSweepFeatureExtractor) -> int:
     if len(peak_t[is_stim]) == 0:  # some sweeps have only wild aps
         return slice(0)
 
+    spike_fts = sweep._spikes_df[relevant_ap_fts]
     has_nan_fts = spike_fts.isna().any(axis=1)
     if any(~has_nan_fts & is_stim):
         selected_ap_idxs = spike_fts.index[~has_nan_fts & is_stim]

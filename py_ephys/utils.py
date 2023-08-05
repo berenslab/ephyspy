@@ -104,10 +104,10 @@ class EphysSweepSetFeatureExtractor(AllenEphysSweepSetFeatureExtractor):
 
     @property
     def i(self) -> ndarray:
-        i = np.empty((len(self.sweeps()), len(self.sweeps()[0].i)))
+        stim = np.empty((len(self.sweeps()), len(self.sweeps()[0].i)))
         for i, swp in enumerate(self.sweeps()):
-            i[i] = swp.i
-        return i
+            stim[i] = swp.i
+        return stim
 
     def get_sweep_features(
         self, force_retrieval: bool = False, return_ft_info: bool = True

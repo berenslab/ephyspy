@@ -331,7 +331,7 @@ class EphysSweepFeatureExtractor:
             warnings.filterwarnings("ignore", category=RuntimeWarning, module="numpy")
 
             sweep_level_features = {
-                "adapt": ft.adaptation_index(isis),
+                "isi_adapt": ft.adaptation_index(isis),
                 "latency": ft.latency(t, thresholds, self.start),
                 "isi_cv": (isis.std() / isis.mean()) if len(isis) >= 1 else np.nan,
                 "mean_isi": isis.mean() if len(isis) > 0 else np.nan,
@@ -672,7 +672,6 @@ class EphysSweepFeatureExtractor:
                 ft.find_time_index(t, 0.12) - ft.find_time_index(t, 0.1)
             )
 
-        # print(t[peak_index])
         v_peak_avg = ft.average_voltage(
             v,
             t,
@@ -681,15 +680,9 @@ class EphysSweepFeatureExtractor:
         )
         v_baseline = self.sweep_feature("v_baseline")
         v_steady = ft.average_voltage(v, t, start=end - self.baseline_interval, end=end)
-        # print('v_stead: ', v_steady)
-        # print('v_baseline: ', v_baseline)
-        # print('v_peak_avg: ', v_peak_avg)
-        # print('denominater=v_stead-v_baseline: ', v_steady-v_baseline)
-        # print('numerator=v_peak_avg-v_baseline: ', v_peak_avg-v_baseline)
         sag = v_peak_avg - v_baseline
         sag_fraction = (v_peak_avg - v_steady) / sag
         sag_ratio = (v_peak_avg - v_baseline) / (v_steady - v_baseline)
-        # print(sag_ratio)
         return sag, sag_fraction, sag_ratio
 
     def spikes(self):
