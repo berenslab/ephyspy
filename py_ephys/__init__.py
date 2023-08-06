@@ -14,7 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from py_ephys.base import *
+
 # from py_ephys.diagnostics import *
 from py_ephys.features import *
 from py_ephys.utils import *
-from py_ephys.base import *

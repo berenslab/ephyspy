@@ -14,21 +14,21 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import inspect
 import re
+import sys
 from typing import Callable, Dict, List, Optional, Union
 
 import numpy as np
 from numpy import ndarray
 
 import py_ephys.allen_sdk.ephys_extractor as efex
-
 from py_ephys.allen_sdk.ephys_extractor import (
     EphysSweepFeatureExtractor as AllenEphysSweepFeatureExtractor,
 )
 from py_ephys.allen_sdk.ephys_extractor import (
     EphysSweepSetFeatureExtractor as AllenEphysSweepSetFeatureExtractor,
 )
-import sys, inspect
 
 
 class EphysSweepFeatureExtractor(AllenEphysSweepFeatureExtractor):

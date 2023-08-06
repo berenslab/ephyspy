@@ -25,8 +25,8 @@ from scipy.optimize import curve_fit
 from sklearn import linear_model
 
 import py_ephys.allen_sdk.ephys_features as ft
-from py_ephys.allen_sdk.ephys_features import FeatureError
 from py_ephys.allen_sdk.ephys_extractor import EphysSweepFeatureExtractor
+from py_ephys.allen_sdk.ephys_features import FeatureError
 from py_ephys.utils import *
 
 # ransac = linear_model.RANSACRegressor()

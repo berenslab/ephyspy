@@ -1,14 +1,14 @@
 from abc import ABC, abstractmethod
+from typing import Callable
+
 import numpy as np
 
 from py_ephys.utils import (
-    parse_func_doc_attrs,
-    parse_deps,
-    fetch_available_fts,
     FeatureError,
+    fetch_available_fts,
+    parse_deps,
+    parse_func_doc_attrs,
 )
-
-from typing import Callable
 
 
 class EphysFeature(ABC):

@@ -25,8 +25,8 @@ from scipy.optimize import curve_fit
 from sklearn import linear_model
 
 from py_ephys.allen_sdk.ephys_extractor import EphysSweepFeatureExtractor
-from py_ephys.utils import *
 from py_ephys.base import EphysFeature, SweepSetFeature
+from py_ephys.utils import *
 
 # ransac = linear_model.RANSACRegressor()
 ransac = linear_model.LinearRegression()
