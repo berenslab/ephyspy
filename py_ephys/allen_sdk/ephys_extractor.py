@@ -41,7 +41,7 @@ import numpy as np
 import six
 from pandas import DataFrame
 
-import py_ephys.allen_sdk.ephys_features as ft
+from . import ephys_features as ft
 
 # Constants for stimulus-specific analysis
 RAMPS_START = 1.02
@@ -171,36 +171,16 @@ class EphysSweepFeatureExtractor:
             self._spikes_df = DataFrame()
             return
 
-        # You can comment the following lines if you don't want to check this
-        thresholds, peaks, clipped = ft.check_threshold_w_peak(
-            v, t, thresholds, peaks, clipped
-        )
-        if not thresholds.size:
-            self._spikes_df = DataFrame()
-            return
-
         # Spike list and thresholds have been refined - now find other features
         upstrokes = ft.find_upstroke_indexes(v, t, thresholds, peaks, self.filter, dvdt)
         troughs = ft.find_trough_indexes(v, t, thresholds, peaks, clipped, self.end)
-
-        # You can comment the following lines if you don't want to check this
-        thresholds, upstrokes, peaks, troughs, clipped = ft.check_trough_w_peak(
-            thresholds, upstrokes, peaks, troughs, clipped, filter=10.0, dvdt=None
-        )
-        # Maybe you have nothing anymore so save time by the following:
-        if not thresholds.size:
-            self._spikes_df = DataFrame()
-            return
-
         downstrokes = ft.find_downstroke_indexes(
             v, t, peaks, troughs, clipped, self.filter, dvdt
         )
         trough_details, clipped = ft.analyze_trough_details(
             v, t, thresholds, peaks, clipped, self.end, self.filter, dvdt=dvdt
         )
-        widths = ft.find_widths_wrt_threshold(
-            v, t, thresholds, peaks, trough_details[1], clipped
-        )
+        widths = ft.find_widths(v, t, thresholds, peaks, trough_details[1], clipped)
 
         base_clipped_list = []
 
@@ -316,14 +296,6 @@ class EphysSweepFeatureExtractor:
             self._sweep_features["avg_rate"] = 0
             return
 
-        # Start recently added
-        peak_heights = None
-        if not self._spikes_df.empty:
-            peak_heights = (
-                self._spikes_df["peak_v"].values - self._spikes_df["threshold_v"].values
-            )
-        # End recently added
-
         thresholds = self._spikes_df["threshold_index"].values.astype(int)
         isis = ft.get_isis(t, thresholds)
         with warnings.catch_warnings():
@@ -331,40 +303,12 @@ class EphysSweepFeatureExtractor:
             warnings.filterwarnings("ignore", category=RuntimeWarning, module="numpy")
 
             sweep_level_features = {
-                "isi_adapt": ft.adaptation_index(isis),
+                "adapt": ft.adaptation_index(isis),
                 "latency": ft.latency(t, thresholds, self.start),
                 "isi_cv": (isis.std() / isis.mean()) if len(isis) >= 1 else np.nan,
                 "mean_isi": isis.mean() if len(isis) > 0 else np.nan,
                 "median_isi": np.median(isis),
                 "first_isi": isis[0] if len(isis) >= 1 else np.nan,
-                # We want at least 3 peaks (i.e. 2 isis) to calculate the adaptation index (given in percentage)
-                "isi_adapt": (isis[1] / isis[0]) if len(isis) >= 2 else np.nan,
-                # Start recently added
-                # "AP_amp_adapt": self._spikes_df['peak_height'][1]/self._spikes_df['peak_height'][0] if self._spikes_df.shape[1] >= 2 else np.nan,
-                "AP_amp_adapt": (peak_heights[1] / peak_heights[0])
-                if peak_heights.size >= 2
-                else np.nan,
-                # "AP_amp_change": ft.ap_amp_change(self._spikes_df['peak_height'].values) if self._spikes_df.shape.shape[1] >= 2 else np.nan,
-                "AP_amp_adapt_average": ft.ap_amp_adaptation(peak_heights)
-                if peak_heights.size >= 2
-                else np.nan,
-                # End recently added
-                "AP_fano_factor": ((peak_heights.std() ** 2) / peak_heights.mean())
-                if peak_heights.size >= 2
-                else np.nan,
-                "AP_cv": ((peak_heights.std()) / peak_heights.mean())
-                if peak_heights.size >= 2
-                else np.nan,
-                "isi_adapt_average": ft.isi_adaptation(isis)
-                if len(isis) >= 2
-                else np.nan,
-                # "norm_sq_isis": ft.norm_sq_diff(isis) if len(isis) >= 2 else np.nan,
-                # You could in principle make the Fano factor and cv 0 for n = 1 ISI, but we choose to make them Nan, i.e. they
-                # are not that informative here
-                "isi_fano_factor": ((isis.std() ** 2) / isis.mean())
-                if len(isis) > 1
-                else np.nan,
-                "isi_cv": (isis.std() / isis.mean()) if len(isis) > 1 else np.nan,
                 "avg_rate": ft.average_rate(t, thresholds, self.start, self.end),
             }
 
@@ -580,55 +524,10 @@ class EphysSweepFeatureExtractor:
         )
         if not search_result.size:
             raise ft.FeatureError("could not find interval for time constant estimate")
-
         fit_start = self.t[search_result[0] + start_index]
         fit_end = self.t[peak_index]
 
-        # There was one cell with a noisy (?) peak downwards (to -250 mV) unfortunately. That's why we have the if-statement here.
-        # You can delete this if-statement if you have normal traces.
-        # If this all still didn't work as expected, then hopefully there are more hyperpolarisation traces for which tau can be estimated
-        if self.v[peak_index] < -200:
-            print("A DOWNWARD PEAK WAS OBSERVED GOING TO LESS THAN 200 MV!!!")
-            # Look for another local minimum closer to stimulus onset
-            # We look for a couple of milliseconds after stimulus onset to 50 ms before the downward peak
-            end_index = (start_index + 50) + np.argmin(
-                self.v[start_index + 50 : peak_index - 1250]
-            )
-            fit_end = self.t[end_index]
-            fit_start = self.t[start_index + 50]
-
         a, inv_tau, y0 = ft.fit_membrane_time_constant(
-            self.v, self.t, fit_start, fit_end
-        )
-
-        return 1.0 / inv_tau
-
-    def estimate_time_constant_at_end(self):
-        """Calculate the membrane time constant by fitting the voltage response with a single expontial at the end of a hyperpolarising
-        stimulus.
-
-        Returns
-        -------
-        tau : membrane time constant in seconds
-        """
-
-        # Assumes this is being done on a hyperpolarizing step
-        v_peak, peak_index = self.voltage_deflection("min")
-        v_baseline = self.sweep_feature("v_baseline")
-        if self.end:
-            start_index = ft.find_time_index(self.t, self.end)
-        else:
-            start_index = ft.find_time_index(self.t, 0.7)
-
-        frac = 0.1
-        search_result = np.flatnonzero(
-            self.v[start_index:] >= frac * (v_baseline - v_peak) + v_peak
-        )
-        if not search_result.size:
-            raise ft.FeatureError("Could not find interval for time constant estimate")
-        fit_start = self.t[search_result[0] + start_index]
-        fit_end = self.t[-1]
-        b, inv_tau, A = ft.fit_membrane_time_constant_at_end(
             self.v, self.t, fit_start, fit_end
         )
 
@@ -643,9 +542,7 @@ class EphysSweepFeatureExtractor:
 
         Returns
         -------
-        sag : magnitude of the depolarization peak.
-        sag_ratio : fraction that membrane potential relaxes back to baseline
-        sag_ratio: ratio of steady state voltage decrease to the largest voltage decrease
+        sag : fraction that membrane potential relaxes back to baseline
         """
 
         t = self.t
@@ -660,18 +557,6 @@ class EphysSweepFeatureExtractor:
             end = self.t[-1]
 
         v_peak, peak_index = self.voltage_deflection("min")
-
-        # There was one cell with a noisy (?) peak downwards (to -250 mV) unfortunately. That's why we have the if-statement here.
-        # You can delete this if-statement if you have normal traces.
-        # If this all still didn't work as expected, then hopefully there are more hyperpolarisation traces for which tau can be estimated
-        if self.v[peak_index] < -200:
-            print("A DOWNWARD PEAK WAS OBSERVED GOING TO LESS THAN 200 MV!!!")
-            # Look for another local minimum closer to stimulus onset
-            # A spike should only last about a couple of milliseconds, so let's look a bit before the 'spike'
-            peak_index = peak_index - (
-                ft.find_time_index(t, 0.12) - ft.find_time_index(t, 0.1)
-            )
-
         v_peak_avg = ft.average_voltage(
             v,
             t,
@@ -680,10 +565,8 @@ class EphysSweepFeatureExtractor:
         )
         v_baseline = self.sweep_feature("v_baseline")
         v_steady = ft.average_voltage(v, t, start=end - self.baseline_interval, end=end)
-        sag = v_peak_avg - v_baseline
-        sag_fraction = (v_peak_avg - v_steady) / sag
-        sag_ratio = (v_peak_avg - v_baseline) / (v_steady - v_baseline)
-        return sag, sag_fraction, sag_ratio
+        sag = (v_peak_avg - v_steady) / (v_peak_avg - v_baseline)
+        return sag
 
     def spikes(self):
         """Get all features for each spike as a list of records."""
@@ -1166,7 +1049,6 @@ class EphysCellFeatureExtractor:
                 "No subthreshold long square sweeps, cannot evaluate cell features."
             )
 
-        peaks = subthresh_ext.sweep_features("peak_deflect")
         sags = subthresh_ext.sweep_features("sag")
         sag_eval_levels = np.array(
             [sweep.voltage_deflection()[0] for sweep in subthresh_ext.sweeps()]

@@ -59,6 +59,7 @@ def detect_putative_spikes(v, t, start=None, end=None, filter=10.0, dv_cutoff=20
     -------
     putative_spikes : numpy array of preliminary spike indexes
     """
+
     if not isinstance(v, np.ndarray):
         raise TypeError("v is not an np.ndarray")
 
@@ -73,18 +74,18 @@ def detect_putative_spikes(v, t, start=None, end=None, filter=10.0, dv_cutoff=20
 
     if end is None:
         end = t[-1]
+
     start_index = find_time_index(t, start)
     end_index = find_time_index(t, end)
     v_window = v[start_index : end_index + 1]
     t_window = t[start_index : end_index + 1]
 
     dvdt = calculate_dvdt(v_window, t_window, filter)
+
     # Find positive-going crossings of dV/dt cutoff level
     putative_spikes = np.flatnonzero(
         np.diff(np.greater_equal(dvdt, dv_cutoff).astype(int)) == 1
     )
-    if dvdt[0] > dv_cutoff:
-        putative_spikes = np.insert(putative_spikes, 0, 0)
 
     if len(putative_spikes) <= 1:
         # Set back to original index space (not just window)
@@ -96,6 +97,7 @@ def detect_putative_spikes(v, t, start=None, end=None, filter=10.0, dv_cutoff=20
         for i, s in enumerate(putative_spikes[1:])
         if np.any(dvdt[putative_spikes[i] : s] < 0)
     ]
+
     # Set back to original index space (not just window)
     return np.array(putative_spikes) + start_index
 
@@ -120,6 +122,7 @@ def find_peak_indexes(v, t, spike_indexes, end=None):
         np.argmax(v[spk:next]) + spk
         for spk, next in zip(spks_and_end[:-1], spks_and_end[1:])
     ]
+
     return np.array(peak_indexes)
 
 
@@ -204,97 +207,8 @@ def find_upstroke_indexes(v, t, spike_indexes, peak_indexes, filter=10.0, dvdt=N
         np.argmax(dvdt[spike:peak]) + spike
         for spike, peak in zip(spike_indexes, peak_indexes)
     ]
+
     return np.array(upstroke_indexes)
-
-
-def refine_threshold_indexes_based_on_third_derivative(
-    v, t, peak_indexes, upstroke_indexes, filter=10.0, dvdt=None
-):
-    """Refine threshold detection of previously-found spikes. Simple code to handle too steep depolarisations in the beginning
-    now too.
-
-    Parameters
-    ----------
-    v : numpy array of voltage time series in mV
-    t : numpy array of times in seconds
-    peak_indexes : numpy array of indexes of action potential peaks
-    upstroke_indexes : numpy array of indexes of spike upstrokes
-    filter : cutoff frequency for 4-pole low-pass Bessel filter in kHz (optional, default 10)
-    dvdt : pre-calculated time-derivative of voltage (optional)
-
-
-    Returns
-    -------
-    threshold_indexes : numpy array of threshold indexes
-    """
-    if not upstroke_indexes.size:
-        return np.array([])
-
-    if dvdt is None:
-        dvdt = calculate_dvdt(v, t, filter)
-    dvdt2 = calculate_dvdt(dvdt, t[:-1], filter)  # Second derivative of the voltage
-    dvdt3 = calculate_dvdt(dvdt2, t[:-2], filter)  # Third derivative of the voltage
-
-    threshold_indexes = []
-    peak_indexes_and_start = np.append(np.array([0]), peak_indexes)
-    for peak, upstroke in zip(peak_indexes_and_start[:-1], upstroke_indexes):
-        thresh_index = np.argmax(
-            dvdt3[upstroke : peak + np.argmin(v[peak:upstroke]) : -1]
-        )
-        threshold_indexes.append(upstroke - thresh_index)
-    return np.array(threshold_indexes)
-
-
-def refine_threshold_indexes_updated(
-    v, t, upstroke_indexes, start=None, thresh_frac=0.05, filter=10.0, dvdt=None
-):
-    """Refine threshold detection of previously-found spikes. Simple code to handle too steep depolarisations in the beginning
-    now too.
-
-    Parameters
-    ----------
-    v : numpy array of voltage time series in mV
-    t : numpy array of times in seconds
-    upstroke_indexes : numpy array of indexes of spike upstrokes (for threshold target calculation)
-    thresh_frac : fraction of average upstroke for threshold calculation (optional, default 0.05)
-    filter : cutoff frequency for 4-pole low-pass Bessel filter in kHz (optional, default 10)
-    dvdt : pre-calculated time-derivative of voltage (optional)
-
-    Returns
-    -------
-    threshold_indexes : numpy array of threshold indexes
-    """
-    if start is None:
-        start = t[0]
-
-    start_index = find_time_index(t, start)
-
-    if not upstroke_indexes.size:
-        return np.array([])
-
-    if dvdt is None:
-        dvdt = calculate_dvdt(v, t, filter)
-
-    avg_upstroke = dvdt[upstroke_indexes].mean()
-    target = avg_upstroke * thresh_frac
-
-    upstrokes_and_start = np.append(np.array([start_index]), upstroke_indexes)
-    threshold_indexes = []
-    for upstk, upstk_prev in zip(upstrokes_and_start[1:], upstrokes_and_start[:-1]):
-        if upstk_prev == start_index and not upstk_prev == find_time_index(
-            t, 0.1
-        ):  # Too steep depolarisations
-            threshold_indexes.append(upstk - np.argmin(dvdt[upstk:upstk_prev:-1]))
-            continue
-        potential_indexes = np.flatnonzero(dvdt[upstk:upstk_prev:-1] <= target)
-        if not potential_indexes.size:
-            # couldn't find a matching value for threshold,
-            # so just going to the start of the search interval
-            threshold_indexes.append(upstk_prev)
-        else:
-            threshold_indexes.append(upstk - potential_indexes[0])
-
-    return np.array(threshold_indexes)
 
 
 def refine_threshold_indexes(
@@ -382,6 +296,7 @@ def check_thresholds_and_peaks(
 
     if not end:
         end = t[-1]
+
     overlaps = np.flatnonzero(spike_indexes[1:] <= peak_indexes[:-1] + 1)
     if overlaps.size:
         spike_mask = np.ones_like(spike_indexes, dtype=bool)
@@ -464,26 +379,8 @@ def check_thresholds_and_peaks(
             v[peak_indexes[-1] : end_index + 1].min(),
         )
         clipped[-1] = True
+
     return spike_indexes, peak_indexes, upstroke_indexes, clipped
-
-
-def check_threshold_w_peak(v, t, spike_indexes, peak_indexes, clipped):
-    # Noisy 'spikes' which have a threshold way too close to the peak index should be removed. Sometimes lowering the filter helps,
-    # you don't want to not see spikes which are spikes. This is an alternative approach.
-
-    if not spike_indexes.size or not peak_indexes.size:
-        return np.array([]), np.array([]), np.zeros_like(np.array([]), dtype=bool)
-
-    # If the peak comes already less than approximately a fifth of a millisecond after the putative threshold, it's probably noise
-    indices = [
-        ((t[peak] - t[spike]) > 0.0002)
-        for peak, spike in zip(peak_indexes, spike_indexes)
-    ]
-    spike_indexes = spike_indexes[indices]
-    peak_indexes = peak_indexes[indices]
-    clipped = clipped[indices]
-
-    return spike_indexes, peak_indexes, clipped
 
 
 def find_trough_indexes(v, t, spike_indexes, peak_indexes, clipped=None, end=None):
@@ -514,7 +411,6 @@ def find_trough_indexes(v, t, spike_indexes, peak_indexes, clipped=None, end=Non
     end_index = find_time_index(t, end)
 
     trough_indexes = np.zeros_like(spike_indexes, dtype=float)
-
     trough_indexes[:-1] = [
         v[peak:spk].argmin() + peak
         for peak, spk in zip(peak_indexes[:-1], spike_indexes[1:])
@@ -529,41 +425,9 @@ def find_trough_indexes(v, t, spike_indexes, peak_indexes, clipped=None, end=Non
     # nwg - trying to remove this next part for now - can't figure out if this will be needed with new "clipped" method
 
     # If peak is the same point as the trough, drop that point
-    # trough_indexes = trough_indexes[np.where(peak_indexes[:len(trough_indexes)] != trough_indexes)]
+    #     trough_indexes = trough_indexes[np.where(peak_indexes[:len(trough_indexes)] != trough_indexes)]
+
     return trough_indexes
-
-
-def check_trough_w_peak(
-    spike_indexes,
-    upstroke_indexes,
-    peak_indexes,
-    trough_indexes,
-    clipped,
-    filter=10.0,
-    dvdt=None,
-):
-    # Sometimes the stimulus at offset e.g. can result in a bump which could be classified as a spike. Sometimes lowering the filter can
-    # work, but you would have to lower it a lot sometimes which might result in a lack of actual spike detection. It seems that for these
-    # bumps the voltage does not increase much and that the trough and peak are at the same detected time index. Ofcourse a peak and
-    # trough cannot occur at the same time, so based on this we remove those 'spikes'.
-
-    if not spike_indexes.size or not peak_indexes.size:
-        return (
-            np.array([]),
-            np.array([]),
-            np.array([]),
-            np.array([]),
-            np.zeros_like(np.array([]), dtype=bool),
-        )
-
-    indices = [peak != trough for peak, trough in zip(peak_indexes, trough_indexes)]
-    spike_indexes = spike_indexes[indices]
-    upstroke_indexes = upstroke_indexes[indices]
-    peak_indexes = peak_indexes[indices]
-    trough_indexes = trough_indexes[indices]
-    clipped = clipped[indices]
-
-    return spike_indexes, upstroke_indexes, peak_indexes, trough_indexes, clipped
 
 
 def find_downstroke_indexes(
@@ -602,6 +466,7 @@ def find_downstroke_indexes(
 
     valid_peak_indexes = peak_indexes[~clipped].astype(int)
     valid_trough_indexes = trough_indexes[~clipped].astype(int)
+
     downstroke_indexes = np.zeros_like(peak_indexes) * np.nan
     downstroke_index_values = [
         np.argmin(dvdt[peak:trough]) + peak
@@ -703,85 +568,6 @@ def find_widths(v, t, spike_indexes, peak_indexes, trough_indexes, clipped=None)
     return widths
 
 
-def find_widths_wrt_threshold(
-    v, t, spike_indexes, peak_indexes, trough_indexes, clipped=None
-):
-    """Find widths at half-height for spikes but based this time on heights w.r.t. to the thresholds (not troughs)
-    Trough_indexes are still necessary to find the index for which the AP reaches the half-height after the peak
-    Widths are only returned when heights are defined
-
-    Parameters
-    ----------
-    v : numpy array of voltage time series in mV
-    t : numpy array of times in seconds
-    spike_indexes : numpy array of spike indexes (they are actually the thresholds)
-    peak_indexes : numpy array of spike peak indexes
-    trough_indexes : numpy array of trough indexes
-
-    Returns
-    -------
-    widths : numpy array of spike widths in sec
-    """
-    if not spike_indexes.size or not peak_indexes.size:
-        return np.array([])
-
-    if len(spike_indexes) < len(trough_indexes):
-        raise FeatureError("Cannot have more troughs than spikes")
-
-    if clipped is None:
-        clipped = np.zeros_like(spike_indexes, dtype=bool)
-    use_indexes = ~np.isnan(trough_indexes)
-    use_indexes[clipped] = False
-
-    heights = np.zeros_like(trough_indexes) * np.nan
-    heights[use_indexes] = (
-        v[peak_indexes[use_indexes]] - v[spike_indexes[use_indexes].astype(int)]
-    )
-
-    width_levels = np.zeros_like(trough_indexes) * np.nan
-    width_levels[use_indexes] = (
-        heights[use_indexes] / 2.0 + v[spike_indexes[use_indexes].astype(int)]
-    )
-
-    width_starts = np.zeros_like(trough_indexes) * np.nan
-    width_starts[use_indexes] = np.array(
-        [
-            pk - np.flatnonzero(v[pk:spk:-1] <= wl)[0]
-            if np.flatnonzero(v[pk:spk:-1] <= wl).size > 0
-            else np.nan
-            for pk, spk, wl in zip(
-                peak_indexes[use_indexes],
-                spike_indexes[use_indexes],
-                width_levels[use_indexes],
-            )
-        ]
-    )
-    width_ends = np.zeros_like(trough_indexes) * np.nan
-    width_ends[use_indexes] = np.array(
-        [
-            pk + np.flatnonzero(v[pk:tr] <= wl)[0]
-            if np.flatnonzero(v[pk:tr] <= wl).size > 0
-            else np.nan
-            for pk, tr, wl in zip(
-                peak_indexes[use_indexes],
-                trough_indexes[use_indexes].astype(int),
-                width_levels[use_indexes],
-            )
-        ]
-    )
-
-    missing_widths = np.isnan(width_starts) | np.isnan(width_ends)
-    widths = np.zeros_like(width_starts, dtype=np.float64)
-    widths[~missing_widths] = (
-        t[width_ends[~missing_widths].astype(int)]
-        - t[width_starts[~missing_widths].astype(int)]
-    )
-    if any(missing_widths):
-        widths[missing_widths] = np.nan
-
-    return widths
-
-
 def analyze_trough_details(
     v,
     t,
@@ -791,11 +577,11 @@ def analyze_trough_details(
     end=None,
     filter=10.0,
     heavy_filter=1.0,
-    term_frac=0.003,
+    term_frac=0.01,
     adp_thresh=0.5,
     tol=0.5,
     flat_interval=0.002,
-    adp_max_delta_t=0.01,
+    adp_max_delta_t=0.005,
     adp_max_delta_v=10.0,
     dvdt=None,
 ):
@@ -1019,6 +805,7 @@ def average_voltage(v, t, start=None, end=None):
 
     if end is None:
         end = t[-1]
+
     start_index = find_time_index(t, start)
     end_index = find_time_index(t, end)
 
@@ -1098,26 +885,6 @@ def norm_sq_diff(a):
     return norm_sq_diffs.mean()
 
 
-def isi_adaptation(a):
-    """Calculate average of (a[1:]/a[:-1])."""
-    if len(a) <= 1:
-        return np.nan
-
-    a = a.astype(float)
-    isis_changes = a[1:] / a[:-1]
-    return isis_changes.mean()
-
-
-def ap_amp_adaptation(a):
-    """Calculate average of (a[1:]/a[:-1])."""
-    if len(a) <= 1:
-        return np.nan
-
-    a = a.astype(float)
-    ap_amp_changes = a[1:] / a[:-1]
-    return ap_amp_changes.mean()
-
-
 def has_fixed_dt(t):
     """Check that all time intervals are identical."""
     dt = np.diff(t)
@@ -1150,45 +917,6 @@ def fit_membrane_time_constant(v, t, start, end, min_rsme=1e-4):
     v_window = v[start_index:end_index].astype(np.float64)
     try:
         popt, pcov = curve_fit(_exp_curve, t_window, v_window, p0=guess)
-    except RuntimeError:
-        logging.info("Curve fit for membrane time constant failed")
-        return np.nan, np.nan, np.nan
-
-    pred = _exp_curve(t_window, *popt)
-    rsme = np.sqrt(np.abs(np.mean(pred - v_window)))
-    if rsme > min_rsme:
-        logging.debug("Curve fit for membrane time constant did not meet RSME standard")
-        return np.nan, np.nan, np.nan
-
-    return popt
-
-
-def fit_membrane_time_constant_at_end(v, t, start, end, min_rsme=1e-4):
-    """Fit an exponential to estimate membrane time constant between start and end
-
-    Parameters
-    ----------
-    v : numpy array of voltages in mV
-    t : numpy array of times in seconds
-    start : start of time window for exponential fit
-    end : end of time window for exponential fit
-    min_rsme: minimal acceptable root mean square error (default 1e-4)
-
-    Returns
-    -------
-    a, inv_tau, y0 : Coeffients of equation y0 + a * exp(-inv_tau * x)
-
-    returns np.nan for values if fit fails
-    """
-
-    start_index = find_time_index(t, start)
-    end_index = find_time_index(t, end)
-
-    guess = (v[end_index] - v[start_index], 50.0, v[start_index])
-    t_window = (t[start_index:end_index] - t[start_index]).astype(np.float64)
-    v_window = v[start_index:end_index].astype(np.float64)
-    try:
-        popt, pcov = curve_fit(_exp_curve_at_end, t_window, v_window, p0=guess)
     except RuntimeError:
         logging.info("Curve fit for membrane time constant failed")
         return np.nan, np.nan, np.nan
@@ -1253,12 +981,7 @@ def detect_pauses(isis, isi_types, cost_weight=1.0):
             break
         cv = non_pause_isis.std() / non_pause_isis.mean()
         benefit = all_cv - cv
-        if 0 in np.abs(non_pause_isis.mean() - pause_isis):
-            cost = 1000  # just a huge cost
-        else:
-            cost = np.sum(
-                non_pause_isis.std() / np.abs(non_pause_isis.mean() - pause_isis)
-            )
+        cost = np.sum(non_pause_isis.std() / np.abs(non_pause_isis.mean() - pause_isis))
         cost *= cost_weight
         net = benefit - cost
         if net > 0 and net < best_net:
@@ -1330,11 +1053,9 @@ def detect_bursts(
 
     # Want to catch special case of detour in the middle of a large burst where
     # the slow trough value is higher than the previous spike's threshold
+    isi_types[(thr_v[:-1] < (slow_tr_v + tol)) & (isi_types == "detour")] = "midburst"
 
-    # WHERE IS THIS EVER USED????? --> prints warnings too
-    # isi_types[(thr_v[:-1] < (slow_tr_v + tol)) & (isi_types == "detour")] = "midburst"
-
-    # Find transitions from detour -> direct and vice versa for burst boundaries
+    # Find transitions from direct -> detour and vice versa for burst boundaries
     into_burst = np.array(
         [
             i + 1
@@ -1358,9 +1079,6 @@ def detect_bursts(
             elif isi == "pauselike":
                 drop_into.append(j)
                 break
-
-    # Burst transitions can't be at pauselike transitions ==> delete here
-
     mask = np.ones_like(into_burst, dtype=bool)
     mask[drop_into] = False
     into_burst = into_burst[mask]
@@ -1375,13 +1093,13 @@ def detect_bursts(
     if len(into_burst) != len(out_of_burst):
         raise FeatureError("Inconsistent burst boundary identification")
 
-    inout_pairs = list(zip(into_burst, out_of_burst))
+    inout_pairs = zip(into_burst, out_of_burst)
     delta_t = slow_tr_t - fast_tr_t
 
     scores = _score_burst_set(inout_pairs, isis, delta_t)
     best_score = np.mean(scores)
     worst = np.argmin(scores)
-    test_bursts = inout_pairs
+    test_bursts = list(inout_pairs)
     del test_bursts[worst]
     while len(test_bursts) > 0:
         scores = _score_burst_set(test_bursts, isis, delta_t)
@@ -1406,7 +1124,7 @@ def detect_bursts(
             else:
                 prev_burst = inout_pairs[i - 1]
                 metric = _burstiness_index(isis[into:outof], isis[prev_burst[1] : into])
-        else:  # So normally, we calculate a burst metric with the isis in and out (out is to the next burst!) of the burst
+        else:
             next_burst = inout_pairs[i + 1]
             metric = _burstiness_index(isis[into:outof], isis[outof : next_burst[0]])
         bursts.append((metric, into, outof))
@@ -1572,7 +1290,7 @@ def estimate_adjusted_detection_parameters(
 def _score_burst_set(bursts, isis, delta_t, c_n=0.1, c_tx=0.01):
     in_burst = np.zeros_like(isis, dtype=bool)
     for b in bursts:
-        in_burst[int(b[0]) : int(b[1])] = True
+        in_burst[b[0] : b[1]] = True
 
     # If all ISIs are part of a burst, give it a bad score
     if len(isis[~in_burst]) == 0:
@@ -1582,15 +1300,11 @@ def _score_burst_set(bursts, isis, delta_t, c_n=0.1, c_tx=0.01):
 
     scores = []
     for b in bursts:
-        score = _burstiness_index(
-            isis[int(b[0]) : int(b[1])], isis[~in_burst]
-        )  # base score
+        score = _burstiness_index(isis[b[0] : b[1]], isis[~in_burst])  # base score
         if b[1] < len(delta_t):
-            score -= c_tx * (1.0 / (delta_frac[int(b[1])]))  # cost for ending a burst
+            score -= c_tx * (1.0 / (delta_frac[b[1]]))  # cost for starting a burst
         if b[0] > 0:
-            score -= c_tx * (
-                1.0 / delta_frac[int(b[0]) - 1]
-            )  # cost for starting a burst
+            score -= c_tx * (1.0 / delta_frac[b[0] - 1])  # cost for ending a burst
         score -= c_n * (b[1] - b[0] - 1)  # cost for extending a burst
         scores.append(score)
 
@@ -1605,10 +1319,6 @@ def _burstiness_index(in_burst_isis, out_burst_isis):
 
 def _exp_curve(x, a, inv_tau, y0):
     return y0 + a * np.exp(-inv_tau * x)
-
-
-def _exp_curve_at_end(x, b, inv_tau, A):
-    return A + b * (1 - np.exp(-inv_tau * x))
 
 
 def _dbl_exp_fit(y0, x, A1, tau1, A2, tau2):
