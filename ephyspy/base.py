@@ -3,11 +3,13 @@ from typing import Callable
 
 import numpy as np
 
-from py_ephys.utils import (
+from ephyspy.utils import (
     FeatureError,
     fetch_available_fts,
     parse_deps,
     parse_func_doc_attrs,
+    EphysSweepFeatureExtractor,
+    EphysSweepSetFeatureExtractor,
 )
 
 
@@ -29,6 +31,7 @@ class EphysFeature(ABC):
     def _data_init(self, data):
         self.data = data
         if data is not None:
+            assert isinstance(data, EphysSweepFeatureExtractor)
             self.type = type(data).__name__
             if not "features" in self.data.__dict__:
                 self.data.features = {}
@@ -107,7 +110,7 @@ class EphysFeature(ABC):
         return
 
 
-class SweepSetFeature(EphysFeature):
+class SweepsetFeature(EphysFeature):
     def __init__(self, feature, data=None, compute_at_init=True):
         self.feature = feature
         ft_cls = feature().__class__
@@ -132,6 +135,7 @@ class SweepSetFeature(EphysFeature):
     def _data_init(self, data):
         self.data = data
         if data is not None:
+            assert isinstance(data, EphysSweepSetFeatureExtractor)
             self.type = type(data).__name__
             for ft in self.dataset:
                 if not "features" in ft.data.__dict__:

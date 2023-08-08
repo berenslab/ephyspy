@@ -1,0 +1,1311 @@
+#!/usr/bin/env python3
+# Copyright 2023 Jonas Beck
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+from functools import partial
+from typing import Dict, Tuple
+
+import numpy as np
+from numpy import ndarray
+from pandas import DataFrame
+from scipy import integrate
+from scipy.optimize import curve_fit
+from sklearn import linear_model
+
+from ephyspy.allen_sdk.ephys_extractor import EphysSweepFeatureExtractor
+import ephyspy.allen_sdk.ephys_features as ft
+from ephyspy.base import EphysFeature, SweepsetFeature
+from ephyspy.utils import *
+
+# ransac = linear_model.RANSACRegressor()
+ransac = linear_model.LinearRegression()
+
+############################
+### spike level features ###
+############################
+
+
+def ap_amp(sweep: EphysSweepFeatureExtractor) -> float:
+    """Extract spike level peak height feature.
+
+    depends on: threshold_v, peak_v.
+    description: v_peak - threshold_v.
+    units: mV.
+
+    Args:
+        sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
+
+    Returns:
+        float: Spike peak height feature.
+    """
+    v_peak = sweep.spike_feature("peak_v", include_clipped=True)
+    threshold_v = sweep.spike_feature("threshold_v", include_clipped=True)
+    peak_height = v_peak - threshold_v
+    return peak_height if len(v_peak) > 0 else np.array([])
+
+
+def ap_ahp(sweep: EphysSweepFeatureExtractor) -> float:
+    """Extract spike level after hyperpolarization feature.
+
+    depends on: threshold_v, fast_trough_v.
+    description: v_fast_trough - threshold_v.
+    units: mV.
+
+    Args:
+        sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
+
+    Returns:
+        float: Spike after hyperpolarization feature.
+    """
+    v_fast_trough = sweep.spike_feature("fast_trough_v", include_clipped=True)
+    threshold_v = sweep.spike_feature("threshold_v", include_clipped=True)
+    return v_fast_trough - threshold_v
+
+
+def ap_adp(sweep: EphysSweepFeatureExtractor) -> float:
+    """Extract spike level after depolarization feature.
+
+    depends on: adp_v, fast_trough_v.
+    description: v_adp - v_fast_trough.
+    units: mV.
+
+    Args:
+        sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
+
+    Returns:
+        float: Spike after depolarization feature.
+    """
+    v_adp = sweep.spike_feature("adp_v", include_clipped=True)
+    v_fast_trough = sweep.spike_feature("fast_trough_v", include_clipped=True)
+    return v_adp - v_fast_trough
+
+
+def ap_peak(sweep: EphysSweepFeatureExtractor) -> float:
+    """Extract spike level peak feature.
+
+    depends on: peak_v.
+    description: /.
+    units: mV.
+
+    Args:
+        sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
+
+    Returns:
+        float: AP peak feature.
+    """
+    v_peak = sweep.spike_feature("peak_v", include_clipped=True)
+    return v_peak
+
+
+def ap_thresh(sweep: EphysSweepFeatureExtractor) -> float:
+    """Extract spike level ap threshold feature.
+
+    depends on: thresh_v.
+    description: /.
+    units: mV.
+
+    Args:
+        sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
+
+    Returns:
+        float: AP threshold feature.
+    """
+    v_thresh = sweep.spike_feature("threshold_v", include_clipped=True)
+    return v_thresh
+
+
+def ap_trough(sweep: EphysSweepFeatureExtractor) -> float:
+    """Extract spike level ap trough feature.
+
+    depends on: thresh_v.
+    description: /.
+    units: mV.
+
+    Args:
+        sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
+
+    Returns:
+        float: AP trough feature.
+    """
+    v_thresh = sweep.spike_feature("trough_v", include_clipped=True)
+    return v_thresh
+
+
+def get_available_spike_features() -> Dict[str, callable]:
+    """Dictionary of spike level features.
+
+    Returns name of feature and function to calculate it.
+    spike_ft_dict = {"ft_name": get_spike_ft, ...}
+
+    Every feature function should take a sweep as input and return a float.
+
+    Returns:
+        Dict[str, callable]: Dictionary of spike level features.
+    """
+    return {
+        "ap_peak": ap_peak,
+        "ap_trough": ap_trough,
+        "ap_thresh": ap_thresh,
+        "ap_amp": ap_amp,
+        "ahp": ap_ahp,
+        "adp": ap_adp,
+    }
+
+
+############################
+### sweep level features ###
+############################
+
+
+class Stim_amp(EphysFeature):
+    """Extract sweep level stimulus ampltiude feature.
+    depends on: /.
+    description: maximum amplitude of stimulus.
+    units: pA."""
+
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(data, compute_at_init)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        stim_amp = np.max(abs(self.data.i).T, axis=0)
+        return stim_amp
+
+
+class Stim_onset(EphysFeature):
+    """Extract sweep level stimulus onset feature.
+
+    depends on: /.
+    description: time of stimulus onset.
+    units: s."""
+
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(data, compute_at_init)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        stim_onset = float("nan")
+        if has_stimulus(self.data):
+            stim_onset = self.data.t[where_stimulus(self.data)][0]
+        return stim_onset
+
+
+class Stim_end(EphysFeature):
+    """Extract sweep level stimulus end feature.
+
+    depends on: /.
+    description: time of stimulus end.
+    units: s."""
+
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(data, compute_at_init)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        stim_end = float("nan")
+        if has_stimulus(self.data):
+            stim_end = self.data.t[where_stimulus(self.data)][-1]
+        return stim_end
+
+
+class Num_AP(EphysFeature):
+    """Extract sweep level spike count feature.
+
+    depends on: stim_onset, stim_end.
+    description: # peaks during stimulus.
+    units: /."""
+
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(data, compute_at_init)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        peak_t = self.lookup_spike_feature("peak_t", recompute=recompute)
+        onset = self.lookup_sweep_feature("stim_onset")
+        end = self.lookup_sweep_feature("stim_end")
+        stim_window = where_between(peak_t, onset, end)
+
+        peak_i = self.lookup_spike_feature("peak_index")[stim_window]
+        num_ap = len(peak_i)
+
+        if num_ap < 0:
+            num_ap = float("nan")
+
+        if store_diagnostics:
+            peak_t = peak_t[stim_window]
+            peak_v = self.lookup_spike_feature("peak_v")[stim_window]
+            self._update_diagnostics(
+                {
+                    "peak_i": peak_i,
+                    "peak_t": peak_t,
+                    "peak_v": peak_v,
+                }
+            )
+        return num_ap
+
+
+class AP_freq(EphysFeature):
+    """Extract sweep level spike rate feature.
+
+    depends on: numap.
+    description: # peaks during stimulus / stimulus duration.
+    units: Hz."""
+
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(data, compute_at_init)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        num_ap = self.lookup_sweep_feature("num_ap", recompute=recompute)
+        onset = self.lookup_sweep_feature("stim_onset", recompute=recompute)
+        end = self.lookup_sweep_feature("stim_end", recompute=recompute)
+
+        ap_freq = num_ap / (end - onset)
+
+        if store_diagnostics:
+            self._update_diagnostics(
+                {"ap_freq": ap_freq, "num_ap": num_ap, "onset": onset, "end": end}
+            )
+        return ap_freq
+
+
+class AP_latency(EphysFeature):
+    """Extract sweep level ap_latency feature.
+
+    depends on: stim_onset.
+    description: time of first spike after stimulus onset.
+    units: s."""
+
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(data, compute_at_init)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        ap_latency = float("nan")
+        if has_stimulus(self.data):
+            onset = self.lookup_sweep_feature("stim_onset", recompute=recompute)
+            end = self.lookup_sweep_feature("stim_end", recompute=recompute)
+            thresh_t = self.lookup_spike_feature("threshold_t", recompute=recompute)
+            thresholds = self.lookup_spike_feature("threshold_v", recompute=recompute)
+            stim_window = where_between(thresh_t, onset, end)
+
+            thresh_t_stim = thresh_t[stim_window]
+
+            if len(thresh_t_stim) > 0:
+                v_first_spike = thresholds[stim_window][0]
+                t_first_spike = thresh_t_stim[0]
+                ap_latency = t_first_spike - onset
+
+                if store_diagnostics:
+                    self._update_diagnostics(
+                        {
+                            "onset": onset,
+                            "end": end,
+                            "spike_times_during_stim": thresh_t_stim,
+                            "t_first_spike": t_first_spike,
+                            "v_first_spike": v_first_spike,
+                        }
+                    )
+        return ap_latency
+
+
+class V_baseline(EphysFeature):
+    """Extract sweep level baseline voltage feature.
+
+    depends on: stim_onset.
+    description: average voltage in baseline_interval (in s) before stimulus onset.
+    units: mV."""
+
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(data, compute_at_init)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        v_baseline_avg = float("nan")
+        onset = self.lookup_sweep_feature("stim_onset", recompute=recompute)
+        if np.isnan(onset):
+            baseline_interval = float("nan")
+            where_baseline = np.ones_like(self.data.t, dtype=bool)  # for I=0pA
+        else:
+            baseline_interval = self.data.baseline_interval
+            where_baseline = where_between(
+                self.data.t, onset - baseline_interval, onset
+            )
+        t_baseline = self.data.t[where_baseline]
+        v_baseline = self.data.v[where_baseline]
+        v_baseline_avg = np.mean(v_baseline)
+        # v_baseline_avg = sweep._get_baseline_voltage() # bad since start is set to t[0]
+        if store_diagnostics:
+            self._update_diagnostics(
+                {
+                    "where_baseline": where_baseline,
+                    "t_baseline": t_baseline,
+                    "v_baseline": v_baseline,
+                    "baseline_interval": baseline_interval,
+                    "stim_onset": onset,
+                }
+            )
+        return v_baseline_avg
+
+
+class V_deflect(EphysFeature):
+    """Extract sweep level voltage deflection feature.
+
+    depends on: stim_end.
+    description: average voltage during last 100 ms of stimulus.
+    units: mV."""
+
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(data, compute_at_init)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        v_deflect_avg = float("nan")
+        if has_stimulus(self.data) and is_hyperpol(self.data):
+            # v_deflect_avg = self.data.voltage_deflection()[0]
+            end = self.lookup_sweep_feature("stim_end", recompute=recompute)
+            v_deflect_avg = ft.average_voltage(
+                self.data.v, self.data.t, start=end - 0.1, end=end
+            )
+            idx_deflect = np.where(where_between(self.data.t, end - 0.1, end))[0]
+            t_deflect = self.data.t[idx_deflect]
+            v_deflect = self.data.v[idx_deflect]
+
+            if store_diagnostics:
+                self._update_diagnostics(
+                    {
+                        "idx_deflect": idx_deflect,
+                        "t_deflect": t_deflect,
+                        "v_deflect": v_deflect,
+                    }
+                )
+        return v_deflect_avg
+
+
+class Tau(EphysFeature):
+    """Extract sweep level time constant feature.
+
+    depends on: v_baseline, stim_onset.
+    description: time constant of exponential fit to voltage deflection.
+    units: s."""
+
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(data, compute_at_init)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        tau = float("nan")
+        if is_hyperpol(self.data):
+            """The following code block is copied and adapted from sweep.estimate_time_constant()."""
+            v_peak, peak_index = self.data.voltage_deflection("min")
+            v_baseline = self.lookup_sweep_feature("v_baseline", recompute=recompute)
+
+            stim_onset = self.lookup_sweep_feature("stim_onset", recompute=recompute)
+            onset_idx = ft.find_time_index(self.data.t, stim_onset)
+
+            frac = 0.1
+            search_result = np.flatnonzero(
+                self.data.v[onset_idx:] <= frac * (v_peak - v_baseline) + v_baseline
+            )
+            if not search_result.size:
+                raise FeatureError("could not find interval for time constant estimate")
+
+            fit_start = self.data.t[search_result[0] + onset_idx]
+            fit_end = self.data.t[peak_index]
+
+            if self.data.v[peak_index] < -200:
+                print("A DOWNWARD PEAK WAS OBSERVED GOING TO LESS THAN 200 MV!!!")
+                # Look for another local minimum closer to stimulus onset
+                # We look for a couple of milliseconds after stimulus onset to 50 ms before the downward peak
+                end_index = (onset_idx + 50) + np.argmin(
+                    self.data.v[onset_idx + 50 : peak_index - 1250]
+                )
+                fit_end = self.data.t[end_index]
+                fit_start = self.data.t[onset_idx + 50]
+
+            a, inv_tau, y0 = ft.fit_membrane_time_constant(
+                self.data.v, self.data.t, fit_start, fit_end
+            )
+
+            tau = 1.0 / inv_tau * 1000
+            if store_diagnostics:
+                self._update_diagnostics(
+                    {
+                        "a": a,
+                        "inv_tau": inv_tau,
+                        "y0": y0,
+                        "fit_start": fit_start,
+                        "fit_end": fit_end,
+                        "equation": "y0 + a * exp(-inv_tau * x)",
+                    }
+                )
+        return tau
+
+
+class AP_freq_adapt(EphysFeature):
+    """Extract sweep level spike frequency adaptation feature.
+
+    depends on: stim_onset, stim_end, num_ap.
+    description: ratio of spikes in second and first half half of stimulus interval, if there is at least 5 spikes in total.
+    units: /."""
+
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(data, compute_at_init)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        ap_freq_adapt = float("nan")
+        num_ap = self.lookup_sweep_feature("num_ap", recompute=recompute)
+        if num_ap > 5 and has_stimulus(self.data):
+            onset = self.lookup_sweep_feature("stim_onset", recompute=recompute)
+            end = self.lookup_sweep_feature("stim_end", recompute=recompute)
+            t_half = (end - onset) / 2 + onset
+            where_1st_half = where_between(self.data.t, onset, t_half)
+            where_2nd_half = where_between(self.data.t, t_half, end)
+            t_1st_half = self.data.t[where_1st_half]
+            t_2nd_half = self.data.t[where_2nd_half]
+
+            peak_t = self.lookup_spike_feature("peak_t", recompute=recompute)
+            onset = self.lookup_sweep_feature("stim_onset", recompute=recompute)
+            end = self.lookup_sweep_feature("stim_end", recompute=recompute)
+            stim_window = where_between(peak_t, onset, end)
+            peak_t = peak_t[stim_window]
+
+            spikes_1st_half = peak_t[peak_t < t_half]
+            spikes_2nd_half = peak_t[peak_t > t_half]
+            num_spikes_1st_half = len(spikes_1st_half)
+            num_spikes_2nd_half = len(spikes_2nd_half)
+            ap_freq_adapt = num_spikes_2nd_half / num_spikes_1st_half
+
+            if store_diagnostics:
+                self._update_diagnostics(
+                    {
+                        "num_spikes_1st_half": num_spikes_1st_half,
+                        "num_spikes_2nd_half": num_spikes_2nd_half,
+                        "where_1st_half": where_1st_half,
+                        "where_2nd_half": where_2nd_half,
+                        "t_1st_half": t_1st_half,
+                        "t_2nd_half": t_2nd_half,
+                    }
+                )
+        return ap_freq_adapt
+
+
+class AP_amp_slope(EphysFeature):
+    """Extract sweep level spike count feature.
+
+    depends on: stim_onset, stim_end.
+    description: spike amplitude adaptation as the slope of a linear fit v_peak(t_peak)
+    during the stimulus interval.
+    units: mV/s."""
+
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(data, compute_at_init)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        ap_amp_slope = float("nan")
+        onset = self.lookup_sweep_feature("stim_onset")
+        end = self.lookup_sweep_feature("stim_end")
+        peak_t = self.lookup_spike_feature("peak_t", recompute=recompute)
+        peak_v = self.lookup_spike_feature("peak_v", recompute=recompute)
+        stim_window = where_between(peak_t, onset, end)
+
+        peak_t = peak_t[stim_window]
+        peak_v = peak_v[stim_window]
+
+        if len(peak_v) > 5:
+            y = lambda x, m, b: m * x + b
+            (m, b), e = curve_fit(y, peak_t, peak_v)
+
+            ap_amp_slope = m
+            if store_diagnostics:
+                self._update_diagnostics(
+                    {
+                        "peak_t": peak_t,
+                        "peak_v": peak_v,
+                        "slope": m,
+                        "intercept": b,
+                    }
+                )
+            return ap_amp_slope
+
+
+class R_input(EphysFeature):
+    """Extract sweep level input resistance feature.
+
+    depends on: stim_amp, v_deflect, v_baseline.
+    description: sweep level input resistance as (v_deflect - v_baseline / current).
+    Should not be used for cell level feature.
+    units: MOhm."""
+
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(data, compute_at_init)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        r_input = float("nan")
+        if is_hyperpol(self.data):
+            stim_amp = self.lookup_sweep_feature("stim_amp", recompute=recompute)
+            v_deflect = self.lookup_sweep_feature("v_deflect", recompute=recompute)
+            v_baseline = self.lookup_sweep_feature("v_baseline", recompute=recompute)
+            r_input = np.abs((v_deflect - v_baseline) * 1000 / stim_amp)
+
+            if store_diagnostics:
+                self._update_diagnostics(
+                    {
+                        "v_baseline": v_baseline,
+                        "v_deflect": v_deflect,
+                        "stim_amp": stim_amp,
+                    }
+                )
+        return r_input
+
+
+class Sag(EphysFeature):
+    """Extract sweep level sag feature.
+
+    depends on: /.
+    description: magnitude of the depolarization peak.
+    units: mV."""
+
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(data, compute_at_init)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        sag = float("nan")
+        if is_hyperpol(self.data):
+            try:  # sometimes fails if stim just below 0pA
+                sag_ = self.data.estimate_sag()
+            except FeatureError:
+                pass
+        return sag
+
+
+# class Sag_fraction(EphysFeature):
+#     """Extract sweep level sag fraction feature.
+
+#     depends on: /.
+#     description: fraction that membrane potential relaxes back to baseline.
+#     units: /."""
+
+#     def __init__(self, data=None, compute_at_init=True):
+#         super().__init__(data, compute_at_init)
+
+#     def _compute(self, recompute=False, store_diagnostics=True):
+#         return
+
+
+# class Sag_ratio(EphysFeature):
+#     """Extract sweep level sag ratio feature.
+
+#     depends on: /.
+#     description: ratio of steady state voltage decrease to the largest voltage decrease.
+#     units: /."""
+
+#     def __init__(self, data=None, compute_at_init=True):
+#         super().__init__(data, compute_at_init)
+
+#     def _compute(self, recompute=False, store_diagnostics=True):
+#         return
+
+
+class Sag_area(EphysFeature):
+    """Extract sweep level sag area feature.
+
+    depends on: v_deflect, stim_onset, stim_end.
+    description: area under the sag.
+    units: mV*s."""
+
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(data, compute_at_init)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        sag_area = float("nan")
+        if is_hyperpol(self.data):
+            where_sag = get_sweep_sag_idxs(self.data)
+            if np.sum(where_sag) > 10:  # TODO: what should be min sag duration!?
+                v_sag = self.data.v[where_sag]
+                t_sag = self.data.t[where_sag]
+                v_sagline = v_sag[0]
+                # Take running average of v?
+                if len(v_sag) > 10:  # at least 10 points to integrate
+                    sag_area = -integrate.cumulative_trapezoid(
+                        v_sag - v_sagline, t_sag
+                    )[-1]
+                    if store_diagnostics:
+                        self._update_diagnostics(
+                            {
+                                "where_sag": where_sag,
+                                "v_sag": v_sag,
+                                "t_sag": t_sag,
+                                "v_sagline": v_sagline,
+                            }
+                        )
+
+        return sag_area
+
+
+class Sag_time(EphysFeature):
+    """Extract sweep level sag duration feature.
+
+    depends on: v_deflect, stim_onset, stim_end.
+    description: duration of the sag.
+    units: s."""
+
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(data, compute_at_init)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        sag_time = float("nan")
+        if is_hyperpol(self.data):
+            where_sag = get_sweep_sag_idxs(self.data)
+            if np.sum(where_sag) > 10:  # TODO: what should be min sag duration!?
+                sag_t_start, sag_t_end = self.data.t[where_sag][[0, -1]]
+                sag_time = sag_t_end - sag_t_start
+                if store_diagnostics:
+                    self._update_diagnostics(
+                        {
+                            "where_sag": where_sag,
+                            "sag_t_start": sag_t_start,
+                            "sag_t_end": sag_t_end,
+                        }
+                    )
+        return sag_time
+
+
+class V_plateau(EphysFeature):
+    """Extract sweep level plataeu voltage feature.
+
+    depends on: stim_end.
+    description: average voltage during the plateau.
+    units: mV."""
+
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(data, compute_at_init)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        v_avg_plateau = float("nan")
+        if is_hyperpol(self.data):
+            end = self.lookup_sweep_feature("stim_end", recompute=recompute)
+            # same as voltage deflection
+            where_plateau = where_between(self.data.t, end - 0.1, end)
+            v_plateau = self.data.v[where_plateau]
+            t_plateau = self.data.t[where_plateau]
+            v_avg_plateau = ft.average_voltage(v_plateau, t_plateau)
+            if store_diagnostics:
+                self._update_diagnostics(
+                    {
+                        "where_plateau": where_plateau,
+                        "v_plateau": v_plateau,
+                        "t_plateau": t_plateau,
+                    }
+                )
+        return v_avg_plateau
+
+
+class Rebound(EphysFeature):
+    """Extract sweep level rebound feature.
+
+    depends on: v_baseline, stim_end.
+    description: V_max during stimulus_end and stimulus_end + T_rebound - V_baseline.
+    units: mV."""
+
+    def __init__(self, data=None, compute_at_init=True, T_rebound=0.3):
+        self.T_rebound = T_rebound
+        super().__init__(data, compute_at_init)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        rebound = float("nan")
+        if has_rebound(self.data, self.T_rebound):
+            v_baseline = self.lookup_sweep_feature("v_baseline", recompute=recompute)
+            end = self.lookup_sweep_feature("stim_end", recompute=recompute)
+            where_rebound = where_between(self.data.t, end, end + self.T_rebound)
+            where_rebound = np.logical_and(where_rebound, self.data.v > v_baseline)
+            t_rebound = self.data.t[where_rebound]
+            v_rebound = self.data.v[where_rebound]
+            if len(v_rebound) > 10:  # at least 10 time points with rebound
+                idx_rebound = np.argmax(self.data.v[where_rebound] - v_baseline)
+                idx_rebound = np.where(where_rebound)[0][idx_rebound]
+                max_rebound = self.data.v[idx_rebound]
+                rebound = max_rebound - v_baseline
+                if store_diagnostics:
+                    self._update_diagnostics(
+                        {
+                            "idx_rebound": idx_rebound,
+                            "t_rebound": t_rebound,
+                            "v_rebound": v_rebound,
+                            "v_baseline": v_baseline,
+                            "max_rebound": max_rebound,
+                            "where_rebound": where_rebound,
+                        }
+                    )
+            return rebound
+
+
+class Rebound_APs(EphysFeature):
+    """Extract sweep level number of rebounding spikes feature.
+
+    depends on: stim_end.
+    description: number of spikes during stimulus_end and stimulus_end + T_rebound.
+    units: /."""
+
+    def __init__(self, data=None, compute_at_init=True, T_rebound=0.3):
+        self.T_rebound = T_rebound
+        super().__init__(data, compute_at_init)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        num_rebound_aps = float("nan")
+        if has_rebound(self.data, self.T_rebound):
+            t_spike = self.lookup_spike_feature("peak_t", include_clipped=True)
+            idx_spike = self.lookup_spike_feature("peak_index", include_clipped=True)
+            v_spike = self.lookup_spike_feature("peak_v", include_clipped=True)
+            if len(t_spike) != 0:
+                end = self.lookup_sweep_feature("stim_end", recompute=recompute)
+                w_rebound = where_between(t_spike, end, end + self.T_rebound)
+                idx_rebound = idx_spike[w_rebound]
+                t_rebound = t_spike[w_rebound]
+                v_rebound = v_spike[w_rebound]
+                num_rebound_aps = np.sum(w_rebound)
+                if num_rebound_aps > 0:
+                    if store_diagnostics:
+                        self._update_diagnostics(
+                            {
+                                "idx_rebound": idx_rebound,
+                                "t_rebound": t_rebound,
+                                "v_rebound": v_rebound,
+                            }
+                        )
+        return num_rebound_aps
+
+
+class Rebound_area(EphysFeature):
+    """Extract sweep level rebound area feature.
+
+    depends on: v_baseline, stim_end.
+    description: area between rebound curve and baseline voltage from stimulus_end
+    to stimulus_end + T_rebound.
+    units: mV*s."""
+
+    def __init__(self, data=None, compute_at_init=True, T_rebound=0.3):
+        self.T_rebound = T_rebound
+        super().__init__(data, compute_at_init)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        rebound_area = float("nan")
+        if has_rebound(self.data, self.T_rebound):
+            v_baseline = self.lookup_sweep_feature("v_baseline", recompute=recompute)
+            end = self.lookup_sweep_feature("stim_end", recompute=recompute)
+            where_rebound = where_between(self.data.t, end, end + self.T_rebound)
+            where_rebound = np.logical_and(where_rebound, self.data.v > v_baseline)
+            v_rebound = self.data.v[where_rebound]
+            t_rebound = self.data.t[where_rebound]
+            if len(v_rebound) > 10:  # at least 10 points to integrate
+                rebound_area = integrate.cumulative_trapezoid(
+                    v_rebound - v_baseline, t_rebound
+                )[-1]
+                if store_diagnostics:
+                    self._update_diagnostics(
+                        {
+                            "where_rebound": where_rebound,
+                            "t_rebound": t_rebound,
+                            "v_rebound": v_rebound,
+                            "v_baseline": v_baseline,
+                        }
+                    )
+        return rebound_area
+
+
+class Rebound_latency(EphysFeature):
+    """Extract sweep level rebound latency feature.
+
+    depends on: v_baseline, stim_end.
+    description: duration from stimulus_end to when the voltage reaches above
+    baseline for the first time. t_rebound = t_off + rebound_latency.
+    units: s."""
+
+    def __init__(self, data=None, compute_at_init=True, T_rebound=0.3):
+        self.T_rebound = T_rebound
+        super().__init__(data, compute_at_init)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        rebound_latency = float("nan")
+        if has_rebound(self.data, self.T_rebound):
+            v_baseline = self.lookup_sweep_feature("v_baseline", recompute=recompute)
+            end = self.lookup_sweep_feature("stim_end", recompute=recompute)
+            where_rebound = where_between(self.data.t, end, end + self.T_rebound)
+            where_rebound = np.logical_and(where_rebound, self.data.v > v_baseline)
+            t_rebound = self.data.t[where_rebound]
+            v_rebound = self.dataeep.v[where_rebound]
+            if len(v_rebound) > 10:  # at least 10 time points with rebound
+                idx_rebound_reached = np.where(where_rebound)[0]
+                t_rebound_reached = self.data.t[idx_rebound_reached][0]
+                rebound_latency = t_rebound_reached - end
+                if store_diagnostics:
+                    self._update_diagnostics(
+                        {
+                            "idx_rebound_reached": idx_rebound_reached,
+                            "t_rebound_reached": t_rebound_reached,
+                            "where_rebound": where_rebound,
+                            "t_rebound": t_rebound,
+                            "v_rebound": v_rebound,
+                            "v_baseline": v_baseline,
+                        }
+                    )
+        return rebound_latency
+
+
+class Rebound_avg(EphysFeature):
+    """Extract sweep level average rebound feature.
+
+    depends on: v_baseline, stim_end.
+    description: average voltage between stimulus_end
+    and stimulus_end + T_rebound - baseline voltage.
+    units: mV."""
+
+    def __init__(self, data=None, compute_at_init=True, T_rebound=0.3):
+        self.T_rebound = T_rebound
+        super().__init__(data, compute_at_init)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        v_rebound_avg = float("nan")
+        if has_rebound(self.data, self.T_rebound):
+            v_baseline = self.lookup_sweep_feature("v_baseline", recompute=recompute)
+            end = self.lookup_sweep_feature("stim_end", recompute=recompute)
+            where_rebound = where_between(self.data.t, end, end + self.T_rebound)
+            where_rebound = np.logical_and(where_rebound, self.data.v > v_baseline)
+            v_rebound = self.data.v[where_rebound]
+            t_rebound = self.data.t[where_rebound]
+            if len(v_rebound) > 10:  # at least 10 rebound points
+                v_rebound_avg = ft.average_voltage(v_rebound, t_rebound) - v_baseline
+                if store_diagnostics:
+                    self._update_diagnostics(
+                        {
+                            "where_rebound": where_rebound,
+                            "t_rebound": t_rebound,
+                            "v_rebound": v_rebound,
+                            "v_baseline": v_baseline,
+                        }
+                    )
+        return v_rebound_avg
+
+
+class V_rest(EphysFeature):
+    """Extract sweep level resting potential feature.
+
+    depends on: v_baseline, r_input, dc_offset.
+    description: v_rest = v_baseline - r_input*dc_offset.
+    units: mV."""
+
+    def __init__(self, data=None, compute_at_init=True, dc_offset=0):
+        self.dc_offset = dc_offset
+        super().__init__(data, compute_at_init)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        v_rest = float("nan")
+        v_baseline = self.lookup_sweep_feature("v_baseline", recompute=recompute)
+        r_input = self.lookup_sweep_feature("r_input", recompute=recompute)
+        try:
+            v_rest = v_baseline - r_input * 1e-3 * self.dc_offset
+            if store_diagnostics:
+                self._update_diagnostics(
+                    {
+                        "v_baseline": v_baseline,
+                        "r_input": r_input,
+                        "dc_offset": self.dc_offset,
+                    }
+                )
+        except KeyError:
+            pass
+        return v_rest
+
+
+class Num_bursts(EphysFeature):
+    """Extract sweep level number of bursts feature.
+
+    depends on: num_ap.
+    description: Number of detected bursts.
+    units: /."""
+
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(data, compute_at_init)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        num_bursts = float("nan")
+        num_ap = self.lookup_sweep_feature("num_ap", recompute=recompute)
+        if num_ap > 5 and has_stimulus(self.data):
+            idx_burst, idx_burst_start, idx_burst_end = get_sweep_burst_metrics(
+                self.data
+            )
+            peak_t = self.lookup_spike_feature("peak_t", recompute=recompute)
+            if not np.isnan(idx_burst).any():
+                t_burst_start = peak_t[idx_burst_start]
+                t_burst_end = peak_t[idx_burst_end]
+                num_bursts = len(idx_burst)
+                num_bursts = float("nan") if num_bursts == 0 else num_bursts
+                if store_diagnostics:
+                    self._update_diagnostics(
+                        {
+                            "idx_burst": idx_burst,
+                            "idx_burst_start": idx_burst_start,
+                            "idx_burst_end": idx_burst_end,
+                            "t_burst_start": t_burst_start,
+                            "t_burst_end": t_burst_end,
+                        }
+                    )
+        return num_bursts
+
+
+class Burstiness(EphysFeature):
+    """Extract sweep level burstiness feature.
+
+    depends on: num_ap.
+    description: max "burstiness" index across detected bursts.
+    units: /."""
+
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(data, compute_at_init)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        max_burstiness = float("nan")
+        num_ap = self.lookup_sweep_feature("num_ap", recompute=recompute)
+        if num_ap > 5 and has_stimulus(self.data):
+            idx_burst, idx_burst_start, idx_burst_end = get_sweep_burst_metrics(
+                self.data
+            )
+            peak_t = self.lookup_spike_feature("peak_t", recompute=recompute)
+            if not np.isnan(idx_burst).any():
+                t_burst_start = peak_t[idx_burst_start]
+                t_burst_end = peak_t[idx_burst_end]
+                num_bursts = len(idx_burst)
+                max_burstiness = idx_burst.max() if num_bursts > 0 else float("nan")
+                if store_diagnostics:
+                    self._update_diagnostics(
+                        {
+                            "idx_burst": idx_burst,
+                            "idx_burst_start": idx_burst_start,
+                            "idx_burst_end": idx_burst_end,
+                            "t_burst_start": t_burst_start,
+                            "t_burst_end": t_burst_end,
+                        }
+                    )
+        return max_burstiness
+
+
+class Wildness(EphysFeature):
+    """Extract sweep level wildness feature.
+
+    depends on: /.
+    description: Wildness is the number of spikes that occur outside of the stimulus interval.
+    units: /."""
+
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(data, compute_at_init)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        num_wild_spikes = float("nan")
+        onset = self.lookup_sweep_feature("stim_onset")
+        end = self.lookup_sweep_feature("stim_end")
+        peak_t = self.lookup_spike_feature("peak_t", recompute=recompute)
+        stim_window = where_between(peak_t, onset, end)
+
+        i_wild_spikes = self.lookup_spike_feature("peak_index", recompute=recompute)
+        i_wild_spikes = i_wild_spikes[~stim_window]
+        t_wild_spikes = self.lookup_spike_feature("peak_t", recompute=recompute)
+        t_wild_spikes = t_wild_spikes[~stim_window]
+        v_wild_spikes = self.lookup_spike_feature("peak_v", recompute=recompute)
+        v_wild_spikes = v_wild_spikes[~stim_window]
+        if len(i_wild_spikes) > 0:
+            num_wild_spikes = len(i_wild_spikes)
+            if store_diagnostics:
+                self._update_diagnostics(
+                    {
+                        "i_wild_spikes": i_wild_spikes,
+                        "t_wild_spikes": t_wild_spikes,
+                        "v_wild_spikes": v_wild_spikes,
+                    }
+                )
+        return num_wild_spikes
+
+
+class APEphysFeature(EphysFeature):
+    """Extract sweep level AP feature."""
+
+    def __init__(
+        self,
+        data=None,
+        compute_at_init=True,
+        ap_selector: Optional[Callable] = None,
+        ft_aggregator: Optional[Callable] = None,
+    ):
+        """
+        Args:
+            ap_selector (Optional[Callable], optional): Function which selects a
+                representative ap or set of aps based on a given criterion.
+                Function expects a EphysSweepSetFeatureExtractor object as input and
+                returns indices for the selected aps. If none is provided, falls
+                back to selecting all aps.
+            ft_aggregator (Optional[Callable], optional): Function which aggregates
+                a list of feature values into a single value. Function expects a
+                list or ndarray of numbers as input. If none is provided, falls back
+                to `np.nanmedian` (equates to pass through for single sweeps)."""
+        self.ap_selector = ap_selector
+        self.ft_aggregator = ft_aggregator
+        super().__init__(data, compute_at_init)
+
+    def _select(self, data):
+        """Function expects a EphysSweepSetFeatureExtractor object as input and
+        returns indices for the selected aps.
+
+        description: Select a representative ap or set of aps based on a
+        given criterion. If none is provided, falls back to selecting all aps."""
+        if self.ap_selector is None:
+            feature = self.lookup_spike_feature(self.name)
+            return np.arange(len(feature))
+        else:
+            return self.ap_selector(data)
+
+    def _aggregate(self, X):
+        """Function expects a list or ndarray of numbers as input.
+
+        description: Aggregate a list of feature values into a single value. If none is provided, falls back
+        to `np.nanmedian` (equates to pass through for single sweeps)."""
+        if self.ft_aggregator is None:
+            return np.nanmedian(X)
+        else:
+            return self.ft_aggregator(X)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        feature = self.lookup_spike_feature(self.name, recompute=recompute)
+        ft_agg = float("nan")
+
+        if len(feature) > 0:
+            selected_idx = self._select(self.data)
+            fts_selected = feature[selected_idx]
+
+            if isinstance(fts_selected, (float, int, np.float64, np.int64)):
+                ft_agg = fts_selected
+            elif isinstance(fts_selected, ndarray):
+                if len(fts_selected.flat) == 0:
+                    ft_agg = float("nan")
+                else:
+                    ft_agg = self._aggregate(feature)
+
+            if store_diagnostics:
+                self._update_diagnostics(
+                    {
+                        "selected_idx": selected_idx,
+                        "selected_fts": fts_selected,
+                        "selection": parse_desc(self._select),
+                        "aggregation": parse_desc(self._aggregate),
+                    }
+                )
+        return ft_agg
+
+
+class AHP(APEphysFeature):
+    """Extract sweep level Afterhyperpolarization feature.
+
+    depends on: /.
+    description: Afterhyperpolarization (AHP) for representative AP. Difference
+    between the fast trough and the threshold.
+    units: mV."""
+
+    def __init__(
+        self,
+        data=None,
+        compute_at_init=True,
+        ap_selector: Optional[Callable] = None,
+        ft_aggregator: Optional[Callable] = None,
+    ):
+        super().__init__(data, compute_at_init, ap_selector, ft_aggregator)
+
+
+class ADP(APEphysFeature):
+    """Extract sweep level Afterdepolarization feature.
+
+    depends on: /.
+    description: Afterdepolarization (ADP) for representative AP. Difference between the ADP and the fast trough.
+    units: mV."""
+
+    def __init__(
+        self,
+        data=None,
+        compute_at_init=True,
+        ap_selector: Optional[Callable] = None,
+        ft_aggregator: Optional[Callable] = None,
+    ):
+        super().__init__(data, compute_at_init, ap_selector, ft_aggregator)
+
+
+class AP_thresh(APEphysFeature):
+    """Extract sweep level AP threshold feature.
+
+    depends on: /.
+    description: AP threshold for representative AP.
+    units: mV."""
+
+    def __init__(
+        self,
+        data=None,
+        compute_at_init=True,
+        ap_selector: Optional[Callable] = None,
+        ft_aggregator: Optional[Callable] = None,
+    ):
+        super().__init__(data, compute_at_init, ap_selector, ft_aggregator)
+
+
+class AP_amp(APEphysFeature):
+    """Extract sweep level AP amplitude feature.
+
+    depends on: /.
+    description: AP amplitude for representative AP.
+    units: mV."""
+
+    def __init__(
+        self,
+        data=None,
+        compute_at_init=True,
+        ap_selector: Optional[Callable] = None,
+        ft_aggregator: Optional[Callable] = None,
+    ):
+        super().__init__(data, compute_at_init, ap_selector, ft_aggregator)
+
+
+class AP_width(APEphysFeature):
+    """Extract sweep level AP width feature.
+
+    depends on: /.
+    description: AP width for representative AP.
+    units: s."""
+
+    def __init__(
+        self,
+        data=None,
+        compute_at_init=True,
+        ap_selector: Optional[Callable] = None,
+        ft_aggregator: Optional[Callable] = None,
+    ):
+        super().__init__(data, compute_at_init, ap_selector, ft_aggregator)
+
+
+class AP_peak(APEphysFeature):
+    """Extract sweep level AP peak feature.
+
+    depends on: /.
+    description: AP peak for representative AP.
+    units: mV."""
+
+    def __init__(
+        self,
+        data=None,
+        compute_at_init=True,
+        ap_selector: Optional[Callable] = None,
+        ft_aggregator: Optional[Callable] = None,
+    ):
+        super().__init__(data, compute_at_init, ap_selector, ft_aggregator)
+
+
+class AP_trough(APEphysFeature):
+    """Extract sweep level AP trough feature.
+
+    depends on: /.
+    description: AP trough for representative AP.
+    units: mV."""
+
+    def __init__(
+        self,
+        data=None,
+        compute_at_init=True,
+        ap_selector: Optional[Callable] = None,
+        ft_aggregator: Optional[Callable] = None,
+    ):
+        super().__init__(data, compute_at_init, ap_selector, ft_aggregator)
+
+
+class UDR(APEphysFeature):
+    """Extract sweep level Upstroke-to-downstroke ratio feature.
+
+    depends on: /.
+    description: Upstroke-to-downstroke ratio for representative AP.
+    units: /."""
+
+    def __init__(
+        self,
+        data=None,
+        compute_at_init=True,
+        ap_selector: Optional[Callable] = None,
+        ft_aggregator: Optional[Callable] = None,
+    ):
+        super().__init__(data, compute_at_init, ap_selector, ft_aggregator)
+
+
+###############################
+### sweepset level features ###
+###############################
+
+
+class Sweepset_AP(SweepsetFeature):
+    def __init__(self, feature, data=None, compute_at_init=True):
+        super().__init__(feature, data=data, compute_at_init=compute_at_init)
+
+    def _select(self, fts):
+        # TODO: THIS IMPLEMENTATION IS WRONG AND ONLY FOR TESTING. FIX!
+        make_selection = lambda fts: fts
+        self._update_diagnostics({})
+        return make_selection(fts)
+
+    def _aggregate(self, fts):
+        # TODO: THIS IMPLEMENTATION IS WRONG AND ONLY FOR TESTING. FIX!
+        aggregate = np.nanmean
+        self._update_diagnostics({})
+        return aggregate(fts)
+
+    def _compute(self, recompute=False, store_diagnostics=False):
+        # TODO: THIS IMPLEMENTATION IS WRONG AND ONLY FOR TESTING. FIX!
+        fts = self.lookup_sweep_feature(self.name, recompute=recompute)
+
+        subset = self._select(fts)
+        ft = self._aggregate(subset)
+        self._update_diagnostics({})
+        return ft
+
+
+# class Sweepset_rebound(SweepsetFeature):
+#     pass
+
+
+# class Sweepset_sag(SweepsetFeature):
+#     pass
+
+
+# class Sweepset_r_input(SweepsetFeature):
+#     pass
+
+
+# class Sweepset_tau(SweepsetFeature):
+#     pass
+
+
+# class Sweepset_spiking(SweepsetFeature):
+#     pass
+
+
+# class Sweepset_max(SweepsetFeature):
+#     pass
+
+
+# class Sweepset_median(SweepsetFeature):
+#     pass
+
+
+# class Sweepset_AP_latency(SweepsetFeature):
+#     pass
+
+
+# class Sweepset_rheobase(SweepsetFeature):
+#     pass
+
+
+# class Sweepset_dfdI(SweepsetFeature):
+#     pass

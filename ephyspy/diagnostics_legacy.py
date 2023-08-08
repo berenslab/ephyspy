@@ -22,14 +22,14 @@ import numpy as np
 from matplotlib.pyplot import Axes, Figure
 from numpy import ndarray
 
-from py_ephys.allen_sdk.ephys_extractor import EphysSweepFeatureExtractor
-from py_ephys.features import (
+from ephyspy.allen_sdk.ephys_extractor import EphysSweepFeatureExtractor
+from ephyspy.features import (
     default_ap_sweep_selector,
     default_rebound_sweep_selector,
     default_sag_sweep_selector,
     default_spiking_sweep_selector,
 )
-from py_ephys.utils import (
+from ephyspy.utils import (
     EphysSweepSetFeatureExtractor,
     ensure_ft_info,
     get_ap_ft_at_idx,

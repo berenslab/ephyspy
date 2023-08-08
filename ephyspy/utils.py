@@ -17,16 +17,16 @@
 import inspect
 import re
 import sys
-from typing import Callable, Dict, List, Optional, Union
+from typing import Callable, Dict, List, Optional, Union, Tuple
 
 import numpy as np
 from numpy import ndarray
 
-import py_ephys.allen_sdk.ephys_extractor as efex
-from py_ephys.allen_sdk.ephys_extractor import (
+import ephyspy.allen_sdk.ephys_extractor as efex
+from ephyspy.allen_sdk.ephys_extractor import (
     EphysSweepFeatureExtractor as AllenEphysSweepFeatureExtractor,
 )
-from py_ephys.allen_sdk.ephys_extractor import (
+from ephyspy.allen_sdk.ephys_extractor import (
     EphysSweepSetFeatureExtractor as AllenEphysSweepSetFeatureExtractor,
 )
 
@@ -40,14 +40,19 @@ class EphysSweepFeatureExtractor(AllenEphysSweepFeatureExtractor):
         self.added_spike_features[feature_name] = feature_func
 
     def _process_added_spike_features(self):
-        for feature_func in self.added_spike_features.values():
-            feature_func(self)
+        for feature_name, feature_func in self.added_spike_features.items():
+            self.process_new_spike_feature(feature_name, feature_func)
 
     def process_spikes(self):
         """Perform spike-related feature analysis"""
         self._process_individual_spikes()
         self._process_spike_related_features()
         self._process_added_spike_features()
+
+    def get_features(self):
+        if hasattr(self, "features"):
+            if self.features is not None:
+                return {k: ft.value for k, ft in self.features.items()}
 
 
 # overwrite AllenSDK EphysSweepFeatureExtractor with wrapper
@@ -133,12 +138,23 @@ class EphysSweepSetFeatureExtractor(AllenEphysSweepSetFeatureExtractor):
         for sweep in self.sweeps():
             sweep.set_stimulus_amplitude_calculator(func)
 
+    def get_features(self):
+        if hasattr(self, "features"):
+            if self.features is not None:
+                return {k: ft.value for k, ft in self.features.items()}
+
+    def get_sweep_features(self):
+        if hasattr(self, "features"):
+            if self.features is not None:
+                LD = [sw.get_features() for sw in self.sweeps()]
+                return {k: [dic[k] for dic in LD] for k in LD[0]}
+
 
 def fetch_available_fts():
     # TODO: Make sure classes can be added somehow!
-    classes = inspect.getmembers(sys.modules["py_ephys"], inspect.isclass)
+    classes = inspect.getmembers(sys.modules["ephyspy"], inspect.isclass)
     classes = [
-        c[1] for c in classes if "py_ephys.features" in c[1].__module__
+        c[1] for c in classes if "ephyspy.features" in c[1].__module__
     ]  # TODO: swap main for module name!
     feature_classes = [c for c in classes if "Feature" not in c.__name__]
     return feature_classes
@@ -246,6 +262,13 @@ def parse_func_doc_attrs(func: Callable) -> Dict:
     return doc_attrs
 
 
+def parse_desc(func):
+    dct = parse_func_doc_attrs(func)
+    if "description" in dct:
+        return dct["description"]
+    return ""
+
+
 def parse_deps(deps_string):
     if deps_string == "/":
         return []
@@ -258,6 +281,28 @@ where_between = lambda t, t0, tend: np.logical_and(t > t0, t < tend)
 get_ap_ft_at_idx = lambda sweep, x, idx: sweep.spike_feature(x, include_clipped=True)[
     idx
 ]
+
+
+def get_sweep_burst_metrics(
+    sweep: EphysSweepFeatureExtractor,
+) -> Tuple[ndarray, ndarray, ndarray]:
+    """Calculate burst metrics for a sweep.
+
+    Uses EphysExtractor's _process_bursts() method to calculate burst metrics.
+
+    Args:
+        sweep (EphysSweepFeatureExtractor): Sweep to calculate burst metrics for.
+
+    Returns:
+        Tuple[ndarray, ndarray, ndarray]: returns burst index, burst start index,
+            burst end index.
+    """
+    # burst_metrics = sweep._process_bursts()
+    burst_metrics = []  # TODO: FIX !!!!!!!!!!!!!
+    if len(burst_metrics) == 0:
+        return float("nan"), slice(0), slice(0)
+    idx_burst, idx_burst_start, idx_burst_end = burst_metrics.T
+    return idx_burst, idx_burst_start.astype(int), idx_burst_end.astype(int)
 
 
 def get_sweep_sag_idxs(sweep: EphysSweepFeatureExtractor):
@@ -286,6 +331,54 @@ def get_sweep_sag_idxs(sweep: EphysSweepFeatureExtractor):
         where_stimulus = where_between(sweep.t, start, end)
         return np.logical_and(where_stimulus, sweep.v < v_steady)
     return np.zeros_like(sweep.t, dtype=bool)
+
+
+def default_ap_selector(sweep: EphysSweepFeatureExtractor, onset, end) -> int:
+    """Select representative AP from which the ap features are extracted.
+
+    description: 2nd AP (if only 1 AP -> select first) during stimulus that has
+    no NaNs in relevant spike features. If all APs have NaNs, return the AP during
+    stimulus that has the least amount of NaNs in the relevant features. This
+    avoids bad threshold detection at onset of stimulus.
+
+    Args:
+        sweep (EphysSweepFeatureExtractor): Sweep from which the ap features are extracted.
+
+    Returns:
+        int: Index of the sweep from which the rebound features are extracted.
+    """
+    relevant_ap_fts = [
+        "ahp",
+        "adp_v",
+        "peak_v",
+        "threshold_v",
+        "trough_v",
+        "width",
+        "slow_trough_v",
+        "fast_trough_v",
+        "downstroke_v",
+        "upstroke_v",
+    ]
+
+    peak_t = sweep.spike_feature("peak_t", include_clipped=True)
+    is_stim = where_between(peak_t, onset, end)
+
+    if len(peak_t[is_stim]) == 0:  # some sweeps have only wild aps
+        return slice(0)
+
+    spike_fts = sweep._spikes_df[relevant_ap_fts]
+    has_nan_fts = spike_fts.isna().any(axis=1)
+    if any(~has_nan_fts & is_stim):
+        selected_ap_idxs = spike_fts.index[~has_nan_fts & is_stim]
+    else:
+        num_nan_fts = spike_fts[is_stim].isna().sum(axis=1)
+        # sort by number of NaNs and then by index (ensure ap order stays intact)
+        selected_ap_idxs = num_nan_fts.reset_index().sort_values([0, "index"])["index"]
+
+    if len(selected_ap_idxs) > 1:
+        return selected_ap_idxs[1]
+    else:
+        return selected_ap_idxs[0]
 
 
 def median_idx(d):
