@@ -17,7 +17,7 @@
 import inspect
 import re
 import sys
-from typing import Callable, Dict, List, Optional, Union, Tuple
+from typing import Callable, Dict, List, Optional, Union, Tuple, Any
 
 import numpy as np
 from numpy import ndarray
@@ -35,6 +35,7 @@ class EphysSweepFeatureExtractor(AllenEphysSweepFeatureExtractor):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.added_spike_features = {}
+        self.features = {}
 
     def add_spike_feature(self, feature_name: str, feature_func: Callable):
         self.added_spike_features[feature_name] = feature_func
@@ -205,7 +206,7 @@ def is_depol(
     return np.any(data.i.T > 0, axis=0)
 
 
-def has_rebound(sweep: EphysSweepFeatureExtractor, T_rebound: float = 0.3) -> bool:
+def has_rebound(feature: Any, T_rebound: float = 0.3) -> bool:
     """Check if sweep rebounds.
 
     description: rebound if voltage exceeds baseline after stimulus offset.
@@ -217,9 +218,10 @@ def has_rebound(sweep: EphysSweepFeatureExtractor, T_rebound: float = 0.3) -> bo
 
     Returns:
         bool: True if sweep rebounds."""
-    if is_hyperpol(sweep):
-        end = sweep.sweep_feature("stim_end")
-        v_baseline = sweep.sweep_feature("v_baseline")
+    if is_hyperpol(feature.data):
+        sweep = feature.data
+        end = feature.lookup_sweep_feature("stim_end")
+        v_baseline = feature.lookup_sweep_feature("v_baseline")
         ts_rebound = np.logical_and(sweep.t > end, sweep.t < end + T_rebound)
         return np.any(sweep.v[ts_rebound] > v_baseline)
     return False
@@ -305,7 +307,7 @@ def get_sweep_burst_metrics(
     return idx_burst, idx_burst_start.astype(int), idx_burst_end.astype(int)
 
 
-def get_sweep_sag_idxs(sweep: EphysSweepFeatureExtractor):
+def get_sweep_sag_idxs(feature: Any, recompute: bool = False) -> ndarray:
     """determine idxs in a sweep that are part of the sag.
 
     description: all idxs below steady state and during stimulus.
@@ -323,11 +325,12 @@ def get_sweep_sag_idxs(sweep: EphysSweepFeatureExtractor):
     # set all True ones after to False
     # also if steady state is never reached again, sag will be massive
     # -> set all idxs to False ?
+    sweep = feature.data
     v_deflect = sweep.voltage_deflection("min")[0]
-    v_steady = sweep.sweep_feature("v_deflect")
+    v_steady = feature.lookup_sweep_feature("v_deflect", recompute=recompute)
     if v_steady - v_deflect < 4:  # The sag should have a minimum depth of 4 mV
-        start = sweep.sweep_feature("stim_onset")
-        end = sweep.sweep_feature("stim_end")
+        start = feature.lookup_sweep_feature("stim_onset", recompute=recompute)
+        end = feature.lookup_sweep_feature("stim_end", recompute=recompute)
         where_stimulus = where_between(sweep.t, start, end)
         return np.logical_and(where_stimulus, sweep.v < v_steady)
     return np.zeros_like(sweep.t, dtype=bool)
