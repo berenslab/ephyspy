@@ -24,6 +24,7 @@ from pandas import DataFrame
 from scipy import integrate
 from scipy.optimize import curve_fit
 from sklearn import linear_model
+import pandas as pd
 
 from ephyspy.allen_sdk.ephys_extractor import EphysSweepFeatureExtractor
 import ephyspy.allen_sdk.ephys_features as ft
@@ -655,7 +656,7 @@ class Sag_fraction(EphysFeature):
     def __init__(self, data=None, compute_at_init=True, peak_width=0.005):
         super().__init__(data, compute_at_init=False)
         self.peak_width = peak_width
-        if compute_at_init:  # because of dc_offset
+        if compute_at_init and data is not None:  # because of dc_offset
             self.get_value()
 
     def _compute(self, recompute=False, store_diagnostics=True):
@@ -838,7 +839,7 @@ class Rebound(EphysFeature):
     def __init__(self, data=None, compute_at_init=True, T_rebound=0.3):
         super().__init__(data, compute_at_init=False)
         self.T_rebound = T_rebound
-        if compute_at_init:  # becuase of T_rebound
+        if compute_at_init and data is not None:  # because of T_rebound
             self.get_value()
 
     def _compute(self, recompute=False, store_diagnostics=True):
@@ -879,7 +880,7 @@ class Rebound_APs(EphysFeature):
     def __init__(self, data=None, compute_at_init=True, T_rebound=0.3):
         super().__init__(data, compute_at_init=False)
         self.T_rebound = T_rebound
-        if compute_at_init:  # becuase of T_rebound
+        if compute_at_init and data is not None:  # because of T_rebound
             self.get_value()
 
     def _compute(self, recompute=False, store_diagnostics=True):
@@ -918,7 +919,7 @@ class Rebound_area(EphysFeature):
     def __init__(self, data=None, compute_at_init=True, T_rebound=0.3):
         super().__init__(data, compute_at_init=False)
         self.T_rebound = T_rebound
-        if compute_at_init:  # becuase of T_rebound
+        if compute_at_init and data is not None:  # because of T_rebound
             self.get_value()
 
     def _compute(self, recompute=False, store_diagnostics=True):
@@ -957,7 +958,7 @@ class Rebound_latency(EphysFeature):
     def __init__(self, data=None, compute_at_init=True, T_rebound=0.3):
         super().__init__(data, compute_at_init=False)
         self.T_rebound = T_rebound
-        if compute_at_init:  # becuase of T_rebound
+        if compute_at_init and data is not None:  # because of T_rebound
             self.get_value()
 
     def _compute(self, recompute=False, store_diagnostics=True):
@@ -998,7 +999,7 @@ class Rebound_avg(EphysFeature):
     def __init__(self, data=None, compute_at_init=True, T_rebound=0.3):
         super().__init__(data, compute_at_init=False)
         self.T_rebound = T_rebound
-        if compute_at_init:  # becuase of T_rebound
+        if compute_at_init and data is not None:  # because of T_rebound
             self.get_value()
 
     def _compute(self, recompute=False, store_diagnostics=True):
@@ -1034,7 +1035,7 @@ class V_rest(EphysFeature):
     def __init__(self, data=None, compute_at_init=True, dc_offset=0):
         super().__init__(data, compute_at_init=False)
         self.dc_offset = dc_offset
-        if compute_at_init:  # because of dc_offset
+        if compute_at_init and data is not None:  # because of dc_offset
             self.get_value()
 
     def _compute(self, recompute=False, store_diagnostics=True):
@@ -1388,57 +1389,200 @@ class Sweepset_AP(SweepsetFeature):
         super().__init__(feature, data=data, compute_at_init=compute_at_init)
 
     def _select(self, fts):
-        # TODO: THIS IMPLEMENTATION IS WRONG AND ONLY FOR TESTING. FIX!
-        make_selection = lambda fts: fts
-        self._update_diagnostics({})
-        return make_selection(fts)
+        """Select representative sweep and use its AP features to represent the
+        entire sweepset.
+
+        description: 2nd AP (if only 1 AP -> select first) during stimulus that has
+        no NaNs in relevant spike features. If all APs have NaNs, return the AP during
+        stimulus that has the least amount of NaNs in the relevant features. This
+        avoids bad threshold detection at onset of stimulus.
+        """
+        # TODO: Consult if this is sensible!
+        relevant_ap_fts = [
+            "ap_thresh",
+            "ap_amp",
+            "ap_width",
+            "ap_peak",
+            "ap_trough",
+            "ap_ahp",
+            "ap_adp",
+            "ap_udr",
+        ]
+
+        is_depol = self.lookup_sweep_feature("stim_amp") > 0
+        has_spikes = self.lookup_sweep_feature("num_ap") > 0
+        ft_is_na = np.zeros((len(relevant_ap_fts), len(self.dataset)), dtype=bool)
+        for i, ft in enumerate(relevant_ap_fts):
+            ft_is_na[i] = np.isnan(self.lookup_sweep_feature(ft))
+
+        num_nans = pd.Series(ft_is_na.sum(axis=0))
+        idx = num_nans[is_depol & has_spikes].idxmin()
+
+        self._update_diagnostics(
+            {"selected_idx": idx, "selection": parse_desc(self._select)}
+        )
+        return fts[idx]
 
     def _aggregate(self, fts):
-        # TODO: THIS IMPLEMENTATION IS WRONG AND ONLY FOR TESTING. FIX!
-        aggregate = np.nanmean
-        self._update_diagnostics({})
-        return aggregate(fts)
-
-    def _compute(self, recompute=False, store_diagnostics=False):
-        # TODO: THIS IMPLEMENTATION IS WRONG AND ONLY FOR TESTING. FIX!
-        fts = self.lookup_sweep_feature(self.name, recompute=recompute)
-
-        subset = self._select(fts)
-        ft = self._aggregate(subset)
-        self._update_diagnostics({})
-        return ft
+        self._update_diagnostics(
+            {"aggregation": "not an aggregate features, only single index is selected."}
+        )
+        return fts
 
 
-# class Sweepset_rebound(SweepsetFeature):
-#     pass
+class Sweepset_rebound(SweepsetFeature):
+    def __init__(self, feature, data=None, compute_at_init=True):
+        super().__init__(feature, data=data, compute_at_init=compute_at_init)
+
+    def _select(self, fts):
+        """Select representative sweep and use its rebound features to represent the
+        entire sweepset.
+
+        description: Lowest hyperpolarization sweep. If 3 lowest sweeps are NaN,
+        then the first sweep is selected, meaning the feature is set to NaN."""
+        rebound = self.lookup_sweep_feature("rebound")
+        nan_rebounds = np.isnan(rebound)
+        if all(nan_rebounds[:3]):
+            idx = 0
+        else:
+            idx = np.arange(len(rebound))[~nan_rebounds][0]
+
+        self._update_diagnostics(
+            {"selected_idx": idx, "selection": parse_desc(self._select)}
+        )
+        return fts[idx]
+
+    def _aggregate(self, fts):
+        self._update_diagnostics(
+            {"aggregation": "not an aggregate features, only single index is selected."}
+        )
+        return fts
 
 
-# class Sweepset_sag(SweepsetFeature):
-#     pass
+class Sweepset_sag(SweepsetFeature):
+    def __init__(self, feature, data=None, compute_at_init=True):
+        super().__init__(feature, data=data, compute_at_init=compute_at_init)
+
+    def _select(self, fts):
+        """Select representative sweep and use its sag features to represent the
+        entire sweepset.
+
+        description: Lowest hyperpolarization sweep that is not NaN. If 3 lowest
+        sweeps are NaN, then the first sweep is selected, meaning the feature is set
+        to NaN."""
+        sag = self.lookup_sweep_feature("sag")
+        nan_sags = np.isnan(sag)
+        if all(nan_sags[:3]):
+            idx = 0
+        else:
+            idx = np.arange(len(sag))[~nan_sags][0]
+
+        self._update_diagnostics(
+            {"selected_idx": idx, "selection": parse_desc(self._select)}
+        )
+        return fts[idx]
+
+    def _aggregate(self, fts):
+        self._update_diagnostics(
+            {"aggregation": "not an aggregate features, only single index is selected."}
+        )
+        return fts
 
 
-# class Sweepset_r_input(SweepsetFeature):
-#     pass
+class Sweepset_spiking(SweepsetFeature):
+    def __init__(self, feature, data=None, compute_at_init=True):
+        super().__init__(feature, data=data, compute_at_init=compute_at_init)
+
+    def _select(self, fts):
+        """Select representative sweep and use its spiking features to represent the
+        entire sweepset.
+
+        description: Highest non wild trace (wildness == cell dying)."""
+        num_spikes = self.lookup_sweep_feature("num_ap")
+        wildness = self.lookup_sweep_feature("wildness")
+        is_non_wild = np.isnan(wildness)
+        idx = pd.Series(num_spikes)[is_non_wild].idxmax()
+
+        self._update_diagnostics(
+            {
+                "selected_idx": idx,
+                "selection": parse_desc(self._select),
+            }
+        )
+        return fts[idx]
+
+    def _aggregate(self, fts):
+        self._update_diagnostics(
+            {"aggregation": "not an aggregate features, only single index is selected."}
+        )
+        return fts
 
 
-# class Sweepset_tau(SweepsetFeature):
-#     pass
+class Sweepset_max(SweepsetFeature):
+    def __init__(self, feature, data=None, compute_at_init=True):
+        super().__init__(feature, data=data, compute_at_init=compute_at_init)
+
+    def _select(self, fts):
+        """Select representative sweep and use its features to represent the
+        entire sweepset.
+
+        description: select arg max."""
+        fts = self.lookup_sweep_feature(self.feature)
+        idx = np.argmax(fts)
+        self._update_diagnostics(
+            {
+                "selected_idx": idx,
+                "selection": parse_desc(self._select),
+            }
+        )
+        return fts[idx]
+
+    def _aggregate(self, fts):
+        self._update_diagnostics({"aggregation": "select max feature."})
+        return fts
 
 
-# class Sweepset_spiking(SweepsetFeature):
-#     pass
+class Sweepset_median(SweepsetFeature):
+    def __init__(self, feature, data=None, compute_at_init=True):
+        super().__init__(feature, data=data, compute_at_init=compute_at_init)
+
+    def _select(self, fts):
+        """Select representative sweep and use its features to represent the
+        entire sweepset.
+
+        description: select all features."""
+        return fts
+
+    def _aggregate(self, fts):
+        self._update_diagnostics({"aggregation": "select median feature."})
+        return np.nanmedian(fts)
 
 
-# class Sweepset_max(SweepsetFeature):
-#     pass
+class Sweepset_AP_latency(SweepsetFeature):
+    def __init__(self, feature, data=None, compute_at_init=True):
+        super().__init__(feature, data=data, compute_at_init=compute_at_init)
 
+    def _select(self, fts):
+        """Select representative sweep and use its sag features to represent the
+        entire sweepset.
 
-# class Sweepset_median(SweepsetFeature):
-#     pass
+        description: first depolarization trace that has non-nan ap_latency."""
+        is_depol = self.lookup_sweep_feature("stim_amp") > 0
+        ap_latency = self.lookup_sweep_feature("ap_latency")
+        idx = pd.Series(is_depol).index[is_depol & ~np.isnan(ap_latency)][0]
+        self._update_diagnostics(
+            {
+                "selected_idx": idx,
+                "selection": parse_desc(self._select),
+            }
+        )
+        return fts[idx]
 
-
-# class Sweepset_AP_latency(SweepsetFeature):
-#     pass
+    def _aggregate(self, fts):
+        self._update_diagnostics(
+            {"aggregation": "not an aggregate features, only single index is selected."}
+        )
+        return fts
 
 
 # class Sweepset_rheobase(SweepsetFeature):
@@ -1446,4 +1590,7 @@ class Sweepset_AP(SweepsetFeature):
 
 
 # class Sweepset_dfdI(SweepsetFeature):
+#     pass
+
+# class Sweepset_r_input(SweepsetFeature):
 #     pass

@@ -218,8 +218,8 @@ def has_rebound(feature: Any, T_rebound: float = 0.3) -> bool:
 
     Returns:
         bool: True if sweep rebounds."""
-    if is_hyperpol(feature.data):
-        sweep = feature.data
+    sweep = feature.data
+    if is_hyperpol(sweep):
         end = feature.lookup_sweep_feature("stim_end")
         v_baseline = feature.lookup_sweep_feature("v_baseline")
         ts_rebound = np.logical_and(sweep.t > end, sweep.t < end + T_rebound)
@@ -227,6 +227,7 @@ def has_rebound(feature: Any, T_rebound: float = 0.3) -> bool:
     return False
 
 
+# TODO: FIX ! Currently not properly parsing the entire description
 def parse_func_doc_attrs(func: Callable) -> Dict:
     """Parses docstrings for attributes.
 
