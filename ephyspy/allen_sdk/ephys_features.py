@@ -1093,13 +1093,13 @@ def detect_bursts(
     if len(into_burst) != len(out_of_burst):
         raise FeatureError("Inconsistent burst boundary identification")
 
-    inout_pairs = zip(into_burst, out_of_burst)
+    inout_pairs = list(zip(into_burst, out_of_burst))
     delta_t = slow_tr_t - fast_tr_t
 
     scores = _score_burst_set(inout_pairs, isis, delta_t)
     best_score = np.mean(scores)
     worst = np.argmin(scores)
-    test_bursts = list(inout_pairs)
+    test_bursts = inout_pairs
     del test_bursts[worst]
     while len(test_bursts) > 0:
         scores = _score_burst_set(test_bursts, isis, delta_t)
