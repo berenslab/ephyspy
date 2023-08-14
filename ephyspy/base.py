@@ -201,14 +201,13 @@ class SweepsetFeature(EphysFeature):
         self._update_diagnostics({})
         return aggregate(fts)
 
-    @abstractmethod
     def _compute(self, recompute=False, store_diagnostics=False):
         fts = self.lookup_sweep_feature(self.name, recompute=recompute)
-        # ftname = self.lookup_sweep_feature("ftname", recompute=recompute)
 
         subset = self._select(fts)
         ft = self._aggregate(subset)
-        self._update_diagnostics({})
+        if store_diagnostics:
+            self._update_diagnostics({"values": fts})
         return ft
 
     @property
