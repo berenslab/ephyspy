@@ -1585,12 +1585,107 @@ class Sweepset_AP_latency(SweepsetFeature):
         return fts
 
 
-# class Sweepset_rheobase(SweepsetFeature):
-#     pass
+class AbstractEphysFeature(EphysFeature):
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(data, compute_at_init)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        return
 
 
-# class Sweepset_dfdI(SweepsetFeature):
-#     pass
+class dfdI(SweepsetFeature):
+    def __init__(self, feature, data=None, compute_at_init=True):
+        super().__init__(feature, data=data, compute_at_init=compute_at_init)
+
+    def _select(self, fts):
+        return fts
+
+    def _aggregate(self, fts):
+        return fts
+
+    def _compute(self, recompute=False, store_diagnostics=False):
+        is_depol = self.lookup_sweep_feature("stim_amp", recompute=recompute) > 0
+        ap_freq = self.lookup_sweep_feature("ap_freq", recompute=recompute)
+        stim_amp = self.lookup_sweep_feature("stim_amp", recompute=recompute)
+
+        f = ap_freq[is_depol]
+        i = stim_amp[is_depol]
+
+        dfdi = float("nan")
+        has_spikes = ~np.isnan(f)
+        if np.sum(has_spikes) > 4 and len(np.unique(f[:5])) > 3:
+            i_s = i[has_spikes][:5]
+            f_s = f[has_spikes][:5]
+
+            ransac.fit(i_s.reshape(-1, 1), f_s.reshape(-1, 1))
+            dfdi = ransac.coef_[0, 0]
+            f_intercept = ransac.intercept_[0]
+
+            if store_diagnostics:
+                self._update_diagnostics(
+                    {
+                        "i_fit": i_s,
+                        "f_fit": f_s,
+                        "f": f,
+                        "i": i,
+                        "f_intercept": f_intercept,
+                    }
+                )
+        return dfdi
+
+
+class Rheobase(SweepsetFeature):
+    def __init__(self, feature, data=None, compute_at_init=True, dc_offset=0):
+        super().__init__(feature, data=data, compute_at_init=False)
+        self.dc_offset = dc_offset
+        if compute_at_init and data is not None:
+            self.get_value()
+
+    def _select(self, fts):
+        return fts
+
+    def _aggregate(self, fts):
+        return fts
+
+    def _compute(self, recompute=False, store_diagnostics=False):
+        dc_offset = self.dc_offset
+        rheobase = float("nan")
+        is_depol = self.lookup_sweep_feature("stim_amp") > 0
+        ap_freq = self.lookup_sweep_feature("ap_freq", recompute=recompute)
+        stim_amp = self.lookup_sweep_feature("stim_amp", recompute=recompute)
+        dfdi = self.lookup_sweep_feature("dfdi", recompute=recompute)
+
+        f = ap_freq[is_depol]
+        i = stim_amp[is_depol]
+
+        has_spikes = ~np.isnan(f)
+        # sometimes all depolarization traces spike
+        i_sub = (
+            0 if all(has_spikes) else i[~has_spikes][0]
+        )  # last stim < spike threshold
+        i_sup = i[has_spikes][0]  # first stim > spike threshold
+
+        if not np.isnan(dfdi):
+            rheobase = float(ransac.predict(np.array([[0]]))) / dfdi
+
+            if rheobase < i_sub or rheobase > i_sup:
+                rheobase = i_sup
+        else:
+            rheobase = i_sup
+        rheobase -= dc_offset
+
+        if store_diagnostics:
+            self._update_diagnostics(
+                {
+                    "i_sub": i_sub,
+                    "i_sup": i_sup,
+                    "f_sup": ap_freq[has_spikes][0],
+                    "dfdi": dfdi,
+                    "dc_offset": dc_offset,
+                }
+            )
+        return rheobase
+
 
 # class Sweepset_r_input(SweepsetFeature):
 #     pass
