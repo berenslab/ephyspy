@@ -299,8 +299,7 @@ def get_sweep_burst_metrics(
         Tuple[ndarray, ndarray, ndarray]: returns burst index, burst start index,
             burst end index.
     """
-    # burst_metrics = sweep._process_bursts()
-    burst_metrics = []  # TODO: FIX !!!!!!!!!!!!!
+    burst_metrics = sweep._process_bursts()
     if len(burst_metrics) == 0:
         return float("nan"), slice(0), slice(0)
     idx_burst, idx_burst_start, idx_burst_end = burst_metrics.T

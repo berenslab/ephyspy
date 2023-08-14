@@ -621,6 +621,30 @@ class Sag(EphysFeature):
         return sag
 
 
+class V_steady(EphysFeature):
+    """Extract sweep level hyperpol steady state feature.
+
+    depends on: stim_end.
+    description: hyperpol steady state voltage.
+    units: /."""
+
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(data, compute_at_init)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        v_steady = float("nan")
+        if is_hyperpol(self.data):
+            stim_end = self.lookup_sweep_feature("stim_end", recompute=recompute)
+            v_steady = ft.average_voltage(
+                self.data.v,
+                self.data.t,
+                start=stim_end - self.data.baseline_interval,
+                end=stim_end,
+            )
+
+        return v_steady
+
+
 class Sag_fraction(EphysFeature):
     """Extract sweep level sag fraction feature.
 
@@ -628,12 +652,51 @@ class Sag_fraction(EphysFeature):
     description: fraction that membrane potential relaxes back to baseline.
     units: /."""
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, compute_at_init=True, peak_width=0.005):
+        super().__init__(data, compute_at_init=False)
+        self.peak_width = peak_width
+        if compute_at_init:  # because of dc_offset
+            self.get_value()
 
     def _compute(self, recompute=False, store_diagnostics=True):
-        warnings.warn("This feature is not implemented yet.")
-        return float("nan")
+        sag_fraction = float("nan")
+        if is_hyperpol(self.data):
+            where_sag = get_sweep_sag_idxs(self)
+            if np.sum(where_sag) > 10:  # TODO: what should be min sag duration!?
+                sag = self.lookup_sweep_feature("sag", recompute=recompute)
+                v_steady = self.lookup_sweep_feature("v_steady", recompute=recompute)
+                v_deflect, idx_deflect = self.data.voltage_deflection("min")
+
+                if self.data.v[idx_deflect] < -200:
+                    warnings.warn("Downward peak < 200 mV")
+                    # Look for another local minimum closer to stimulus onset
+                    idx_deflect -= ft.find_time_index(
+                        self.data.t, 0.12
+                    ) - ft.find_time_index(self.data.t, 0.1)
+
+                t_deflect = self.data.t[idx_deflect]
+
+                v_sag_peak_avg = ft.average_voltage(
+                    self.data.v,
+                    self.data.t,
+                    start=t_deflect - self.peak_width / 2.0,
+                    end=t_deflect + self.peak_width / 2.0,
+                )
+
+                sag_fraction = (v_sag_peak_avg - v_steady) / sag
+
+                if store_diagnostics:
+                    self._update_diagnostics(
+                        {
+                            "sag": sag,
+                            "v_sag_peak_avg": v_sag_peak_avg,
+                            "where_sag": where_sag,
+                            "v_deflect": v_deflect,
+                            "t_deflect": t_deflect,
+                            "v_steady": v_steady,
+                        }
+                    )
+        return sag_fraction
 
 
 class Sag_ratio(EphysFeature):
@@ -647,8 +710,28 @@ class Sag_ratio(EphysFeature):
         super().__init__(data, compute_at_init)
 
     def _compute(self, recompute=False, store_diagnostics=True):
-        warnings.warn("This feature is not implemented yet.")
-        return float("nan")
+        sag_ratio = float("nan")
+        if is_hyperpol(self.data):
+            where_sag = get_sweep_sag_idxs(self)
+            if np.sum(where_sag) > 10:  # TODO: what should be min sag duration!?
+                sag = self.lookup_sweep_feature("sag", recompute=recompute)
+                v_steady = self.lookup_sweep_feature("v_steady", recompute=recompute)
+                v_baseline = self.lookup_sweep_feature(
+                    "v_baseline", recompute=recompute
+                )
+
+                sag_ratio = sag / (v_steady - v_baseline)
+
+                if store_diagnostics:
+                    self._update_diagnostics(
+                        {
+                            "sag": sag,
+                            "where_sag": where_sag,
+                            "v_baseline": v_baseline,
+                            "v_steady": v_steady,
+                        }
+                    )
+        return sag_ratio
 
 
 class Sag_area(EphysFeature):
@@ -951,7 +1034,7 @@ class V_rest(EphysFeature):
     def __init__(self, data=None, compute_at_init=True, dc_offset=0):
         super().__init__(data, compute_at_init=False)
         self.dc_offset = dc_offset
-        if compute_at_init:  # becuase of dc_offset
+        if compute_at_init:  # because of dc_offset
             self.get_value()
 
     def _compute(self, recompute=False, store_diagnostics=True):
@@ -984,7 +1067,6 @@ class Num_bursts(EphysFeature):
         super().__init__(data, compute_at_init)
 
     def _compute(self, recompute=False, store_diagnostics=True):
-        warnings.warn("Feature is not correctly implemented yet.")
         num_bursts = float("nan")
         num_ap = self.lookup_sweep_feature("num_ap", recompute=recompute)
         if num_ap > 5 and has_stimulus(self.data):
@@ -1021,7 +1103,6 @@ class Burstiness(EphysFeature):
         super().__init__(data, compute_at_init)
 
     def _compute(self, recompute=False, store_diagnostics=True):
-        warnings.warn("Feature is not correctly implemented yet.")
         max_burstiness = float("nan")
         num_ap = self.lookup_sweep_feature("num_ap", recompute=recompute)
         if num_ap > 5 and has_stimulus(self.data):
@@ -1125,7 +1206,9 @@ class APEphysFeature(EphysFeature):
 
         description: Aggregate a list of feature values into a single value. If none is provided, falls back
         to `np.nanmedian` (equates to pass through for single sweeps)."""
-        if self.ft_aggregator is None:
+        if np.isnan(X).all():
+            return float("nan")
+        elif self.ft_aggregator is None:
             return np.nanmedian(X)
         else:
             return self.ft_aggregator(X)
