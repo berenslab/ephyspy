@@ -27,6 +27,7 @@ class EphysFeature(ABC):
             self.description = attrs["description"]
             self.depends_on = attrs["depends on"]
             self.units = attrs["units"]
+            self.units = "" if self.units == "/" else self.units
 
     def _data_init(self, data):
         self.data = data
@@ -57,7 +58,7 @@ class EphysFeature(ABC):
 
     def __str__(self):
         val = self._value if self._value is not None else "?"
-        return f"{self.name} = {val} {self.units}"
+        return f"{self.name} = {val:.3f} {self.units}"
 
     @abstractmethod
     def _compute(self, recompute=False, store_diagnostics=True):
