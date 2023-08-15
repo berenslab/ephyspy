@@ -74,9 +74,11 @@ class EphysFeature(ABC):
 
         if self.__class__.__doc__ is not None:
             attrs = parse_func_doc_attrs(self.__class__)
-            self.description = attrs["description"]
-            self.depends_on = attrs["depends on"]
-            self.units = attrs["units"]
+            self.description = (
+                None if not "description" in attrs else attrs["description"]
+            )
+            self.depends_on = None if not "depends on" in attrs else attrs["depends on"]
+            self.units = None if not "units" in attrs else attrs["units"]
             self.units = "" if self.units == "/" else self.units
 
     def _data_init(self, data: EphysSweepFeatureExtractor):
@@ -144,6 +146,11 @@ class EphysFeature(ABC):
             The value of the feature.
         """
         if not hasattr(self.data, "_spikes_df") or recompute:
+            self.data.process_spikes()
+        elif (
+            feature_name in self.data.added_spike_features
+            and feature_name not in self.data._spikes_df.columns
+        ):
             self.data.process_spikes()
         return self.data.spike_feature(feature_name, include_clipped=True)
 
