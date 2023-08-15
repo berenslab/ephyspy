@@ -189,6 +189,16 @@ class SweepsetFeature(EphysFeature):
             ]
         )
 
+    def lookup_sweepset_feature(self, feature_name, recompute=False):
+        if feature_name not in self.data.features:
+            available_fts = fetch_available_fts()
+            available_fts = {ft.__name__.lower(): ft for ft in available_fts}
+            if feature_name in available_fts:
+                return available_fts[feature_name](self.data).value
+            else:
+                raise FeatureError(f"{feature_name} is not a known feature.")
+        return self.get_features()[feature_name].get_value(recompute=recompute)
+
     @abstractmethod
     def _select(self, fts):
         make_selection = lambda fts: fts

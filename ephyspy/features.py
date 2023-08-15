@@ -219,8 +219,8 @@ class Stim_amp(EphysFeature):
         super().__init__(data, compute_at_init)
 
     def _compute(self, recompute=False, store_diagnostics=True):
-        stim_amp = np.max(abs(self.data.i).T, axis=0)
-        return stim_amp
+        idx = np.argmax(abs(self.data.i).T, axis=0)
+        return self.data.i[idx]
 
 
 class Stim_onset(EphysFeature):
@@ -1586,6 +1586,12 @@ class Sweepset_AP_latency(SweepsetFeature):
 
 
 class AbstractEphysFeature(EphysFeature):
+    """Abstract sweep level feature.
+
+    depends on: /.
+    description: /.
+    units: /."""
+
     def __init__(self, data=None, compute_at_init=True):
         super().__init__(data, compute_at_init)
 
@@ -1594,8 +1600,15 @@ class AbstractEphysFeature(EphysFeature):
 
 
 class dfdI(SweepsetFeature):
-    def __init__(self, feature, data=None, compute_at_init=True):
-        super().__init__(feature, data=data, compute_at_init=compute_at_init)
+    # TODO: Keep `feature` around as input for API consistency?
+    def __init__(self, data=None, compute_at_init=True):
+        abstract_feature = AbstractEphysFeature
+        super().__init__(abstract_feature, data=data, compute_at_init=False)
+        self.name = "dfdi"
+        features = self.data.features
+        features[self.name] = features.pop(abstract_feature().name)
+        if compute_at_init and data is not None:
+            self.get_value()
 
     def _select(self, fts):
         return fts
@@ -1613,6 +1626,8 @@ class dfdI(SweepsetFeature):
 
         dfdi = float("nan")
         has_spikes = ~np.isnan(f)
+        # TODO: Check if this is a sensible idea!!!
+        # (In case of 4 nans for example this will skip, even though sweep has spikes)
         if np.sum(has_spikes) > 4 and len(np.unique(f[:5])) > 3:
             i_s = i[has_spikes][:5]
             f_s = f[has_spikes][:5]
@@ -1635,9 +1650,13 @@ class dfdI(SweepsetFeature):
 
 
 class Rheobase(SweepsetFeature):
-    def __init__(self, feature, data=None, compute_at_init=True, dc_offset=0):
-        super().__init__(feature, data=data, compute_at_init=False)
+    def __init__(self, data=None, compute_at_init=True, dc_offset=0):
+        abstract_feature = AbstractEphysFeature
+        super().__init__(abstract_feature, data=data, compute_at_init=False)
+        self.name = "rheobase"
         self.dc_offset = dc_offset
+        features = self.data.features
+        features[self.name] = features.pop(abstract_feature().name)
         if compute_at_init and data is not None:
             self.get_value()
 
@@ -1650,10 +1669,10 @@ class Rheobase(SweepsetFeature):
     def _compute(self, recompute=False, store_diagnostics=False):
         dc_offset = self.dc_offset
         rheobase = float("nan")
-        is_depol = self.lookup_sweep_feature("stim_amp") > 0
+        is_depol = self.lookup_sweep_feature("stim_amp", recompute=recompute) > 0
         ap_freq = self.lookup_sweep_feature("ap_freq", recompute=recompute)
         stim_amp = self.lookup_sweep_feature("stim_amp", recompute=recompute)
-        dfdi = self.lookup_sweep_feature("dfdi", recompute=recompute)
+        dfdi = self.lookup_sweepset_feature("dfdi", recompute=recompute)
 
         f = ap_freq[is_depol]
         i = stim_amp[is_depol]
@@ -1679,7 +1698,7 @@ class Rheobase(SweepsetFeature):
                 {
                     "i_sub": i_sub,
                     "i_sup": i_sup,
-                    "f_sup": ap_freq[has_spikes][0],
+                    "f_sup": f[has_spikes][0],
                     "dfdi": dfdi,
                     "dc_offset": dc_offset,
                 }
@@ -1687,5 +1706,45 @@ class Rheobase(SweepsetFeature):
         return rheobase
 
 
-# class Sweepset_r_input(SweepsetFeature):
-#     pass
+class Sweepset_r_input(SweepsetFeature):
+    def __init__(self, data=None, compute_at_init=True, dc_offset=0):
+        abstract_feature = AbstractEphysFeature
+        super().__init__(abstract_feature, data=data, compute_at_init=False)
+        self.name = "r_input"
+        features = self.data.features
+        features[self.name] = features.pop(abstract_feature().name)
+        if compute_at_init and data is not None:
+            self.get_value()
+
+    def _select(self, fts):
+        return fts
+
+    def _aggregate(self, fts):
+        return fts
+
+    def _compute(self, recompute=False, store_diagnostics=False):
+        r_input = float("nan")
+        is_hyperpol = self.lookup_sweep_feature("stim_amp", recompute=recompute) < 0
+        v_deflect = self.lookup_sweep_feature("v_deflect", recompute=recompute)
+        v_deflect = v_deflect[is_hyperpol].reshape(-1, 1)
+        i_amp = self.lookup_sweep_feature("stim_amp", recompute=recompute)
+        i_amp = i_amp[is_hyperpol].reshape(-1, 1)
+
+        if len(v_deflect) >= 3:
+            ransac.fit(i_amp, v_deflect)
+            r_input = ransac.coef_[0, 0] * 1000
+            v_intercept = ransac.intercept_[0]
+            if store_diagnostics:
+                self._update_diagnostics(
+                    {
+                        "raw_slope": r_input / 1000,
+                        "v_intercept": v_intercept,
+                        "i_amp": i_amp,
+                        "v_deflect": v_deflect,
+                    }
+                )
+        return r_input
+
+
+# sweep_features = {}
+# sweepset_features = {}
