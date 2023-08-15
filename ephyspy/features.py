@@ -28,7 +28,7 @@ import pandas as pd
 
 from ephyspy.allen_sdk.ephys_extractor import EphysSweepFeatureExtractor
 import ephyspy.allen_sdk.ephys_features as ft
-from ephyspy.base import EphysFeature, SweepsetFeature
+from ephyspy.base import AbstractEphysFeature, EphysFeature, SweepsetFeature
 from ephyspy.utils import *
 
 # ransac = linear_model.RANSACRegressor()
@@ -1583,20 +1583,6 @@ class Sweepset_AP_latency(SweepsetFeature):
             {"aggregation": "not an aggregate features, only single index is selected."}
         )
         return fts
-
-
-class AbstractEphysFeature(EphysFeature):
-    """Abstract sweep level feature.
-
-    depends on: /.
-    description: /.
-    units: /."""
-
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
-
-    def _compute(self, recompute=False, store_diagnostics=True):
-        return
 
 
 class dfdI(SweepsetFeature):

@@ -18,6 +18,7 @@ import inspect
 import re
 import sys
 from typing import Callable, Dict, List, Optional, Union, Tuple, Any
+import warnings
 
 import numpy as np
 from numpy import ndarray
@@ -30,22 +31,38 @@ from ephyspy.allen_sdk.ephys_extractor import (
     EphysSweepSetFeatureExtractor as AllenEphysSweepSetFeatureExtractor,
 )
 
+CUSTOM_FEATURES = []
+
 
 class EphysSweepFeatureExtractor(AllenEphysSweepFeatureExtractor):
+    """Wrapper around EphysSweepFeatureExtractor from the AllenSDK to
+    support additional functionality.
+
+    Mainly it supports the addition of new spike features.
+    """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.added_spike_features = {}
         self.features = {}
 
     def add_spike_feature(self, feature_name: str, feature_func: Callable):
+        """Add a new spike feature to the extractor.
+
+        Args:
+            feature_name (str): Name of the new feature.
+            feature_func (Callable): Function to calculate the new feature.
+        """
         self.added_spike_features[feature_name] = feature_func
 
     def _process_added_spike_features(self):
+        """Process added spike features."""
         for feature_name, feature_func in self.added_spike_features.items():
             self.process_new_spike_feature(feature_name, feature_func)
 
     def process_spikes(self):
-        """Perform spike-related feature analysis"""
+        """Perform spike-related feature analysis, which includes added spike
+        features not part of the original AllenSDK implementation."""
         self._process_individual_spikes()
         self._process_spike_related_features()
         self._process_added_spike_features()
@@ -132,10 +149,23 @@ class EphysSweepSetFeatureExtractor(AllenEphysSweepSetFeatureExtractor):
         return stim
 
     def add_spike_feature(self, feature_name: str, feature_func: Callable):
+        """Add a new spike feature to the extractor.
+
+        Adds new spike feature to each `EphysSweepFeatureExtractor` instance.
+
+        Args:
+            feature_name (str): Name of the new feature.
+            feature_func (Callable): Function to calculate the new feature.
+        """
         for sweep in self.sweeps():
             sweep.add_spike_feature(feature_name, feature_func)
 
     def set_stimulus_amplitude_calculator(self, func: Callable):
+        """Set stimulus amplitude calculator for each sweep.
+
+        Args:
+            func (Callable): Function to calculate stimulus amplitude.
+        """
         for sweep in self.sweeps():
             sweep.set_stimulus_amplitude_calculator(func)
 
@@ -151,19 +181,53 @@ class EphysSweepSetFeatureExtractor(AllenEphysSweepSetFeatureExtractor):
                 return {k: [dic[k] for dic in LD] for k in LD[0]}
 
 
+def add_custom_feature(Feature: Any):
+    """Add a custom feature class that inherits from `EphysFeature`
+    or from `SweepsetFeature`. This makes the feature available to all the
+    the EphysPy functionalities such as recursive computation of all dependend
+    features that are called with `lookup_X_feature`.
+
+    Args:
+        Feature: Feature class to be added to EphysPy ecosystem. Feature
+            must inherit from either `EphysFeature` or `SweesetFeature`.
+    """
+    CUSTOM_FEATURES.append(Feature)
+
+
 def fetch_available_fts():
-    # TODO: Make sure classes can be added somehow!
     classes = inspect.getmembers(sys.modules["ephyspy"], inspect.isclass)
     classes = [
         c[1] for c in classes if "ephyspy.features" in c[1].__module__
     ]  # TODO: swap main for module name!
     feature_classes = [c for c in classes if "Feature" not in c.__name__]
-    return feature_classes
+
+    duplicate_features = set(
+        ft.__name__.lower() for ft in CUSTOM_FEATURES
+    ).intersection(set(ft.__name__.lower() for ft in feature_classes))
+    if len(duplicate_features) > 0:
+        warnings.warn(
+            f"DUPLICATE FEATURES: Unwanted behaviour with custom versions of"
+            + ", ".join(duplicate_features)
+            + "cannot be ruled out. Please consider renaming these features."
+        )
+    return feature_classes + CUSTOM_FEATURES
 
 
 def where_stimulus(
     data: Union[EphysSweepFeatureExtractor, EphysSweepSetFeatureExtractor]
 ) -> Union[bool, ndarray]:
+    """Checks where the stimulus is non-zero.
+
+    Checks where stimulus is non-zero for a single sweep or each sweep in a
+    sweepset.
+
+    Args:
+        data (EphysSweepFeatureExtractor or EphysSweepSetFeatureExtractor):
+            Sweep or sweepset to check.
+
+    Returns:
+        bool: True if stimulus is non-zero.
+    """
     return data.i.T != 0
 
 
@@ -173,7 +237,8 @@ def has_stimulus(
     """Check if sweep has stimulus that is non-zero.
 
     Args:
-        sweep (EphysSweepFeatureExtractor): Sweep to check.
+        data (EphysSweepFeatureExtractor or EphysSweepSetFeatureExtractor):
+            Sweep or sweepset to check.
 
     Returns:
         bool: True if sweep has stimulus."""
@@ -186,7 +251,8 @@ def is_hyperpol(
     """Check if sweep is hyperpolarizing, i.e. if the stimulus < 0.
 
     Args:
-        sweep (EphysSweepFeatureExtractor): Sweep to check.
+        data (EphysSweepFeatureExtractor or EphysSweepSetFeatureExtractor):
+            Sweep or sweepset to check.
 
     Returns:
         bool: True if sweep is hyperpolarizing."""
@@ -199,7 +265,8 @@ def is_depol(
     """Check if sweep is depolarizing, i.e. if the stimulus > 0.
 
     Args:
-        sweep (EphysSweepFeatureExtractor): Sweep to check.
+        data (EphysSweepFeatureExtractor or EphysSweepSetFeatureExtractor):
+            Sweep or sweepset to check.
 
     Returns:
         bool: True if sweep is depolarizing."""
@@ -212,7 +279,7 @@ def has_rebound(feature: Any, T_rebound: float = 0.3) -> bool:
     description: rebound if voltage exceeds baseline after stimulus offset.
 
     Args:
-        sweep (EphysSweepFeatureExtractor): Sweep to check.
+        feature (EphysFeature): Feature to check for rebound.
         T_rebound (float, optional): Time window after stimulus offset in which
             rebound can occur. Defaults to 0.3.
 
@@ -265,14 +332,34 @@ def parse_func_doc_attrs(func: Callable) -> Dict:
     return doc_attrs
 
 
-def parse_desc(func):
+def parse_desc(func: Callable) -> str:
+    """Parses docstring for description.
+
+    If no description is found, returns empty string.
+    Special case of `parse_func_doc_attrs`.
+
+    Args:
+        func (Callable): Function to parse docstring of.
+
+    Returns:
+        str: Description of function."""
     dct = parse_func_doc_attrs(func)
     if "description" in dct:
         return dct["description"]
     return ""
 
 
-def parse_deps(deps_string):
+def parse_deps(deps_string: str) -> List[str]:
+    """Parses docstring for feature dependencies.
+
+    If no dependencies are found, returns empty list.
+    Special case of `parse_func_doc_attrs`.
+
+    Args:
+        deps_string (str): String to parse for dependencies.
+
+    Returns:
+        List[str]: List of dependencies."""
     if deps_string == "/":
         return []
     else:
@@ -292,6 +379,7 @@ def get_sweep_burst_metrics(
     """Calculate burst metrics for a sweep.
 
     Uses EphysExtractor's _process_bursts() method to calculate burst metrics.
+    Handles case where no bursts are found.
 
     Args:
         sweep (EphysSweepFeatureExtractor): Sweep to calculate burst metrics for.
@@ -334,54 +422,6 @@ def get_sweep_sag_idxs(feature: Any, recompute: bool = False) -> ndarray:
         where_stimulus = where_between(sweep.t, start, end)
         return np.logical_and(where_stimulus, sweep.v < v_steady)
     return np.zeros_like(sweep.t, dtype=bool)
-
-
-def default_ap_selector(sweep: EphysSweepFeatureExtractor, onset, end) -> int:
-    """Select representative AP from which the ap features are extracted.
-
-    description: 2nd AP (if only 1 AP -> select first) during stimulus that has
-    no NaNs in relevant spike features. If all APs have NaNs, return the AP during
-    stimulus that has the least amount of NaNs in the relevant features. This
-    avoids bad threshold detection at onset of stimulus.
-
-    Args:
-        sweep (EphysSweepFeatureExtractor): Sweep from which the ap features are extracted.
-
-    Returns:
-        int: Index of the sweep from which the rebound features are extracted.
-    """
-    relevant_ap_fts = [
-        "ahp",
-        "adp_v",
-        "peak_v",
-        "threshold_v",
-        "trough_v",
-        "width",
-        "slow_trough_v",
-        "fast_trough_v",
-        "downstroke_v",
-        "upstroke_v",
-    ]
-
-    peak_t = sweep.spike_feature("peak_t", include_clipped=True)
-    is_stim = where_between(peak_t, onset, end)
-
-    if len(peak_t[is_stim]) == 0:  # some sweeps have only wild aps
-        return slice(0)
-
-    spike_fts = sweep._spikes_df[relevant_ap_fts]
-    has_nan_fts = spike_fts.isna().any(axis=1)
-    if any(~has_nan_fts & is_stim):
-        selected_ap_idxs = spike_fts.index[~has_nan_fts & is_stim]
-    else:
-        num_nan_fts = spike_fts[is_stim].isna().sum(axis=1)
-        # sort by number of NaNs and then by index (ensure ap order stays intact)
-        selected_ap_idxs = num_nan_fts.reset_index().sort_values([0, "index"])["index"]
-
-    if len(selected_ap_idxs) > 1:
-        return selected_ap_idxs[1]
-    else:
-        return selected_ap_idxs[0]
 
 
 def median_idx(d):
