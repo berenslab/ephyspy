@@ -101,7 +101,12 @@ class EphysFeature(ABC):
             self.type = type(data).__name__
             if not "features" in self.data.__dict__:
                 self.data.features = {}
-            self.data.features.update({self.name: self})
+            if not self.name in self.data.features:
+                self.data.features.update({self.name: self})
+            else:
+                features = self.data.features
+                self._value = features[self.name]._value
+                self._diagnostics = features[self.name]._diagnostics
 
     def lookup_sweep_feature(self, feature_name: str, recompute: bool = False) -> float:
         """Look up a sweep level feature and return its value.
@@ -421,7 +426,12 @@ class SweepsetFeature(EphysFeature):
                 ft.data.features.update({self.name: ft})
             if not "features" in self.data.__dict__:
                 self.data.features = {}
-            self.data.features.update({self.name: self})
+            if not self.name in self.data.features:
+                self.data.features.update({self.name: self})
+            else:
+                features = self.data.features
+                self._value = features[self.name]._value
+                self._diagnostics = features[self.name]._diagnostics
 
     def __repr__(self):
         return f"{self.name} for {self.data}"
@@ -469,27 +479,20 @@ class SweepsetFeature(EphysFeature):
         Returns:
             Vector of feature values.
         """
-        if feature_name not in self.data.features:
-            available_fts = fetch_available_fts()
-            available_fts = {ft.__name__.lower(): ft for ft in available_fts}
-            if feature_name in available_fts:
-                return np.array(
-                    [
-                        sw.lookup_sweep_feature(
-                            feature_name,
-                            recompute=recompute,
-                        )
-                        for sw in self
-                    ]
-                )
-            else:
-                raise FeatureError(f"{feature_name} is not a known feature")
-        return np.array(
-            [
-                ft.get_value(recompute=recompute)
-                for ft in self.get_features()[feature_name]
-            ]
-        )
+        available_fts = fetch_available_fts()
+        available_fts = {ft.__name__.lower(): ft for ft in available_fts}
+        if feature_name in available_fts:
+            return np.array(
+                [
+                    sweep.lookup_sweep_feature(
+                        feature_name,
+                        recompute=recompute,
+                    )
+                    for sweep in self
+                ]
+            )
+        else:
+            raise FeatureError(f"{feature_name} is not a known feature")
 
     def lookup_sweepset_feature(
         self, feature_name: str, recompute: bool = False
