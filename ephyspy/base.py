@@ -54,6 +54,7 @@ class EphysFeature(ABC):
         self,
         data: Optional[EphysSweepFeatureExtractor] = None,
         compute_at_init: bool = True,
+        name: Optional[str] = None,
     ):
         r"""
         Args:
@@ -64,8 +65,10 @@ class EphysFeature(ABC):
                 `get_value` is called. This can be useful when instantiating
                 many features at once, and waiting with the computation until
                 the features are actually needed.
+            name: Custom name of the feature. If None, the name of the feature
+                class is used.
         """
-        self.name = self.__class__.__name__.lower()
+        self.name = self.__class__.__name__.lower() if name is None else name
         self._value = None
         self._diagnostics = None
         self._data_init(data)
@@ -294,8 +297,8 @@ class AbstractEphysFeature(EphysFeature):
     description: Only the corresponding sweepset level feature exsits.
     units: /."""
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, compute_at_init=True, name=None):
+        super().__init__(data, compute_at_init, name=name)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         return
@@ -359,6 +362,7 @@ class SweepsetFeature(EphysFeature):
         feature: EphysFeature,
         data: Optional[EphysSweepSetFeatureExtractor] = None,
         compute_at_init: bool = True,
+        name: Optional[str] = None,
     ):
         """Initialize the SweepsetFeature.
 
@@ -372,11 +376,13 @@ class SweepsetFeature(EphysFeature):
             data: The data to compute the feature for, i.e. an instance of
                 SweepSetEphysExtractor.
             compute_at_init: If True, compute the feature at initialization.
+            name: Custom name of the feature. If None, the name of the feature
+                class is used.
         """
         self.feature = feature
         ft_cls = feature().__class__
 
-        self.name = ft_cls.__name__.lower()
+        self.name = ft_cls.__name__.lower() if name is None else name
         self._value = None
         self._diagnostics = None
         self._data_init(data)
@@ -527,7 +533,7 @@ class SweepsetFeature(EphysFeature):
         """
         make_selection = lambda fts: fts
         self._update_diagnostics({})
-        return make_selection(fts)
+        return float(make_selection(fts))
 
     @abstractmethod
     def _aggregate(self, fts: ndarray) -> float:
@@ -546,7 +552,7 @@ class SweepsetFeature(EphysFeature):
             Aggregated feature value."""
         aggregate = np.nanmean
         self._update_diagnostics({})
-        return aggregate(fts)
+        return float(aggregate(fts))
 
     def _compute(
         self, recompute: bool = False, store_diagnostics: bool = False

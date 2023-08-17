@@ -148,6 +148,9 @@ class EphysSweepSetFeatureExtractor(AllenEphysSweepSetFeatureExtractor):
             stim[i] = swp.i
         return stim
 
+    def __len__(self):
+        return len(self.sweeps())
+
     def add_spike_feature(self, feature_name: str, feature_func: Callable):
         """Add a new spike feature to the extractor.
 
@@ -181,7 +184,7 @@ class EphysSweepSetFeatureExtractor(AllenEphysSweepSetFeatureExtractor):
                 return {k: [dic[k] for dic in LD] for k in LD[0]}
 
 
-def add_custom_feature(Feature: Any):
+def register_custom_feature(Feature: Any):
     """Add a custom feature class that inherits from `EphysFeature`
     or from `SweepsetFeature`. This makes the feature available to all the
     the EphysPy functionalities such as recursive computation of all dependend
@@ -229,6 +232,20 @@ def where_stimulus(
         bool: True if stimulus is non-zero.
     """
     return data.i.T != 0
+
+
+def has_spikes(sweep: EphysSweepFeatureExtractor) -> bool:
+    """Check if sweep has spikes.
+
+    Args:
+        sweep (EphysSweepFeatureExtractor): Sweep to check.
+
+    Returns:
+        bool: True if sweep has spikes.
+    """
+    if hasattr(sweep, "_spikes_df"):
+        return not sweep._spikes_df.empty
+    return False
 
 
 def has_stimulus(

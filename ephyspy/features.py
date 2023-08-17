@@ -31,6 +31,8 @@ import ephyspy.allen_sdk.ephys_features as ft
 from ephyspy.base import AbstractEphysFeature, EphysFeature, SweepsetFeature
 from ephyspy.utils import *
 
+from ephyspy.utils import EphysSweepSetFeatureExtractor
+
 # ransac = linear_model.RANSACRegressor()
 ransac = linear_model.LinearRegression()
 
@@ -181,27 +183,29 @@ def ap_udr(sweep: EphysSweepFeatureExtractor) -> float:
     return upstroke / downstroke
 
 
-def get_available_spike_features() -> Dict[str, callable]:
-    """Dictionary of spike level features.
+def isi(sweep: EphysSweepFeatureExtractor) -> float:
+    """Extract spike level inter-spike-interval feature.
 
-    Returns name of feature and function to calculate it.
-    spike_ft_dict = {"ft_name": get_spike_ft, ...}
+    depends on: threshold_t.
+    description: The distance between subsequent spike thresholds. isi at the
+        first index is nan since isi[t+1] = threshold_t[t+1] - threshold_t[t].
+    units: s.
 
-    Every feature function should take a sweep as input and return a float.
+    Args:
+        sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
 
     Returns:
-        Dict[str, callable]: Dictionary of spike level features.
+        float: inter-spike-interval feature.
     """
-    return {
-        "ap_peak": ap_peak,
-        "ap_width": ap_width,
-        "ap_trough": ap_trough,
-        "ap_thresh": ap_thresh,
-        "ap_amp": ap_amp,
-        "ap_udr": ap_udr,
-        "ap_ahp": ap_ahp,
-        "ap_adp": ap_adp,
-    }
+    spike_times = sweep.spike_feature("threshold_t", include_clipped=True)
+    if len(spike_times) > 1:
+        isi = np.diff(spike_times)
+        isi = np.insert(isi, 0, np.nan)
+        return isi
+    elif len(spike_times) == 1:
+        return np.array([float("nan")])
+    else:
+        return np.array([])
 
 
 ############################
@@ -572,6 +576,106 @@ class AP_amp_slope(EphysFeature):
         return ap_amp_slope
 
 
+class ISI_FF(EphysFeature):
+    """Extract sweep level inter-spike-interval (ISI) Fano factor feature.
+
+    depends on: ISIs.
+    description: Var(ISIs) / Mean(ISIs).
+    units: s."""
+
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(data, compute_at_init)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        isi_ff = float("nan")
+        if has_spikes(self.data):
+            isi = self.lookup_spike_feature("isi", recompute=recompute)[1:]
+            isi_ff = np.var(isi) / np.mean(isi)
+
+            if store_diagnostics:
+                self._update_diagnostics(
+                    {"isi": isi, "isi_var": np.var(isi), "isi_mean": np.mean(isi)}
+                )
+        return isi_ff
+
+
+class ISI_CV(EphysFeature):
+    """Extract sweep level inter-spike-interval (ISI) coefficient of variation (CV) feature.
+
+    depends on: ISIs.
+    description: Std(ISIs) / Mean(ISIs).
+    units: /."""
+
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(data, compute_at_init)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        isi_cv = float("nan")
+        if has_spikes(self.data):
+            isi = self.lookup_spike_feature("isi", recompute=recompute)[1:]
+            isi_cv = np.std(isi) / np.mean(isi)
+
+            if store_diagnostics:
+                self._update_diagnostics(
+                    {"isi": isi, "isi_std": np.std(isi), "isi_mean": np.mean(isi)}
+                )
+        return isi_cv
+
+
+class AP_FF(EphysFeature):
+    """Extract sweep level AP amplitude Fano factor feature.
+
+    depends on: ap_amp.
+    description: Var(ap_amp) / Mean(ap_amp).
+    units: mV."""
+
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(data, compute_at_init)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        ap_ff = float("nan")
+        if has_spikes(self.data):
+            ap_amp = self.lookup_spike_feature("ap_amp", recompute=recompute)
+            ap_ff = np.var(ap_amp) / np.mean(ap_amp)
+
+            if store_diagnostics:
+                self._update_diagnostics(
+                    {
+                        "ap_amp": ap_amp,
+                        "ap_amp_var": np.var(ap_amp),
+                        "ap_amp_mean": np.mean(ap_amp),
+                    }
+                )
+        return ap_ff
+
+
+class AP_CV(EphysFeature):
+    """Extract sweep level AP amplitude coefficient of variation (CV) feature.
+
+    depends on: ap_amp.
+    description: Std(ap_amp) / Mean(ap_amp).
+    units: /."""
+
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(data, compute_at_init)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        ap_cv = float("nan")
+        if has_spikes(self.data):
+            ap_amp = self.lookup_spike_feature("ap_amp", recompute=recompute)
+            ap_cv = np.std(ap_amp) / np.mean(ap_amp)
+
+            if store_diagnostics:
+                self._update_diagnostics(
+                    {
+                        "ap_amp": ap_amp,
+                        "ap_amp_std": np.std(ap_amp),
+                        "ap_amp_mean": np.mean(ap_amp),
+                    }
+                )
+        return ap_cv
+
+
 class R_input(EphysFeature):
     """Extract sweep level input resistance feature.
 
@@ -656,7 +760,7 @@ class Sag_fraction(EphysFeature):
     def __init__(self, data=None, compute_at_init=True, peak_width=0.005):
         super().__init__(data, compute_at_init=False)
         self.peak_width = peak_width
-        if compute_at_init and data is not None:  # because of dc_offset
+        if compute_at_init and data is not None:  # because of peak_width
             self.get_value()
 
     def _compute(self, recompute=False, store_diagnostics=True):
@@ -1129,6 +1233,98 @@ class Burstiness(EphysFeature):
         return max_burstiness
 
 
+class ISI_adapt(EphysFeature):
+    """Extract sweep level inter-spike-interval (ISI) adaptation index feature.
+
+    depends on: ISIs.
+    description: /.
+    units: /."""
+
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(data, compute_at_init)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        isi_adapt = float("nan")
+        if has_spikes(self.data):
+            isi = self.lookup_spike_feature("isi", recompute=recompute)[1:]
+            if len(isi) > 1:
+                isi_adapt = isi[1] / isi[0]
+
+            if store_diagnostics:
+                self._update_diagnostics({"isi": isi})
+        return isi_adapt
+
+
+class ISI_adapt_avg(EphysFeature):
+    """Extract sweep level average inter-spike-interval (ISI) adaptation index feature.
+
+    depends on: ISIs.
+    description: /.
+    units: /."""
+
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(data, compute_at_init)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        isi_adapt_avg = float("nan")
+        if has_spikes(self.data):
+            isi = self.lookup_spike_feature("isi", recompute=recompute)[1:]
+            if len(isi) > 2:
+                isi_changes = isi[1:] / isi[:-1]
+                isi_adapt_avg = isi_changes.mean()
+
+                if store_diagnostics:
+                    self._update_diagnostics({"isi": isi})
+        return isi_adapt_avg
+
+
+class AP_amp_adapt(EphysFeature):
+    """Extract sweep level AP amplitude adaptation index feature.
+
+    depends on: ap_amp.
+    description: /.
+    units: mV/s."""
+
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(data, compute_at_init)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        ap_amp_adapt = float("nan")
+        if has_spikes(self.data):
+            ap_amp = self.lookup_spike_feature("ap_amp", recompute=recompute)
+            if len(ap_amp) > 1:
+                ap_amp_adapt = ap_amp[1] / ap_amp[0]
+
+            if store_diagnostics:
+                self._update_diagnostics({"ap_amp": ap_amp})
+
+        return ap_amp_adapt
+
+
+class AP_amp_adapt_avg(EphysFeature):
+    """Extract sweep level average AP amplitude adaptation index feature.
+
+    depends on: ap_amp.
+    description: /.
+    units: /."""
+
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(data, compute_at_init)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        ap_amp_adapt_avg = float("nan")
+        if has_spikes(self.data):
+            ap_amp = self.lookup_spike_feature("ap_amp", recompute=recompute)
+            if len(ap_amp) > 2:
+                ap_amp_changes = ap_amp[1:] / ap_amp[:-1]
+                ap_amp_adapt_avg = ap_amp_changes.mean()
+
+            if store_diagnostics:
+                self._update_diagnostics({"ap_amp": ap_amp})
+
+        return ap_amp_adapt_avg
+
+
 class Wildness(EphysFeature):
     """Extract sweep level wildness feature.
 
@@ -1141,42 +1337,46 @@ class Wildness(EphysFeature):
 
     def _compute(self, recompute=False, store_diagnostics=True):
         num_wild_spikes = float("nan")
-        onset = self.lookup_sweep_feature("stim_onset")
-        end = self.lookup_sweep_feature("stim_end")
-        peak_t = self.lookup_spike_feature("peak_t", recompute=recompute)
-        stim_window = where_between(peak_t, onset, end)
+        if has_spikes(self.data):
+            onset = self.lookup_sweep_feature("stim_onset", recompute=recompute)
+            end = self.lookup_sweep_feature("stim_end", recompute=recompute)
+            peak_t = self.lookup_spike_feature("peak_t", recompute=recompute)
+            peak_idx = self.lookup_spike_feature("peak_index", recompute=recompute)
+            peak_v = self.lookup_spike_feature("peak_v", recompute=recompute)
+            stim_window = where_between(peak_t, onset, end)
 
-        i_wild_spikes = self.lookup_spike_feature("peak_index", recompute=recompute)
-        i_wild_spikes = i_wild_spikes[~stim_window]
-        t_wild_spikes = self.lookup_spike_feature("peak_t", recompute=recompute)
-        t_wild_spikes = t_wild_spikes[~stim_window]
-        v_wild_spikes = self.lookup_spike_feature("peak_v", recompute=recompute)
-        v_wild_spikes = v_wild_spikes[~stim_window]
-        if len(i_wild_spikes) > 0:
-            num_wild_spikes = len(i_wild_spikes)
-            if store_diagnostics:
-                self._update_diagnostics(
-                    {
-                        "i_wild_spikes": i_wild_spikes,
-                        "t_wild_spikes": t_wild_spikes,
-                        "v_wild_spikes": v_wild_spikes,
-                    }
-                )
+            i_wild_spikes = peak_idx[~stim_window]
+            t_wild_spikes = peak_t[~stim_window]
+            v_wild_spikes = peak_v[~stim_window]
+            if len(i_wild_spikes) > 0:
+                num_wild_spikes = len(i_wild_spikes)
+                if store_diagnostics:
+                    self._update_diagnostics(
+                        {
+                            "i_wild_spikes": i_wild_spikes,
+                            "t_wild_spikes": t_wild_spikes,
+                            "v_wild_spikes": v_wild_spikes,
+                        }
+                    )
         return num_wild_spikes
 
 
 class APEphysFeature(EphysFeature):
-    """Extract sweep level AP feature."""
+    """Extract sweep level AP feature.
+
+    description: Action potential feature to represent a sweep."""
 
     def __init__(
         self,
         data=None,
         compute_at_init=True,
+        ft_name: Optional[str] = None,
         ap_selector: Optional[Callable] = None,
         ft_aggregator: Optional[Callable] = None,
     ):
         """
         Args:
+            ft_name (Optional[str], optional): Name of the spike feature
             ap_selector (Optional[Callable], optional): Function which selects a
                 representative ap or set of aps based on a given criterion.
                 Function expects a EphysSweepSetFeatureExtractor object as input and
@@ -1189,6 +1389,8 @@ class APEphysFeature(EphysFeature):
         self.ap_selector = ap_selector
         self.ft_aggregator = ft_aggregator
         super().__init__(data, compute_at_init)
+        if ft_name is not None:
+            self.name = ft_name
 
     def _select(self, data):
         """Function expects a EphysSweepSetFeatureExtractor object as input and
@@ -1210,7 +1412,7 @@ class APEphysFeature(EphysFeature):
         if np.isnan(X).all():
             return float("nan")
         elif self.ft_aggregator is None:
-            return np.nanmedian(X)
+            return np.nanmedian(X).item()
         else:
             return self.ft_aggregator(X)
 
@@ -1257,7 +1459,7 @@ class AP_AHP(APEphysFeature):
         ap_selector: Optional[Callable] = None,
         ft_aggregator: Optional[Callable] = None,
     ):
-        super().__init__(data, compute_at_init, ap_selector, ft_aggregator)
+        super().__init__(data, compute_at_init, "ap_ahp", ap_selector, ft_aggregator)
 
 
 class AP_ADP(APEphysFeature):
@@ -1274,7 +1476,7 @@ class AP_ADP(APEphysFeature):
         ap_selector: Optional[Callable] = None,
         ft_aggregator: Optional[Callable] = None,
     ):
-        super().__init__(data, compute_at_init, ap_selector, ft_aggregator)
+        super().__init__(data, compute_at_init, "ap_adp", ap_selector, ft_aggregator)
 
 
 class AP_thresh(APEphysFeature):
@@ -1291,7 +1493,7 @@ class AP_thresh(APEphysFeature):
         ap_selector: Optional[Callable] = None,
         ft_aggregator: Optional[Callable] = None,
     ):
-        super().__init__(data, compute_at_init, ap_selector, ft_aggregator)
+        super().__init__(data, compute_at_init, "ap_thresh", ap_selector, ft_aggregator)
 
 
 class AP_amp(APEphysFeature):
@@ -1308,7 +1510,7 @@ class AP_amp(APEphysFeature):
         ap_selector: Optional[Callable] = None,
         ft_aggregator: Optional[Callable] = None,
     ):
-        super().__init__(data, compute_at_init, ap_selector, ft_aggregator)
+        super().__init__(data, compute_at_init, "ap_amp", ap_selector, ft_aggregator)
 
 
 class AP_width(APEphysFeature):
@@ -1325,7 +1527,7 @@ class AP_width(APEphysFeature):
         ap_selector: Optional[Callable] = None,
         ft_aggregator: Optional[Callable] = None,
     ):
-        super().__init__(data, compute_at_init, ap_selector, ft_aggregator)
+        super().__init__(data, compute_at_init, "ap_width", ap_selector, ft_aggregator)
 
 
 class AP_peak(APEphysFeature):
@@ -1342,7 +1544,7 @@ class AP_peak(APEphysFeature):
         ap_selector: Optional[Callable] = None,
         ft_aggregator: Optional[Callable] = None,
     ):
-        super().__init__(data, compute_at_init, ap_selector, ft_aggregator)
+        super().__init__(data, compute_at_init, "ap_peak", ap_selector, ft_aggregator)
 
 
 class AP_trough(APEphysFeature):
@@ -1359,7 +1561,7 @@ class AP_trough(APEphysFeature):
         ap_selector: Optional[Callable] = None,
         ft_aggregator: Optional[Callable] = None,
     ):
-        super().__init__(data, compute_at_init, ap_selector, ft_aggregator)
+        super().__init__(data, compute_at_init, "ap_trough", ap_selector, ft_aggregator)
 
 
 class AP_UDR(APEphysFeature):
@@ -1376,7 +1578,24 @@ class AP_UDR(APEphysFeature):
         ap_selector: Optional[Callable] = None,
         ft_aggregator: Optional[Callable] = None,
     ):
-        super().__init__(data, compute_at_init, ap_selector, ft_aggregator)
+        super().__init__(data, compute_at_init, "ap_udr", ap_selector, ft_aggregator)
+
+
+class ISI(APEphysFeature):
+    """Extract sweep level ISI ratio feature.
+
+    depends on: /.
+    description: Median interspike interval.
+    units: /."""
+
+    def __init__(
+        self,
+        data=None,
+        compute_at_init=True,
+        ap_selector: Optional[Callable] = None,
+        ft_aggregator: Optional[Callable] = None,
+    ):
+        super().__init__(data, compute_at_init, "isi", ap_selector, ft_aggregator)
 
 
 ###############################
@@ -1385,6 +1604,19 @@ class AP_UDR(APEphysFeature):
 
 
 class Sweepset_AP(SweepsetFeature):
+    """Obtain sweepset level single AP feature.
+
+    This includes the following features:
+    - AP threshold
+    - AP amplitude
+    - AP width
+    - AP peak
+    - AP trough
+    - AP afterhyperpolarization (AHP)
+    - AP afterdepolarization (ADP)
+    - AP upstroke-to-downstroke ratio (UDR)
+    """
+
     def __init__(self, feature, data=None, compute_at_init=True):
         super().__init__(feature, data=data, compute_at_init=compute_at_init)
 
@@ -1427,10 +1659,20 @@ class Sweepset_AP(SweepsetFeature):
         self._update_diagnostics(
             {"aggregation": "not an aggregate features, only single index is selected."}
         )
-        return fts
+        return fts.item()
 
 
 class Sweepset_rebound(SweepsetFeature):
+    """Obtain sweepset level rebound related feature.
+
+    This includes the following features:
+    - rebound
+    - rebound APs
+    - rebound latency
+    - average rebound
+    - rebound area
+    """
+
     def __init__(self, feature, data=None, compute_at_init=True):
         super().__init__(feature, data=data, compute_at_init=compute_at_init)
 
@@ -1456,10 +1698,19 @@ class Sweepset_rebound(SweepsetFeature):
         self._update_diagnostics(
             {"aggregation": "not an aggregate features, only single index is selected."}
         )
-        return fts
+        return fts.item()
 
 
 class Sweepset_sag(SweepsetFeature):
+    """Obtain sweepset level sag related feature.
+
+    This includes the following features:
+    - sag
+    - sag area
+    - sag time
+    - sag ratio
+    - sag fraction"""
+
     def __init__(self, feature, data=None, compute_at_init=True):
         super().__init__(feature, data=data, compute_at_init=compute_at_init)
 
@@ -1486,10 +1737,23 @@ class Sweepset_sag(SweepsetFeature):
         self._update_diagnostics(
             {"aggregation": "not an aggregate features, only single index is selected."}
         )
-        return fts
+        return fts.item()
 
 
 class Sweepset_spiking(SweepsetFeature):
+    """Obtain sweepset level spiking related feature.
+
+    This includes the following features:
+    - number of spikes
+    - spike frequency
+    - spike frequency adaptation (SFA)
+    - spike amplitude slope
+    - ISI fano factor
+    - ISI AP fano factor
+    - ISI CV
+    - AP CV
+    """
+
     def __init__(self, feature, data=None, compute_at_init=True):
         super().__init__(feature, data=data, compute_at_init=compute_at_init)
 
@@ -1515,10 +1779,17 @@ class Sweepset_spiking(SweepsetFeature):
         self._update_diagnostics(
             {"aggregation": "not an aggregate features, only single index is selected."}
         )
-        return fts
+        return fts.item()
 
 
 class Sweepset_max(SweepsetFeature):
+    """Obtain sweepset level maximum feature.
+
+    This includes the following features:
+    - number of bursts
+    - wildness
+    """
+
     def __init__(self, feature, data=None, compute_at_init=True):
         super().__init__(feature, data=data, compute_at_init=compute_at_init)
 
@@ -1527,22 +1798,32 @@ class Sweepset_max(SweepsetFeature):
         entire sweepset.
 
         description: select arg max."""
-        fts = self.lookup_sweep_feature(self.feature)
-        idx = np.argmax(fts)
+        fts = self.lookup_sweep_feature(self.name)
+        idx = slice(0) if np.isnan(fts).all() else np.nanargmax(fts)
         self._update_diagnostics(
             {
                 "selected_idx": idx,
                 "selection": parse_desc(self._select),
             }
         )
-        return fts[idx]
+        return float("nan") if np.isnan(fts).all() else fts[idx]
 
     def _aggregate(self, fts):
         self._update_diagnostics({"aggregation": "select max feature."})
-        return fts
+        return fts.item()
 
 
-class Sweepset_median(SweepsetFeature):
+class Sweepset_median_first5(SweepsetFeature):
+    """Obtain sweepset level median feature.
+
+    This includes the following features:
+    - burstiness
+    - ISI adaptation
+    - average ISI adaptation
+    - AP amplitude adaptation
+    - average AP amplitude adaptation
+    """
+
     def __init__(self, feature, data=None, compute_at_init=True):
         super().__init__(feature, data=data, compute_at_init=compute_at_init)
 
@@ -1551,16 +1832,44 @@ class Sweepset_median(SweepsetFeature):
         entire sweepset.
 
         description: select all features."""
-        return fts
+
+        fts[fts < 0] = float("nan")  # don't consider negative burstiness
+        na_fts = np.isnan(fts)
+        if not np.all(na_fts):
+            return fts[~na_fts][:5]
+        return np.array([])
 
     def _aggregate(self, fts):
         self._update_diagnostics({"aggregation": "select median feature."})
-        return np.nanmedian(fts)
+        if np.isnan(fts).all() or len(fts) == 0:
+            return float("nan")
+        return np.nanmedian(fts).item()
+
+
+class Hyperpol_median(SweepsetFeature):
+    """Obtain sweepset level hyperpolarization feature."""
+
+    def __init__(self, feature, data=None, compute_at_init=True):
+        super().__init__(feature, data=data, compute_at_init=compute_at_init)
+
+    def _select(self, fts):
+        """Select representative sweep and use its features to represent the
+        entire sweepset.
+
+        description: select all features."""
+        is_hyperpol = self.lookup_sweep_feature("stim_amp") < 0
+        return fts[is_hyperpol]
+
+    def _aggregate(self, fts):
+        self._update_diagnostics({"aggregation": "select median feature."})
+        return np.nanmedian(fts).item()
 
 
 class Sweepset_AP_latency(SweepsetFeature):
-    def __init__(self, feature, data=None, compute_at_init=True):
-        super().__init__(feature, data=data, compute_at_init=compute_at_init)
+    """Obtain sweepset level AP latency feature."""
+
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(AP_latency, data=data, compute_at_init=compute_at_init)
 
     def _select(self, fts):
         """Select representative sweep and use its sag features to represent the
@@ -1582,25 +1891,26 @@ class Sweepset_AP_latency(SweepsetFeature):
         self._update_diagnostics(
             {"aggregation": "not an aggregate features, only single index is selected."}
         )
-        return fts
+        return fts.item()
 
 
 class dfdI(SweepsetFeature):
+    """Obtain sweepset level dfdI feature."""
+
     # TODO: Keep `feature` around as input for API consistency?
     def __init__(self, data=None, compute_at_init=True):
-        abstract_feature = AbstractEphysFeature
-        super().__init__(abstract_feature, data=data, compute_at_init=False)
-        self.name = "dfdi"
-        features = self.data.features
-        features[self.name] = features.pop(abstract_feature().name)
-        if compute_at_init and data is not None:
-            self.get_value()
+        super().__init__(
+            AbstractEphysFeature,
+            data=data,
+            compute_at_init=compute_at_init,
+            name="dfdI",
+        )
 
     def _select(self, fts):
         return fts
 
     def _aggregate(self, fts):
-        return fts
+        return fts.item()
 
     def _compute(self, recompute=False, store_diagnostics=False):
         is_depol = self.lookup_sweep_feature("stim_amp", recompute=recompute) > 0
@@ -1636,21 +1946,22 @@ class dfdI(SweepsetFeature):
 
 
 class Rheobase(SweepsetFeature):
+    """Obtain sweepset level rheobase feature."""
+
     def __init__(self, data=None, compute_at_init=True, dc_offset=0):
-        abstract_feature = AbstractEphysFeature
-        super().__init__(abstract_feature, data=data, compute_at_init=False)
-        self.name = "rheobase"
         self.dc_offset = dc_offset
-        features = self.data.features
-        features[self.name] = features.pop(abstract_feature().name)
-        if compute_at_init and data is not None:
-            self.get_value()
+        super().__init__(
+            AbstractEphysFeature,
+            data=data,
+            compute_at_init=compute_at_init,
+            name="rheobase",
+        )
 
     def _select(self, fts):
         return fts
 
     def _aggregate(self, fts):
-        return fts
+        return fts.item()
 
     def _compute(self, recompute=False, store_diagnostics=False):
         dc_offset = self.dc_offset
@@ -1693,20 +2004,21 @@ class Rheobase(SweepsetFeature):
 
 
 class Sweepset_r_input(SweepsetFeature):
+    """Obtain sweepset level r_input feature."""
+
     def __init__(self, data=None, compute_at_init=True, dc_offset=0):
-        abstract_feature = AbstractEphysFeature
-        super().__init__(abstract_feature, data=data, compute_at_init=False)
-        self.name = "r_input"
-        features = self.data.features
-        features[self.name] = features.pop(abstract_feature().name)
-        if compute_at_init and data is not None:
-            self.get_value()
+        super().__init__(
+            AbstractEphysFeature,
+            data=data,
+            compute_at_init=compute_at_init,
+            name="r_input",
+        )
 
     def _select(self, fts):
         return fts
 
     def _aggregate(self, fts):
-        return fts
+        return fts.item()
 
     def _compute(self, recompute=False, store_diagnostics=False):
         r_input = float("nan")
@@ -1732,5 +2044,139 @@ class Sweepset_r_input(SweepsetFeature):
         return r_input
 
 
-# sweep_features = {}
-# sweepset_features = {}
+class Slow_hyperpolarization(SweepsetFeature):
+    """Obtain sweepset level slow_hyperpolarization feature."""
+
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(
+            AbstractEphysFeature,
+            data=data,
+            compute_at_init=compute_at_init,
+            name="slow_hyperpolarization",
+        )
+
+    def _select(self, fts):
+        return fts
+
+    def _aggregate(self, fts):
+        return fts.item()
+
+    def _compute(self, recompute=False, store_diagnostics=False):
+        is_hyperpol = self.lookup_sweep_feature("stim_amp", recompute=recompute) < 0
+        # TODO: ASK IF THIS IS ONLY TAKEN FOR HYPERPOLARIZING TRACES (I THINK NOT)
+        v_baseline = self.lookup_sweep_feature("v_baseline", recompute=recompute)
+
+        slow_hyperpolarization = v_baseline.max() - v_baseline.min()
+
+        if store_diagnostics:
+            self._update_diagnostics(
+                {
+                    "v_baseline": v_baseline,
+                }
+            )
+        return slow_hyperpolarization
+
+
+spike_features = {
+    "ap_peak": ap_peak,
+    "ap_width": ap_width,
+    "ap_trough": ap_trough,
+    "ap_thresh": ap_thresh,
+    "ap_amp": ap_amp,
+    "ap_udr": ap_udr,
+    "ap_ahp": ap_ahp,
+    "ap_adp": ap_adp,
+    "isi": isi,
+}
+
+sweep_features = {
+    "stim_amp": Stim_amp,
+    "stim_onset": Stim_onset,
+    "stim_end": Stim_end,
+    "num_ap": Num_AP,
+    "ap_freq": AP_freq,
+    "ap_latency": AP_latency,
+    "v_baseline": V_baseline,
+    "v_deflect": V_deflect,
+    "tau": Tau,
+    "ap_freq_adapt": AP_freq_adapt,
+    "ap_amp_slope": AP_amp_slope,
+    "isi_ff": ISI_FF,
+    "isi_cv": ISI_CV,
+    "ap_ff": AP_FF,
+    "ap_cv": AP_CV,
+    "isi_adapt": ISI_adapt,
+    "isi_adapt_avg": ISI_adapt_avg,
+    "ap_amp_adapt": AP_amp_adapt,
+    "ap_amp_adapt_avg": AP_amp_adapt_avg,
+    "r_input": R_input,
+    "sag": Sag,
+    "v_steady": V_steady,
+    "sag_ratio": Sag_ratio,
+    "sag_fraction": Sag_fraction,
+    "sag_area": Sag_area,
+    "sag_time": Sag_time,
+    "v_plateau": V_plateau,
+    "rebound": Rebound,
+    "rebound_aps": Rebound_APs,
+    "rebound_area": Rebound_area,
+    "rebound_latency": Rebound_latency,
+    "rebound_avg": Rebound_avg,
+    "v_rest": V_rest,
+    "num_bursts": Num_bursts,
+    "burstiness": Burstiness,
+    "wildness": Wildness,
+    "ap_adp": AP_ADP,
+    "ap_ahp": AP_AHP,
+    "ap_thresh": AP_thresh,
+    "ap_amp": AP_amp,
+    "ap_width": AP_width,
+    "ap_peak": AP_peak,
+    "ap_trough": AP_trough,
+    "ap_udr": AP_UDR,
+}
+
+sweepset_features = {
+    "tau": Hyperpol_median(Tau),
+    "v_rest": Hyperpol_median(V_rest),
+    "v_baseline": Hyperpol_median(V_baseline),
+    "sag": Sweepset_sag(Sag),
+    "sag_ratio": Sweepset_sag(Sag_ratio),
+    "sag_fraction": Sweepset_sag(Sag_fraction),
+    "sag_area": Sweepset_sag(Sag_area),
+    "sag_time": Sweepset_sag(Sag_time),
+    "rebound": Sweepset_rebound(Rebound),
+    "rebound_APs": Sweepset_rebound(Rebound_APs),
+    "rebound_area": Sweepset_rebound(Rebound_area),
+    "rebound_latency": Sweepset_rebound(Rebound_latency),
+    "rebound_avg": Sweepset_rebound(Rebound_avg),
+    "num_ap": Sweepset_spiking(Num_AP),
+    "ap_freq": Sweepset_spiking(AP_freq),
+    "wildness": Sweepset_max(Wildness),
+    "ap_freq_adapt": Sweepset_spiking(AP_freq_adapt),
+    "ap_amp_slope": Sweepset_spiking(AP_amp_slope),
+    "isi_ff": Sweepset_spiking(ISI_FF),
+    "isi_cv": Sweepset_spiking(ISI_CV),
+    "ap_ff": Sweepset_spiking(AP_FF),
+    "ap_cv": Sweepset_spiking(AP_CV),
+    "isi": Sweepset_spiking(ISI),
+    "burstiness": Sweepset_median_first5(Burstiness),
+    "num_bursts": Sweepset_median_first5(Num_bursts),
+    "isi_adapt": Sweepset_median_first5(ISI_adapt),
+    "isi_adapt_avg": Sweepset_median_first5(ISI_adapt_avg),
+    "ap_amp_adapt": Sweepset_median_first5(AP_amp_adapt),
+    "ap_amp_adapt_avg": Sweepset_median_first5(AP_amp_adapt_avg),
+    "ap_ahp": Sweepset_AP(AP_AHP),
+    "ap_adp": Sweepset_AP(AP_ADP),
+    "ap_thresh": Sweepset_AP(AP_thresh),
+    "ap_amp": Sweepset_AP(AP_amp),
+    "ap_width": Sweepset_AP(AP_width),
+    "ap_peak": Sweepset_AP(AP_peak),
+    "ap_trough": Sweepset_AP(AP_trough),
+    "ap_udr": Sweepset_AP(AP_UDR),
+    # "r_input": R_input(),
+    # "slow_hyperpolarization": Slow_hyperpolarization(),
+    # "a": Sweepset_AP_latency(),
+    # "dfdi": dfdI(),
+    # "rheobase": Rheobase(),
+}
