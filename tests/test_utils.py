@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from ephyspy.features import get_available_spike_features, fetch_available_fts
+from ephyspy.features import spike_features, fetch_available_fts
 from ephyspy.utils import EphysSweepFeatureExtractor, EphysSweepSetFeatureExtractor
 
 # load test data
@@ -18,7 +18,7 @@ test_sweepset = EphysSweepSetFeatureExtractor(
     filter=5,
     dc_offset=-14.52083,
 )
-for ft, ft_func in get_available_spike_features().items():
+for ft, ft_func in spike_features.items():
     test_sweepset.add_spike_feature(ft, ft_func)
 
 # create test sweeps
@@ -36,7 +36,14 @@ hyperpol_test_sweep.process_spikes()
 @pytest.mark.skip(reason="helper function")
 def get_available_sweep_fts():
     not_ephy_ft = lambda ft: any(
-        w in ft for w in ["sweepset", "apfeature", "rheobase", "dfdi"]
+        w in ft
+        for w in [
+            "sweepset",
+            "apfeature",
+            "rheobase",
+            "dfdi",
+            "hyperpol",
+        ]
     )
 
     Features = {FT.__name__.lower(): FT for FT in fetch_available_fts()}
