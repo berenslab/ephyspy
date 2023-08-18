@@ -1,5 +1,6 @@
+from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import Callable, Optional, Dict, Any
+from typing import Callable, Optional, Dict, Any, Union
 
 import numpy as np
 from numpy import ndarray
@@ -9,9 +10,10 @@ from ephyspy.utils import (
     fetch_available_fts,
     parse_deps,
     parse_func_doc_attrs,
-    EphysSweepFeatureExtractor,
-    EphysSweepSetFeatureExtractor,
+    is_sweep_feature,
+    is_sweepset_feature,
 )
+from ephyspy.sweeps import EphysSweepFeatureExtractor, EphysSweepSetFeatureExtractor
 
 
 class EphysFeature(ABC):
@@ -97,7 +99,9 @@ class EphysFeature(ABC):
         """
         self.data = data
         if data is not None:
-            assert isinstance(data, EphysSweepFeatureExtractor)
+            assert isinstance(
+                data, EphysSweepFeatureExtractor
+            ), "data must be EphysSweepFeatureExtractor"
             self.type = type(data).__name__
             if not "features" in self.data.__dict__:
                 self.data.features = {}
@@ -130,6 +134,7 @@ class EphysFeature(ABC):
         """
         if feature_name not in self.data.features:
             available_fts = fetch_available_fts()
+            available_fts = [ft for ft in available_fts if is_sweep_feature(ft)]
             available_fts = {ft.__name__.lower(): ft for ft in available_fts}
             if feature_name in available_fts:
                 return available_fts[feature_name](self.data).value
@@ -166,8 +171,10 @@ class EphysFeature(ABC):
         return f"{self.name} for {self.data}"
 
     def __str__(self):
-        val = self._value if self._value is not None else "?"
-        return f"{self.name} = {val:.3f} {self.units}"
+        if self._value is not None:
+            return f"{self.name} = {self._value:.3f} {self.units}"
+        else:
+            return f"{self.name} = ? {self.units}"
 
     @abstractmethod
     def _compute(
@@ -266,7 +273,13 @@ class EphysFeature(ABC):
     def _set_value(self, value):
         self._value = value
 
-    def __call__(self, data, recompute: bool = False, store_diagnostics: bool = True):
+    def __call__(
+        self,
+        data: EphysSweepFeatureExtractor = None,
+        compute: bool = False,
+        store_diagnostics: bool = True,
+        return_value: bool = False,
+    ) -> Union[float, EphysFeature]:
         """Compute the feature for a given dataset.
 
         Essentially chains together `_data_init` and `get_value`.
@@ -274,19 +287,25 @@ class EphysFeature(ABC):
         Args:
             data: The dataset to compute the feature for, i.e. an instance of
                 `EphysSweepFeatureExtractor`.
-            recompute: If True, recompute the feature even if it is already
+            compute: If True, compute the feature even if it is already
                 computed.
             store_diagnostics: If True, store any additional information about
                 the feature computation in the `_diagnostics` attribute.
+            return_value: If True, return the value of the feature, otherwise
+                return the feature object.
 
         Returns:
             The value of the feature.
         """
         self._data_init(data)
-        return self.get_value(
-            recompute=recompute,
-            store_diagnostics=store_diagnostics,
-        )
+        if compute:
+            self.get_value(
+                recompute=True,
+                store_diagnostics=store_diagnostics,
+            )
+        if return_value:
+            return self._value
+        return self
 
     def show(self):
         return
@@ -418,7 +437,9 @@ class SweepsetFeature(EphysFeature):
         """
         self.data = data
         if data is not None:
-            assert isinstance(data, EphysSweepSetFeatureExtractor)
+            assert isinstance(
+                data, EphysSweepSetFeatureExtractor
+            ), "data must be a EphysSweepSetFeatureExtractor object"
             self.type = type(data).__name__
             for ft in self.dataset:
                 if not "features" in ft.data.__dict__:
@@ -433,8 +454,48 @@ class SweepsetFeature(EphysFeature):
                 self._value = features[self.name]._value
                 self._diagnostics = features[self.name]._diagnostics
 
+    def __call__(
+        self,
+        data: EphysSweepSetFeatureExtractor = None,
+        compute: bool = False,
+        store_diagnostics: bool = True,
+        return_value: bool = False,
+    ) -> Union[SweepsetFeature, float]:
+        """Compute the feature for a given dataset.
+
+        Essentially chains together `_data_init` and `get_value`.
+
+        Args:
+            data: The dataset to compute the feature for, i.e. an instance of
+                `EphysSweepSetFeatureExtractor`.
+            compute: If True, compute the feature even if it is already
+                computed.
+            store_diagnostics: If True, store any additional information about
+                the feature computation in the `_diagnostics` attribute.
+            return_value: If True, return the value of the feature, otherwise
+                return the feature object.
+
+        Returns:
+            The value of the feature.
+        """
+        self._data_init(data)
+        if compute:
+            self.get_value(
+                recompute=True,
+                store_diagnostics=store_diagnostics,
+            )
+        if return_value:
+            return self._value
+        return self
+
     def __repr__(self):
         return f"{self.name} for {self.data}"
+
+    def __str__(self):
+        if self._value is not None:
+            return f"{self.name} = {self._value:.3f} {self.units}"
+        else:
+            return f"{self.name} = ? {self.units}"
 
     def __getitem__(self, idx):
         return self.dataset[idx]
@@ -480,6 +541,7 @@ class SweepsetFeature(EphysFeature):
             Vector of feature values.
         """
         available_fts = fetch_available_fts()
+        available_fts = [ft for ft in available_fts if is_sweep_feature(ft)]
         available_fts = {ft.__name__.lower(): ft for ft in available_fts}
         if feature_name in available_fts:
             return np.array(
@@ -511,6 +573,7 @@ class SweepsetFeature(EphysFeature):
             Feature value."""
         if feature_name not in self.data.features:
             available_fts = fetch_available_fts()
+            available_fts = [ft for ft in available_fts if is_sweepset_feature(ft)]
             available_fts = {ft.__name__.lower(): ft for ft in available_fts}
             if feature_name in available_fts:
                 return available_fts[feature_name](self.data).value

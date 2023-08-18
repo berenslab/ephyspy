@@ -14,8 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 from functools import partial
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Optional
 import warnings
 
 import numpy as np
@@ -26,12 +27,10 @@ from scipy.optimize import curve_fit
 from sklearn import linear_model
 import pandas as pd
 
-from ephyspy.allen_sdk.ephys_extractor import EphysSweepFeatureExtractor
+from ephyspy.sweeps import EphysSweepFeatureExtractor
 import ephyspy.allen_sdk.ephys_features as ft
 from ephyspy.base import AbstractEphysFeature, EphysFeature, SweepsetFeature
 from ephyspy.utils import *
-
-from ephyspy.utils import EphysSweepSetFeatureExtractor
 
 # ransac = linear_model.RANSACRegressor()
 ransac = linear_model.LinearRegression()
@@ -461,7 +460,9 @@ class Tau(EphysFeature):
             fit_end = self.data.t[peak_index]
 
             if self.data.v[peak_index] < -200:
-                print("A DOWNWARD PEAK WAS OBSERVED GOING TO LESS THAN 200 MV!!!")
+                warnings.warn(
+                    "A DOWNWARD PEAK WAS OBSERVED GOING TO LESS THAN 200 MV!!!"
+                )
                 # Look for another local minimum closer to stimulus onset
                 # We look for a couple of milliseconds after stimulus onset to 50 ms before the downward peak
                 end_index = (onset_idx + 50) + np.argmin(
@@ -590,12 +591,17 @@ class ISI_FF(EphysFeature):
         isi_ff = float("nan")
         if has_spikes(self.data):
             isi = self.lookup_spike_feature("isi", recompute=recompute)[1:]
-            isi_ff = np.var(isi) / np.mean(isi)
+            if len(isi) > 1:
+                isi_ff = np.nanvar(isi) / np.nanmean(isi)
 
-            if store_diagnostics:
-                self._update_diagnostics(
-                    {"isi": isi, "isi_var": np.var(isi), "isi_mean": np.mean(isi)}
-                )
+                if store_diagnostics:
+                    self._update_diagnostics(
+                        {
+                            "isi": isi,
+                            "isi_var": np.nanvar(isi),
+                            "isi_mean": np.nanmean(isi),
+                        }
+                    )
         return isi_ff
 
 
@@ -613,12 +619,17 @@ class ISI_CV(EphysFeature):
         isi_cv = float("nan")
         if has_spikes(self.data):
             isi = self.lookup_spike_feature("isi", recompute=recompute)[1:]
-            isi_cv = np.std(isi) / np.mean(isi)
+            if len(isi) > 1:
+                isi_cv = np.nanstd(isi) / np.nanmean(isi)
 
-            if store_diagnostics:
-                self._update_diagnostics(
-                    {"isi": isi, "isi_std": np.std(isi), "isi_mean": np.mean(isi)}
-                )
+                if store_diagnostics:
+                    self._update_diagnostics(
+                        {
+                            "isi": isi,
+                            "isi_std": np.nanstd(isi),
+                            "isi_mean": np.nanmean(isi),
+                        }
+                    )
         return isi_cv
 
 
@@ -636,16 +647,17 @@ class AP_FF(EphysFeature):
         ap_ff = float("nan")
         if has_spikes(self.data):
             ap_amp = self.lookup_spike_feature("ap_amp", recompute=recompute)
-            ap_ff = np.var(ap_amp) / np.mean(ap_amp)
+            if len(ap_amp) > 1:
+                ap_ff = np.nanvar(ap_amp) / np.nanmean(ap_amp)
 
-            if store_diagnostics:
-                self._update_diagnostics(
-                    {
-                        "ap_amp": ap_amp,
-                        "ap_amp_var": np.var(ap_amp),
-                        "ap_amp_mean": np.mean(ap_amp),
-                    }
-                )
+                if store_diagnostics:
+                    self._update_diagnostics(
+                        {
+                            "ap_amp": ap_amp,
+                            "ap_amp_var": np.nanvar(ap_amp),
+                            "ap_amp_mean": np.nanmean(ap_amp),
+                        }
+                    )
         return ap_ff
 
 
@@ -663,16 +675,17 @@ class AP_CV(EphysFeature):
         ap_cv = float("nan")
         if has_spikes(self.data):
             ap_amp = self.lookup_spike_feature("ap_amp", recompute=recompute)
-            ap_cv = np.std(ap_amp) / np.mean(ap_amp)
+            if len(ap_amp) > 1:
+                ap_cv = np.nanstd(ap_amp) / np.nanmean(ap_amp)
 
-            if store_diagnostics:
-                self._update_diagnostics(
-                    {
-                        "ap_amp": ap_amp,
-                        "ap_amp_std": np.std(ap_amp),
-                        "ap_amp_mean": np.mean(ap_amp),
-                    }
-                )
+                if store_diagnostics:
+                    self._update_diagnostics(
+                        {
+                            "ap_amp": ap_amp,
+                            "ap_amp_std": np.nanstd(ap_amp),
+                            "ap_amp_mean": np.nanmean(ap_amp),
+                        }
+                    )
         return ap_cv
 
 
@@ -1220,6 +1233,10 @@ class Burstiness(EphysFeature):
                 t_burst_end = peak_t[idx_burst_end]
                 num_bursts = len(idx_burst)
                 max_burstiness = idx_burst.max() if num_bursts > 0 else float("nan")
+                max_burstiness = (
+                    float("nan") if max_burstiness < 0 else max_burstiness
+                )  # don't consider negative burstiness
+
                 if store_diagnostics:
                     self._update_diagnostics(
                         {
@@ -1806,7 +1823,7 @@ class Sweepset_max(SweepsetFeature):
                 "selection": parse_desc(self._select),
             }
         )
-        return float("nan") if np.isnan(fts).all() else fts[idx]
+        return np.array([float("nan")]) if np.isnan(fts).all() else fts[idx]
 
     def _aggregate(self, fts):
         self._update_diagnostics({"aggregation": "select max feature."})
@@ -1833,7 +1850,6 @@ class Sweepset_median_first5(SweepsetFeature):
 
         description: select all features."""
 
-        fts[fts < 0] = float("nan")  # don't consider negative burstiness
         na_fts = np.isnan(fts)
         if not np.all(na_fts):
             return fts[~na_fts][:5]
@@ -2006,7 +2022,7 @@ class Rheobase(SweepsetFeature):
 class Sweepset_r_input(SweepsetFeature):
     """Obtain sweepset level r_input feature."""
 
-    def __init__(self, data=None, compute_at_init=True, dc_offset=0):
+    def __init__(self, data=None, compute_at_init=True):
         super().__init__(
             AbstractEphysFeature,
             data=data,
@@ -2062,7 +2078,7 @@ class Slow_hyperpolarization(SweepsetFeature):
         return fts.item()
 
     def _compute(self, recompute=False, store_diagnostics=False):
-        is_hyperpol = self.lookup_sweep_feature("stim_amp", recompute=recompute) < 0
+        # is_hyperpol = self.lookup_sweep_feature("stim_amp", recompute=recompute) < 0
         # TODO: ASK IF THIS IS ONLY TAKEN FOR HYPERPOLARIZING TRACES (I THINK NOT)
         v_baseline = self.lookup_sweep_feature("v_baseline", recompute=recompute)
 
@@ -2077,106 +2093,129 @@ class Slow_hyperpolarization(SweepsetFeature):
         return slow_hyperpolarization
 
 
-spike_features = {
-    "ap_peak": ap_peak,
-    "ap_width": ap_width,
-    "ap_trough": ap_trough,
-    "ap_thresh": ap_thresh,
-    "ap_amp": ap_amp,
-    "ap_udr": ap_udr,
-    "ap_ahp": ap_ahp,
-    "ap_adp": ap_adp,
-    "isi": isi,
-}
+def available_spike_features():
+    return {
+        "ap_peak": ap_peak,
+        "ap_width": ap_width,
+        "ap_trough": ap_trough,
+        "ap_thresh": ap_thresh,
+        "ap_amp": ap_amp,
+        "ap_udr": ap_udr,
+        "ap_ahp": ap_ahp,
+        "ap_adp": ap_adp,
+        "isi": isi,
+    }
 
-sweep_features = {
-    "stim_amp": Stim_amp,
-    "stim_onset": Stim_onset,
-    "stim_end": Stim_end,
-    "num_ap": Num_AP,
-    "ap_freq": AP_freq,
-    "ap_latency": AP_latency,
-    "v_baseline": V_baseline,
-    "v_deflect": V_deflect,
-    "tau": Tau,
-    "ap_freq_adapt": AP_freq_adapt,
-    "ap_amp_slope": AP_amp_slope,
-    "isi_ff": ISI_FF,
-    "isi_cv": ISI_CV,
-    "ap_ff": AP_FF,
-    "ap_cv": AP_CV,
-    "isi_adapt": ISI_adapt,
-    "isi_adapt_avg": ISI_adapt_avg,
-    "ap_amp_adapt": AP_amp_adapt,
-    "ap_amp_adapt_avg": AP_amp_adapt_avg,
-    "r_input": R_input,
-    "sag": Sag,
-    "v_steady": V_steady,
-    "sag_ratio": Sag_ratio,
-    "sag_fraction": Sag_fraction,
-    "sag_area": Sag_area,
-    "sag_time": Sag_time,
-    "v_plateau": V_plateau,
-    "rebound": Rebound,
-    "rebound_aps": Rebound_APs,
-    "rebound_area": Rebound_area,
-    "rebound_latency": Rebound_latency,
-    "rebound_avg": Rebound_avg,
-    "v_rest": V_rest,
-    "num_bursts": Num_bursts,
-    "burstiness": Burstiness,
-    "wildness": Wildness,
-    "ap_adp": AP_ADP,
-    "ap_ahp": AP_AHP,
-    "ap_thresh": AP_thresh,
-    "ap_amp": AP_amp,
-    "ap_width": AP_width,
-    "ap_peak": AP_peak,
-    "ap_trough": AP_trough,
-    "ap_udr": AP_UDR,
-}
 
-sweepset_features = {
-    "tau": Hyperpol_median(Tau),
-    "v_rest": Hyperpol_median(V_rest),
-    "v_baseline": Hyperpol_median(V_baseline),
-    "sag": Sweepset_sag(Sag),
-    "sag_ratio": Sweepset_sag(Sag_ratio),
-    "sag_fraction": Sweepset_sag(Sag_fraction),
-    "sag_area": Sweepset_sag(Sag_area),
-    "sag_time": Sweepset_sag(Sag_time),
-    "rebound": Sweepset_rebound(Rebound),
-    "rebound_APs": Sweepset_rebound(Rebound_APs),
-    "rebound_area": Sweepset_rebound(Rebound_area),
-    "rebound_latency": Sweepset_rebound(Rebound_latency),
-    "rebound_avg": Sweepset_rebound(Rebound_avg),
-    "num_ap": Sweepset_spiking(Num_AP),
-    "ap_freq": Sweepset_spiking(AP_freq),
-    "wildness": Sweepset_max(Wildness),
-    "ap_freq_adapt": Sweepset_spiking(AP_freq_adapt),
-    "ap_amp_slope": Sweepset_spiking(AP_amp_slope),
-    "isi_ff": Sweepset_spiking(ISI_FF),
-    "isi_cv": Sweepset_spiking(ISI_CV),
-    "ap_ff": Sweepset_spiking(AP_FF),
-    "ap_cv": Sweepset_spiking(AP_CV),
-    "isi": Sweepset_spiking(ISI),
-    "burstiness": Sweepset_median_first5(Burstiness),
-    "num_bursts": Sweepset_median_first5(Num_bursts),
-    "isi_adapt": Sweepset_median_first5(ISI_adapt),
-    "isi_adapt_avg": Sweepset_median_first5(ISI_adapt_avg),
-    "ap_amp_adapt": Sweepset_median_first5(AP_amp_adapt),
-    "ap_amp_adapt_avg": Sweepset_median_first5(AP_amp_adapt_avg),
-    "ap_ahp": Sweepset_AP(AP_AHP),
-    "ap_adp": Sweepset_AP(AP_ADP),
-    "ap_thresh": Sweepset_AP(AP_thresh),
-    "ap_amp": Sweepset_AP(AP_amp),
-    "ap_width": Sweepset_AP(AP_width),
-    "ap_peak": Sweepset_AP(AP_peak),
-    "ap_trough": Sweepset_AP(AP_trough),
-    "ap_udr": Sweepset_AP(AP_UDR),
-    # "r_input": R_input(),
-    # "slow_hyperpolarization": Slow_hyperpolarization(),
-    # "a": Sweepset_AP_latency(),
-    # "dfdi": dfdI(),
-    # "rheobase": Rheobase(),
-}
+def available_sweep_features(compute_at_init=False, store_diagnostics=False):
+    features = {
+        "stim_amp": Stim_amp,
+        "stim_onset": Stim_onset,
+        "stim_end": Stim_end,
+        "num_ap": Num_AP,
+        "ap_freq": AP_freq,
+        "ap_latency": AP_latency,
+        "v_baseline": V_baseline,
+        "v_deflect": V_deflect,
+        "tau": Tau,
+        "ap_freq_adapt": AP_freq_adapt,
+        "ap_amp_slope": AP_amp_slope,
+        "isi_ff": ISI_FF,
+        "isi_cv": ISI_CV,
+        "ap_ff": AP_FF,
+        "ap_cv": AP_CV,
+        "isi_adapt": ISI_adapt,
+        "isi_adapt_avg": ISI_adapt_avg,
+        "ap_amp_adapt": AP_amp_adapt,
+        "ap_amp_adapt_avg": AP_amp_adapt_avg,
+        "r_input": R_input,
+        "sag": Sag,
+        "v_steady": V_steady,
+        "sag_ratio": Sag_ratio,
+        "sag_fraction": Sag_fraction,
+        "sag_area": Sag_area,
+        "sag_time": Sag_time,
+        "v_plateau": V_plateau,
+        "rebound": Rebound,
+        "rebound_aps": Rebound_APs,
+        "rebound_area": Rebound_area,
+        "rebound_latency": Rebound_latency,
+        "rebound_avg": Rebound_avg,
+        "v_rest": V_rest,
+        "num_bursts": Num_bursts,
+        "burstiness": Burstiness,
+        "wildness": Wildness,
+        "ap_adp": AP_ADP,
+        "ap_ahp": AP_AHP,
+        "ap_thresh": AP_thresh,
+        "ap_amp": AP_amp,
+        "ap_width": AP_width,
+        "ap_peak": AP_peak,
+        "ap_trough": AP_trough,
+        "ap_udr": AP_UDR,
+    }
+    if any((compute_at_init, store_diagnostics)):
+        return {
+            k: lambda *args, **kwargs: v(
+                compute_at_init=compute_at_init, store_diagnostics=store_diagnostics
+            )
+            for k, v in features.items()
+        }
+    else:
+        return features
+
+
+def available_sweepset_features(compute_at_init=False, store_diagnostics=False):
+    features = {
+        "tau": Hyperpol_median(Tau),
+        "v_rest": Hyperpol_median(V_rest),
+        "v_baseline": Hyperpol_median(V_baseline),
+        "sag": Sweepset_sag(Sag),
+        "sag_ratio": Sweepset_sag(Sag_ratio),
+        "sag_fraction": Sweepset_sag(Sag_fraction),
+        "sag_area": Sweepset_sag(Sag_area),
+        "sag_time": Sweepset_sag(Sag_time),
+        "rebound": Sweepset_rebound(Rebound),
+        "rebound_APs": Sweepset_rebound(Rebound_APs),
+        "rebound_area": Sweepset_rebound(Rebound_area),
+        "rebound_latency": Sweepset_rebound(Rebound_latency),
+        "rebound_avg": Sweepset_rebound(Rebound_avg),
+        "num_ap": Sweepset_spiking(Num_AP),
+        "ap_freq": Sweepset_spiking(AP_freq),
+        "wildness": Sweepset_max(Wildness),
+        "ap_freq_adapt": Sweepset_spiking(AP_freq_adapt),
+        "ap_amp_slope": Sweepset_spiking(AP_amp_slope),
+        "isi_ff": Sweepset_spiking(ISI_FF),
+        "isi_cv": Sweepset_spiking(ISI_CV),
+        "ap_ff": Sweepset_spiking(AP_FF),
+        "ap_cv": Sweepset_spiking(AP_CV),
+        "isi": Sweepset_spiking(ISI),
+        "burstiness": Sweepset_median_first5(Burstiness),
+        "num_bursts": Sweepset_median_first5(Num_bursts),
+        "isi_adapt": Sweepset_median_first5(ISI_adapt),
+        "isi_adapt_avg": Sweepset_median_first5(ISI_adapt_avg),
+        "ap_amp_adapt": Sweepset_median_first5(AP_amp_adapt),
+        "ap_amp_adapt_avg": Sweepset_median_first5(AP_amp_adapt_avg),
+        "ap_ahp": Sweepset_AP(AP_AHP),
+        "ap_adp": Sweepset_AP(AP_ADP),
+        "ap_thresh": Sweepset_AP(AP_thresh),
+        "ap_amp": Sweepset_AP(AP_amp),
+        "ap_width": Sweepset_AP(AP_width),
+        "ap_peak": Sweepset_AP(AP_peak),
+        "ap_trough": Sweepset_AP(AP_trough),
+        "ap_udr": Sweepset_AP(AP_UDR),
+        "r_input": Sweepset_r_input(),
+        "slow_hyperpolarization": Slow_hyperpolarization(),
+        "ap_latency": Sweepset_AP_latency(),
+        "dfdi": dfdI(),
+        "rheobase": Rheobase(),
+    }
+    if any((compute_at_init, store_diagnostics)):
+        return {
+            k: lambda *args, **kwargs: v(
+                compute_at_init=compute_at_init, store_diagnostics=store_diagnostics
+            )
+            for k, v in features.items()
+        }
+    else:
+        return features

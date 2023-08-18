@@ -14,174 +14,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import inspect
 import re
 import sys
-from typing import Callable, Dict, List, Optional, Union, Tuple, Any
+from typing import Callable, Dict, List, Tuple, Any, Union
 import warnings
+from ephyspy.sweeps import EphysSweepFeatureExtractor, EphysSweepSetFeatureExtractor
 
 import numpy as np
 from numpy import ndarray
 
-import ephyspy.allen_sdk.ephys_extractor as efex
-from ephyspy.allen_sdk.ephys_extractor import (
-    EphysSweepFeatureExtractor as AllenEphysSweepFeatureExtractor,
-)
-from ephyspy.allen_sdk.ephys_extractor import (
-    EphysSweepSetFeatureExtractor as AllenEphysSweepSetFeatureExtractor,
-)
-
-CUSTOM_FEATURES = []
-
-
-class EphysSweepFeatureExtractor(AllenEphysSweepFeatureExtractor):
-    """Wrapper around EphysSweepFeatureExtractor from the AllenSDK to
-    support additional functionality.
-
-    Mainly it supports the addition of new spike features.
-    """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.added_spike_features = {}
-        self.features = {}
-
-    def add_spike_feature(self, feature_name: str, feature_func: Callable):
-        """Add a new spike feature to the extractor.
-
-        Args:
-            feature_name (str): Name of the new feature.
-            feature_func (Callable): Function to calculate the new feature.
-        """
-        self.added_spike_features[feature_name] = feature_func
-
-    def _process_added_spike_features(self):
-        """Process added spike features."""
-        for feature_name, feature_func in self.added_spike_features.items():
-            self.process_new_spike_feature(feature_name, feature_func)
-
-    def process_spikes(self):
-        """Perform spike-related feature analysis, which includes added spike
-        features not part of the original AllenSDK implementation."""
-        self._process_individual_spikes()
-        self._process_spike_related_features()
-        self._process_added_spike_features()
-
-    def get_features(self):
-        if hasattr(self, "features"):
-            if self.features is not None:
-                return {k: ft.value for k, ft in self.features.items()}
-
-
-# overwrite AllenSDK EphysSweepFeatureExtractor with wrapper
-efex.EphysSweepFeatureExtractor = EphysSweepFeatureExtractor
-
-
-class EphysSweepSetFeatureExtractor(AllenEphysSweepSetFeatureExtractor):
-    """Wrapper around EphysSweepSetFeatureExtractor from the AllenSDK to
-    support additional functionality.
-
-    Args:
-        t_set (ndarray): Time array for set of sweeps.
-        v_set (ndarray): Voltage array for set of sweeps.
-        i_set (ndarray): Current array for set of sweeps.
-        metadata (dict, optional): Metadata for the sweep set. Defaults to None.
-        *args: Additional arguments for AllenEphysSweepSetFeatureExtractor.
-        **kwargs: Additional keyword arguments for AllenEphysSweepSetFeatureExtractor.
-
-    Attributes:
-        metadata (dict): Metadata for the sweep set.
-    """
-
-    def __init__(
-        self,
-        t_set: Optional[Union[List, ndarray]] = None,
-        v_set: Optional[Union[List, ndarray]] = None,
-        i_set: Optional[Union[List, ndarray]] = None,
-        t_start: Optional[Union[List, ndarray, float]] = None,
-        t_end: Optional[Union[List, ndarray, float]] = None,
-        metadata: Dict = {},
-        dc_offset: float = 0,
-        *args,
-        **kwargs,
-    ):
-        is_array = lambda x: isinstance(x, ndarray) and x is not None
-        is_float = lambda x: isinstance(x, float) and x is not None
-        t_set = [t for t in t_set] if is_array(t_set) else t_set
-        v_set = [v for v in v_set] if is_array(v_set) else v_set
-        i_set = [i for i in i_set] if is_array(i_set) else i_set
-        if t_start is None:
-            t_start = [t[1] for t in t_set]
-            t_end = [t[-1] for t in t_set]
-        elif is_float(t_start):
-            t_start = [t_start] * len(t_set)
-            t_end = [t_end] * len(t_set)
-        elif is_array(t_start):
-            pass  # t_start and t_end for each sweep are already specified
-
-        super().__init__(t_set, v_set, i_set, t_start, t_end, *args, **kwargs)
-        self.metadata = metadata
-        self.dc_offset = {
-            "value": dc_offset,
-            "units": "pA",
-            "description": "offset current",
-        }
-
-    @property
-    def t(self) -> ndarray:
-        t = np.empty((len(self.sweeps()), len(self.sweeps()[0].t)))
-        for i, swp in enumerate(self.sweeps()):
-            t[i] = swp.t
-        return t
-
-    @property
-    def v(self) -> ndarray:
-        v = np.empty((len(self.sweeps()), len(self.sweeps()[0].v)))
-        for i, swp in enumerate(self.sweeps()):
-            v[i] = swp.v
-        return v
-
-    @property
-    def i(self) -> ndarray:
-        stim = np.empty((len(self.sweeps()), len(self.sweeps()[0].i)))
-        for i, swp in enumerate(self.sweeps()):
-            stim[i] = swp.i
-        return stim
-
-    def __len__(self):
-        return len(self.sweeps())
-
-    def add_spike_feature(self, feature_name: str, feature_func: Callable):
-        """Add a new spike feature to the extractor.
-
-        Adds new spike feature to each `EphysSweepFeatureExtractor` instance.
-
-        Args:
-            feature_name (str): Name of the new feature.
-            feature_func (Callable): Function to calculate the new feature.
-        """
-        for sweep in self.sweeps():
-            sweep.add_spike_feature(feature_name, feature_func)
-
-    def set_stimulus_amplitude_calculator(self, func: Callable):
-        """Set stimulus amplitude calculator for each sweep.
-
-        Args:
-            func (Callable): Function to calculate stimulus amplitude.
-        """
-        for sweep in self.sweeps():
-            sweep.set_stimulus_amplitude_calculator(func)
-
-    def get_features(self):
-        if hasattr(self, "features"):
-            if self.features is not None:
-                return {k: ft.value for k, ft in self.features.items()}
-
-    def get_sweep_features(self):
-        if hasattr(self, "features"):
-            if self.features is not None:
-                LD = [sw.get_features() for sw in self.sweeps()]
-                return {k: [dic[k] for dic in LD] for k in LD[0]}
+CUSTOM_SWEEP_FEATURES = []
+CUSTOM_SWEEPSET_FEATURES = []
+CUSTOM_SPIKE_FEATURES = []
 
 
 def register_custom_feature(Feature: Any):
@@ -194,26 +40,44 @@ def register_custom_feature(Feature: Any):
         Feature: Feature class to be added to EphysPy ecosystem. Feature
             must inherit from either `EphysFeature` or `SweesetFeature`.
     """
-    CUSTOM_FEATURES.append(Feature)
+    if isinstance(Feature, Callable):
+        CUSTOM_SPIKE_FEATURES.append(Feature)
+    elif issubclass(Feature, EphysSweepFeatureExtractor):
+        CUSTOM_SWEEP_FEATURES.append(Feature)
+    elif issubclass(Feature, EphysSweepSetFeatureExtractor):
+        CUSTOM_SWEEPSET_FEATURES.append(Feature)
 
 
-def fetch_available_fts():
+def fetch_available_fts(include: str = "all") -> List[str]:
     classes = inspect.getmembers(sys.modules["ephyspy"], inspect.isclass)
-    classes = [
-        c[1] for c in classes if "ephyspy.features" in c[1].__module__
-    ]  # TODO: swap main for module name!
+    classes = [c[1] for c in classes if "ephyspy.features" in c[1].__module__]
     feature_classes = [c for c in classes if "Feature" not in c.__name__]
 
-    duplicate_features = set(
-        ft.__name__.lower() for ft in CUSTOM_FEATURES
-    ).intersection(set(ft.__name__.lower() for ft in feature_classes))
-    if len(duplicate_features) > 0:
-        warnings.warn(
-            f"DUPLICATE FEATURES: Unwanted behaviour with custom versions of"
-            + ", ".join(duplicate_features)
-            + "cannot be ruled out. Please consider renaming these features."
+    for custom_fts, base_class in zip(
+        [CUSTOM_SWEEP_FEATURES, CUSTOM_SWEEPSET_FEATURES],
+        ["EphysFeature", "SweepsetFeature"],
+    ):
+        base_feature_classes = [
+            ft for ft in feature_classes if ft.__base__.__name__ == base_class
+        ]
+        duplicate_features = set(ft.__name__.lower() for ft in custom_fts).intersection(
+            set(ft.__name__.lower() for ft in base_feature_classes)
         )
-    return feature_classes + CUSTOM_FEATURES
+        if len(duplicate_features) > 0:
+            warnings.warn(
+                f"DUPLICATE FEATURES: Unwanted behaviour with custom versions of"
+                + ", ".join(duplicate_features)
+                + "cannot be ruled out. Please consider renaming these features."
+            )
+
+    return feature_classes + CUSTOM_SWEEP_FEATURES + CUSTOM_SWEEPSET_FEATURES
+
+
+is_sweep_feature = (
+    lambda ft: "EphysFeature" in ft.__base__.__name__
+)  # EphysFeature or APEphysFeature
+
+is_sweepset_feature = lambda ft: "SweepsetFeature" in ft.__base__.__name__
 
 
 def where_stimulus(

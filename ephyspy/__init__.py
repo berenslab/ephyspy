@@ -14,8 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from ephyspy.base import *
 
 # from ephyspy.diagnostics import *
-from ephyspy.features import *
+from ephyspy.sweeps import *
 from ephyspy.utils import *
+from ephyspy.base import *
+from ephyspy.features import *

@@ -15,7 +15,9 @@ from tests.test_utils import (
 #####################
 
 
-@pytest.mark.parametrize("Ft", sweep_features.values(), ids=sweep_features.keys())
+@pytest.mark.parametrize(
+    "Ft", available_sweep_features().values(), ids=available_sweep_features().keys()
+)
 def test_ephys_feature(Ft):
     assert issubclass(Ft, EphysFeature)
     assert Ft().units is not None, "No unit defined for feature."
@@ -34,14 +36,23 @@ def test_ephys_feature(Ft):
 ############################
 
 
-@pytest.mark.parametrize("ft_func", spike_features.values())
-def test_spike_feature(ft_func):
+@pytest.mark.parametrize("ft", available_spike_features().values())
+@pytest.mark.parametrize(
+    "sweep, is_depol",
+    [[depol_test_sweep, True], [hyperpol_test_sweep, False]],
+    ids=["depol", "hyperpol"],
+)
+def test_spike_feature(ft, sweep, is_depol):
     """Test spike feature function for hyperpolarizing and depolarizing sweeps."""
-    assert isinstance(ft_func(depol_test_sweep), np.ndarray), "No array returned."
-    assert isinstance(ft_func(hyperpol_test_sweep), np.ndarray), "No array returned."
+    if not hasattr(sweep, "_spikes_df"):
+        sweep.process_spikes()
 
-    assert len(ft_func(hyperpol_test_sweep)) == 0, "BAD: APs found in hyperpol trace."
-    assert len(ft_func(depol_test_sweep)) > 0, "BAD: No APs found in depol trace."
+    assert isinstance(ft(sweep), np.ndarray), "No array returned."
+
+    if is_depol:
+        assert len(ft(sweep)) > 0, "BAD: No APs found in depol trace."
+    else:
+        assert len(ft(sweep)) == 0, "BAD: APs found in hyperpol trace."
 
 
 ############################
@@ -50,20 +61,19 @@ def test_spike_feature(ft_func):
 
 # test value, diagnostics etc.
 
-
-for ft, ft_func in spike_features.items():
-    depol_test_sweep.add_spike_feature(ft, ft_func)
-for ft, ft_func in spike_features.items():
-    hyperpol_test_sweep.add_spike_feature(ft, ft_func)
+depol_test_sweep.add_features(available_spike_features())
+hyperpol_test_sweep.add_features(available_spike_features())
 
 
-@pytest.mark.parametrize("Ft", sweep_features.values(), ids=sweep_features.keys())
-def test_sweep_feature(Ft):
-    depol_ft = Ft(depol_test_sweep)
-    hyperpol_ft = Ft(hyperpol_test_sweep)
-
-    assert isinstance(depol_ft.value, (float, int)), "Feature is not a number."
-    assert isinstance(hyperpol_ft.value, (float, int)), "Feature is not a number."
+@pytest.mark.parametrize(
+    "Ft", available_sweep_features().values(), ids=available_sweep_features().keys()
+)
+@pytest.mark.parametrize(
+    "sweep", [depol_test_sweep, hyperpol_test_sweep], ids=["depol", "hyperpol"]
+)
+def test_sweep_feature(Ft, sweep):
+    ft = Ft(sweep)
+    assert isinstance(ft.value, (float, int)), "Feature is not a number."
 
 
 ################################
@@ -73,10 +83,17 @@ def test_sweep_feature(Ft):
 # test value, diagnostics etc.
 
 
-@pytest.mark.parametrize("Ft", sweepset_features.values(), ids=sweepset_features.keys())
+@pytest.mark.parametrize(
+    "Ft",
+    available_sweepset_features().values(),
+    ids=available_sweepset_features().keys(),
+)
 def test_sweep_feature(Ft):
-    depol_ft = Ft(test_sweepset)
-    hyperpol_ft = Ft(test_sweepset)
+    ft = Ft(test_sweepset)
+    assert isinstance(ft.value, (float, int)), "Feature is not a number."
 
-    assert isinstance(depol_ft, (float, int)), "Feature is not a number."
-    assert isinstance(hyperpol_ft, (float, int)), "Feature is not a number."
+
+# def test_sweepset_pipe():
+#     test_sweepset.add_features(available_spike_features())
+#     # sweepset.add_features(available_sweep_features())
+#     test_sweepset.add_features(available_sweepset_features())
