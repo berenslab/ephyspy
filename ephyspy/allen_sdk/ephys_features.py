@@ -922,7 +922,7 @@ def fit_membrane_time_constant(v, t, start, end, min_rsme=1e-4):
         return np.nan, np.nan, np.nan
 
     pred = _exp_curve(t_window, *popt)
-    rsme = np.sqrt(np.mean(pred - v_window))
+    rsme = np.sqrt(np.abs(np.mean(pred - v_window)))
     if rsme > min_rsme:
         logging.debug("Curve fit for membrane time constant did not meet RSME standard")
         return np.nan, np.nan, np.nan
@@ -1083,7 +1083,7 @@ def detect_bursts(
     mask[drop_into] = False
     into_burst = into_burst[mask]
 
-    out_of_burst = np.array(out_of_burst)
+    out_of_burst = np.array(out_of_burst).astype(int)
     if len(out_of_burst) == len(into_burst) - 1:
         out_of_burst = np.append(out_of_burst, len(isi_types))
 
@@ -1105,7 +1105,7 @@ def detect_bursts(
         scores = _score_burst_set(test_bursts, isis, delta_t)
         if np.mean(scores) > best_score:
             best_score = np.mean(scores)
-            inout_pairs = list(test_bursts)
+            inout_pairs = test_bursts
             worst = np.argmin(scores)
             del test_bursts[worst]
         else:
