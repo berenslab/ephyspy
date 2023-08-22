@@ -49,7 +49,7 @@ def get_spike_ft_scatter_func(ft: str) -> Callable:
     ) -> Axes:
         spike_fts = sweep._spikes_df
         if spike_fts.size:
-            if not np.all(spike_fts[f"{ft}_v"].isnan()):
+            if not np.all(np.isnan(spike_fts[f"{ft}_v"])):
                 ax.scatter(
                     spike_fts[f"{ft}_t"],
                     spike_fts[f"{ft}_v"],
@@ -105,7 +105,7 @@ def plot_spike_width(
 ) -> Axes:
     spike_fts = sweep._spikes_df
     if spike_fts.size:
-        if not np.all(spike_fts["width"].isnan()):
+        if not np.all(np.isnan(spike_fts["width"])):
             t_threshold = sweep.spike_feature("threshold_t", include_clipped=True)
             t_peak = sweep.spike_feature("peak_t", include_clipped=True)
             t_next = t_peak + 1.0 * (
@@ -136,7 +136,7 @@ def plot_spike_adp(
 ) -> Axes:
     spike_fts = sweep._spikes_df
     if spike_fts.size:
-        if not np.all(spike_fts["adp_v"].isnan()):
+        if not np.all(np.isnan(spike_fts["adp_v"])):
             ax.vlines(
                 0.5 * (spike_fts[f"adp_t"] + spike_fts["fast_trough_t"]),
                 spike_fts["adp_v"],
@@ -153,7 +153,7 @@ def plot_spike_ahp(
 ) -> Axes:
     spike_fts = sweep._spikes_df
     if spike_fts.size:
-        if not np.all(spike_fts["fast_trough_v"].isnan()):
+        if not np.all(np.isnan(spike_fts["fast_trough_v"])):
             ax.vlines(
                 0.5 * (spike_fts[f"fast_trough_t"] + spike_fts["threshold_t"]),
                 spike_fts["fast_trough_v"],
