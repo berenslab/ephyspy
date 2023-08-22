@@ -49,7 +49,7 @@ def get_spike_ft_scatter_func(ft: str) -> Callable:
     ) -> Axes:
         spike_fts = sweep._spikes_df
         if spike_fts.size:
-            if not np.all(spike_fts[f"{ft}_v"]):
+            if not np.all(np.isnan(spike_fts[f"{ft}_v"])):
                 ax.scatter(
                     spike_fts[f"{ft}_t"],
                     spike_fts[f"{ft}_v"],
