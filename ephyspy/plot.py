@@ -15,16 +15,18 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import matplotlib.pyplot as plt
-from matplotlib.pyplot import Axes, Figure
-from typing import Tuple
-from typing import TYPE_CHECKING
-import numpy as np
+
 import warnings
+from typing import TYPE_CHECKING, Tuple
+
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.pyplot import Axes, Figure
 
 if TYPE_CHECKING:
     from ephyspy.sweeps import EphysSweep
-from ephyspy.utils import where_between, fwhm
+
+from ephyspy.utils import fwhm, where_between
 
 ############################
 ### spike level features ###

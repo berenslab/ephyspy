@@ -15,9 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+from typing import Tuple
+
 import numpy as np
 from numpy import ndarray
-from typing import Tuple
 
 where_between = lambda t, t0, tend: np.logical_and(t > t0, t < tend)
 
@@ -49,3 +51,20 @@ def fwhm(
     hm_up_t = t[upstroke][hm_up_idx]
     hm_down_t = t[downstroke][hm_down_idx]
     return fwhm, hm_up_t, hm_down_t
+
+
+def featureplot(func):
+    """Decorator to make ax optional in plot functions."""
+
+    def wrapper(self, *args, ax=None, show_sweep=False, **kwargs):
+        if ax is None:
+            import matplotlib.pyplot as plt
+
+            ax = plt.gca()
+            if np.isnan(self.value):
+                return
+            if show_sweep:
+                self.plot(ax=ax, **kwargs)
+        return func(self, *args, ax=ax, **kwargs)
+
+    return wrapper
