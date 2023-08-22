@@ -15,19 +15,20 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import Callable, Optional, Dict, Any, Union
+from typing import Any, Callable, Dict, Optional, Union
 
 import numpy as np
 from numpy import ndarray
 
-from ephyspy.features.utils import fetch_available_fts
 from ephyspy.features.utils import (
     FeatureError,
-    parse_deps,
-    parse_func_doc_attrs,
+    fetch_available_fts,
     is_sweep_feature,
     is_sweepset_feature,
+    parse_deps,
+    parse_func_doc_attrs,
 )
 from ephyspy.sweeps import EphysSweep, EphysSweepSet
 
@@ -126,7 +127,9 @@ class EphysFeature(ABC):
                 self._value = features[self.name]._value
                 self._diagnostics = features[self.name]._diagnostics
 
-    def lookup_sweep_feature(self, feature_name: str, recompute: bool = False) -> float:
+    def lookup_sweep_feature(
+        self, feature_name: str, recompute: bool = False, return_value: bool = True
+    ) -> Union[float, EphysFeature]:
         """Look up a sweep level feature and return its value.
 
         This method will first check if the feature is already computed,
@@ -139,9 +142,11 @@ class EphysFeature(ABC):
             feature_name: Name of the feature to look up.
             recompute: If True, recompute the feature even if it is already
                 computed.
+            return_value: If True, return the value of the feature. Otherwise
+                return the feature object.
 
         Returns:
-            The value of the feature.
+            The feature or the value of the feature depending on `return_value`.
 
         Raises:
             FeatureError: If the feature is not found via `fetch_available_fts`.
@@ -151,10 +156,16 @@ class EphysFeature(ABC):
             available_fts = [ft for ft in available_fts if is_sweep_feature(ft)]
             available_fts = {ft.__name__.lower(): ft for ft in available_fts}
             if feature_name in available_fts:
-                return available_fts[feature_name](self.data).value
+                ft = available_fts[feature_name](self.data)
+                if return_value:
+                    return ft.value
+                return ft
             else:
                 raise FeatureError(f"{feature_name} is not a known feature.")
-        return self.data.features[feature_name].get_value(recompute=recompute)
+        ft = self.data.features[feature_name]
+        if return_value:
+            return ft.get_value(recompute=recompute)
+        return ft
 
     def lookup_spike_feature(self, feature_name: str, recompute: bool = False) -> float:
         """Look up a spike level feature and return its value.
@@ -542,7 +553,7 @@ class SweepsetFeature(EphysFeature):
             return getattr(self, name)
 
     def lookup_sweep_feature(
-        self, feature_name: str, recompute: bool = False
+        self, feature_name: str, recompute: bool = False, return_value: bool = True
     ) -> ndarray:
         """Lookup feature for each sweep and return the results as a vector.
 
@@ -550,9 +561,11 @@ class SweepsetFeature(EphysFeature):
             feature_name: Name of the feature to lookup.
             recompute: If True, recompute the feature even if it is already
                 has been computed previously.
+            return_value: If True, return the value of the feature, otherwise
+                return the feature object.
 
         Returns:
-            Vector of feature values.
+            Vector of feature values or feature objects.
         """
         available_fts = fetch_available_fts()
         available_fts = [ft for ft in available_fts if is_sweep_feature(ft)]
@@ -563,6 +576,7 @@ class SweepsetFeature(EphysFeature):
                     sweep.lookup_sweep_feature(
                         feature_name,
                         recompute=recompute,
+                        return_value=return_value,
                     )
                     for sweep in self
                 ]
@@ -571,8 +585,8 @@ class SweepsetFeature(EphysFeature):
             raise FeatureError(f"{feature_name} is not a known feature")
 
     def lookup_sweepset_feature(
-        self, feature_name: str, recompute: bool = False
-    ) -> float:
+        self, feature_name: str, recompute: bool = False, return_value: bool = True
+    ) -> Union[float, SweepsetFeature]:
         """Lookup feature for the sweepset and return the result.
 
         Analogous to `lookup_sweep_feature`, on the sweep level, but for sweepset
@@ -582,6 +596,8 @@ class SweepsetFeature(EphysFeature):
             feature_name: Name of the feature to lookup.
             recompute: If True, recompute the feature even if it is already
                 has been computed previously.
+            return_value: If True, return the value of the feature, otherwise
+                return the feature object.
 
         Returns:
             Feature value."""
@@ -590,10 +606,16 @@ class SweepsetFeature(EphysFeature):
             available_fts = [ft for ft in available_fts if is_sweepset_feature(ft)]
             available_fts = {ft.__name__.lower(): ft for ft in available_fts}
             if feature_name in available_fts:
-                return available_fts[feature_name](self.data).value
+                ft = available_fts[feature_name](self.data)
+                if return_value:
+                    return ft.value
+                return ft
             else:
                 raise FeatureError(f"{feature_name} is not a known feature.")
-        return self.get_features()[feature_name].get_value(recompute=recompute)
+        ft = self.get_features()[feature_name]
+        if return_value:
+            return ft.get_value(recompute=recompute)
+        return ft
 
     @abstractmethod
     def _select(self, fts: ndarray) -> ndarray:
