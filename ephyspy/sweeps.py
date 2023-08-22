@@ -1,3 +1,19 @@
+#!/usr/bin/env python3
+# Copyright 2023 Jonas Beck
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 from __future__ import annotations
 import numpy as np
 
@@ -12,6 +28,8 @@ from ephyspy.allen_sdk.ephys_extractor import (
     EphysSweepSetFeatureExtractor as AllenEphysSweepSetFeatureExtractor,
 )
 import matplotlib.pyplot as plt
+
+from ephyspy.plot import plot_spike_feature
 
 
 def is_spike_feature(ft):
@@ -82,12 +100,27 @@ class EphysSweepFeatureExtractor(AllenEphysSweepFeatureExtractor):
                     for k, ft in self.features.items()
                 }
 
-    def show(self):
+    def show(self, ax=None):
         # TODO: Make nice and add options!
-        plt.plot(self.t.T * 1000, self.v.T)
-        plt.xlabel("Time (ms)")
-        plt.ylabel("Voltage (mV)")
-        plt.show()
+        if ax is None:
+            fig, ax = plt.subplots()
+        ax.plot(self.t.T * 1000, self.v.T)
+        ax.set_xlabel("Time (ms)")
+        ax.set_ylabel("Voltage (mV)")
+        return ax
+
+    def plot_feature(self, ft: str, ax=None, **kwargs):
+        if ax is None:
+            fig, ax = plt.subplots()
+        self.show(ax=ax)
+        if not self._spikes_df.empty:
+            if ft in self._spikes_df.columns:
+                plot_spike_feature(self, ft, ax=ax, **kwargs)
+        # else:
+        #     if ft in self.features:
+        #         self.features[ft].plot(ax=ax, **kwargs)
+        ax.legend()
+        return ax
 
 
 # overwrite AllenSDK EphysSweepFeatureExtractor with wrapper

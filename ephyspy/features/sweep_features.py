@@ -15,201 +15,87 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-from functools import partial
-from typing import Dict, Tuple, Optional
-import warnings
-
 import numpy as np
 from numpy import ndarray
-from pandas import DataFrame
-from scipy import integrate
+import warnings
+
+from ephyspy.utils import where_between
+from ephyspy.features.utils import (
+    FeatureError,
+    where_stimulus,
+    parse_desc,
+    has_stimulus,
+    has_spikes,
+    is_hyperpol,
+    get_sweep_sag_idxs,
+    has_rebound,
+    get_sweep_burst_metrics,
+)
+
 from scipy.optimize import curve_fit
-from sklearn import linear_model
-import pandas as pd
-
-from ephyspy.sweeps import EphysSweepFeatureExtractor
+from scipy.integrate import cumulative_trapezoid
 import ephyspy.allen_sdk.ephys_features as ft
-from ephyspy.base import AbstractEphysFeature, EphysFeature, SweepsetFeature
-from ephyspy.utils import *
 
-# ransac = linear_model.RANSACRegressor()
-ransac = linear_model.LinearRegression()
-
-############################
-### spike level features ###
-############################
+from typing import Callable, Optional
+from ephyspy.features.base import EphysFeature
 
 
-def ap_amp(sweep: EphysSweepFeatureExtractor) -> float:
-    """Extract spike level peak height feature.
-
-    depends on: threshold_v, peak_v.
-    description: v_peak - threshold_v.
-    units: mV.
-
-    Args:
-        sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
-
-    Returns:
-        float: Spike peak height feature.
-    """
-    v_peak = sweep.spike_feature("peak_v", include_clipped=True)
-    threshold_v = sweep.spike_feature("threshold_v", include_clipped=True)
-    peak_height = v_peak - threshold_v
-    return peak_height if len(v_peak) > 0 else np.array([])
-
-
-def ap_ahp(sweep: EphysSweepFeatureExtractor) -> float:
-    """Extract spike level after hyperpolarization feature.
-
-    depends on: threshold_v, fast_trough_v.
-    description: v_fast_trough - threshold_v.
-    units: mV.
-
-    Args:
-        sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
-
-    Returns:
-        float: Spike after hyperpolarization feature.
-    """
-    v_fast_trough = sweep.spike_feature("fast_trough_v", include_clipped=True)
-    threshold_v = sweep.spike_feature("threshold_v", include_clipped=True)
-    return v_fast_trough - threshold_v
-
-
-def ap_adp(sweep: EphysSweepFeatureExtractor) -> float:
-    """Extract spike level after depolarization feature.
-
-    depends on: adp_v, fast_trough_v.
-    description: v_adp - v_fast_trough.
-    units: mV.
-
-    Args:
-        sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
-
-    Returns:
-        float: Spike after depolarization feature.
-    """
-    v_adp = sweep.spike_feature("adp_v", include_clipped=True)
-    v_fast_trough = sweep.spike_feature("fast_trough_v", include_clipped=True)
-    return v_adp - v_fast_trough
-
-
-def ap_peak(sweep: EphysSweepFeatureExtractor) -> float:
-    """Extract spike level peak feature.
-
-    depends on: peak_v.
-    description: max voltage of AP.
-    units: mV.
-
-    Args:
-        sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
-
-    Returns:
-        float: AP peak feature.
-    """
-    v_peak = sweep.spike_feature("peak_v", include_clipped=True)
-    return v_peak
-
-
-def ap_thresh(sweep: EphysSweepFeatureExtractor) -> float:
-    """Extract spike level ap threshold feature.
-
-    depends on: threshold_v.
-    description: For details on how AP thresholds are computed see AllenSDK.
-    units: mV.
-
-    Args:
-        sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
-
-    Returns:
-        float: AP threshold feature.
-    """
-    v_thresh = sweep.spike_feature("threshold_v", include_clipped=True)
-    return v_thresh
-
-
-def ap_trough(sweep: EphysSweepFeatureExtractor) -> float:
-    """Extract spike level ap trough feature.
-
-    depends on: through_v.
-    description: For details on how AP troughs are computed see AllenSDK.
-    units: mV.
-
-    Args:
-        sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
-
-    Returns:
-        float: AP trough feature.
-    """
-    v_thresh = sweep.spike_feature("trough_v", include_clipped=True)
-    return v_thresh
-
-
-def ap_width(sweep: EphysSweepFeatureExtractor) -> float:
-    """Extract spike level ap width feature.
-
-    depends on: width.
-    description: full width half max of AP.
-    units: s.
-
-    Args:
-        sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
-
-    Returns:
-        float: AP width feature.
-    """
-    width = sweep.spike_feature("width", include_clipped=True)
-    return width
-
-
-def ap_udr(sweep: EphysSweepFeatureExtractor) -> float:
-    """Extract spike level ap udr feature.
-
-    depends on: upstroke, downstroke.
-    description: upstroke / downstroke. For details on how upstroke, downstroke
-    are computed see AllenSDK.
-    units: /.
-
-    Args:
-        sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
-
-    Returns:
-        float: AP udr feature.
-    """
-    upstroke = sweep.spike_feature("upstroke", include_clipped=True)
-    downstroke = sweep.spike_feature("downstroke", include_clipped=True)
-    return upstroke / downstroke
-
-
-def isi(sweep: EphysSweepFeatureExtractor) -> float:
-    """Extract spike level inter-spike-interval feature.
-
-    depends on: threshold_t.
-    description: The distance between subsequent spike thresholds. isi at the
-        first index is nan since isi[t+1] = threshold_t[t+1] - threshold_t[t].
-    units: s.
-
-    Args:
-        sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
-
-    Returns:
-        float: inter-spike-interval feature.
-    """
-    spike_times = sweep.spike_feature("threshold_t", include_clipped=True)
-    if len(spike_times) > 1:
-        isi = np.diff(spike_times)
-        isi = np.insert(isi, 0, np.nan)
-        return isi
-    elif len(spike_times) == 1:
-        return np.array([float("nan")])
+def available_sweep_features(compute_at_init=False, store_diagnostics=False):
+    features = {
+        "stim_amp": Stim_amp,
+        "stim_onset": Stim_onset,
+        "stim_end": Stim_end,
+        "num_ap": Num_AP,
+        "ap_freq": AP_freq,
+        "ap_latency": AP_latency,
+        "v_baseline": V_baseline,
+        "v_deflect": V_deflect,
+        "tau": Tau,
+        "ap_freq_adapt": AP_freq_adapt,
+        "ap_amp_slope": AP_amp_slope,
+        "isi_ff": ISI_FF,
+        "isi_cv": ISI_CV,
+        "ap_ff": AP_FF,
+        "ap_cv": AP_CV,
+        "isi_adapt": ISI_adapt,
+        "isi_adapt_avg": ISI_adapt_avg,
+        "ap_amp_adapt": AP_amp_adapt,
+        "ap_amp_adapt_avg": AP_amp_adapt_avg,
+        "r_input": R_input,
+        "sag": Sag,
+        "v_steady": V_steady,
+        "sag_ratio": Sag_ratio,
+        "sag_fraction": Sag_fraction,
+        "sag_area": Sag_area,
+        "sag_time": Sag_time,
+        "v_plateau": V_plateau,
+        "rebound": Rebound,
+        "rebound_aps": Rebound_APs,
+        "rebound_area": Rebound_area,
+        "rebound_latency": Rebound_latency,
+        "rebound_avg": Rebound_avg,
+        "v_rest": V_rest,
+        "num_bursts": Num_bursts,
+        "burstiness": Burstiness,
+        "wildness": Wildness,
+        "ap_adp": AP_ADP,
+        "ap_ahp": AP_AHP,
+        "ap_thresh": AP_thresh,
+        "ap_amp": AP_amp,
+        "ap_width": AP_width,
+        "ap_peak": AP_peak,
+        "ap_trough": AP_trough,
+        "ap_udr": AP_UDR,
+    }
+    if any((compute_at_init, store_diagnostics)):
+        return {
+            k: lambda *args, **kwargs: v(
+                compute_at_init=compute_at_init, store_diagnostics=store_diagnostics
+            )
+            for k, v in features.items()
+        }
     else:
-        return np.array([])
-
-
-############################
-### sweep level features ###
-############################
+        return features
 
 
 class Stim_amp(EphysFeature):
@@ -872,9 +758,7 @@ class Sag_area(EphysFeature):
                 v_sagline = v_sag[0]
                 # Take running average of v?
                 if len(v_sag) > 10:  # at least 10 points to integrate
-                    sag_area = -integrate.cumulative_trapezoid(
-                        v_sag - v_sagline, t_sag
-                    )[-1]
+                    sag_area = -cumulative_trapezoid(v_sag - v_sagline, t_sag)[-1]
                     if store_diagnostics:
                         self._update_diagnostics(
                             {
@@ -1049,9 +933,9 @@ class Rebound_area(EphysFeature):
             v_rebound = self.data.v[where_rebound]
             t_rebound = self.data.t[where_rebound]
             if len(v_rebound) > 10:  # at least 10 points to integrate
-                rebound_area = integrate.cumulative_trapezoid(
-                    v_rebound - v_baseline, t_rebound
-                )[-1]
+                rebound_area = cumulative_trapezoid(v_rebound - v_baseline, t_rebound)[
+                    -1
+                ]
                 if store_diagnostics:
                     self._update_diagnostics(
                         {
@@ -1613,609 +1497,3 @@ class ISI(APEphysFeature):
         ft_aggregator: Optional[Callable] = None,
     ):
         super().__init__(data, compute_at_init, "isi", ap_selector, ft_aggregator)
-
-
-###############################
-### sweepset level features ###
-###############################
-
-
-class Sweepset_AP(SweepsetFeature):
-    """Obtain sweepset level single AP feature.
-
-    This includes the following features:
-    - AP threshold
-    - AP amplitude
-    - AP width
-    - AP peak
-    - AP trough
-    - AP afterhyperpolarization (AHP)
-    - AP afterdepolarization (ADP)
-    - AP upstroke-to-downstroke ratio (UDR)
-    """
-
-    def __init__(self, feature, data=None, compute_at_init=True):
-        super().__init__(feature, data=data, compute_at_init=compute_at_init)
-
-    def _select(self, fts):
-        """Select representative sweep and use its AP features to represent the
-        entire sweepset.
-
-        description: 2nd AP (if only 1 AP -> select first) during stimulus that has
-        no NaNs in relevant spike features. If all APs have NaNs, return the AP during
-        stimulus that has the least amount of NaNs in the relevant features. This
-        avoids bad threshold detection at onset of stimulus.
-        """
-        # TODO: Consult if this is sensible!
-        relevant_ap_fts = [
-            "ap_thresh",
-            "ap_amp",
-            "ap_width",
-            "ap_peak",
-            "ap_trough",
-            "ap_ahp",
-            "ap_adp",
-            "ap_udr",
-        ]
-
-        is_depol = self.lookup_sweep_feature("stim_amp") > 0
-        has_spikes = self.lookup_sweep_feature("num_ap") > 0
-        ft_is_na = np.zeros((len(relevant_ap_fts), len(self.dataset)), dtype=bool)
-        for i, ft in enumerate(relevant_ap_fts):
-            ft_is_na[i] = np.isnan(self.lookup_sweep_feature(ft))
-
-        num_nans = pd.Series(ft_is_na.sum(axis=0))
-        idx = num_nans[is_depol & has_spikes].idxmin()
-
-        self._update_diagnostics(
-            {"selected_idx": idx, "selection": parse_desc(self._select)}
-        )
-        return fts[idx]
-
-    def _aggregate(self, fts):
-        self._update_diagnostics(
-            {"aggregation": "not an aggregate features, only single index is selected."}
-        )
-        return fts.item()
-
-
-class Sweepset_rebound(SweepsetFeature):
-    """Obtain sweepset level rebound related feature.
-
-    This includes the following features:
-    - rebound
-    - rebound APs
-    - rebound latency
-    - average rebound
-    - rebound area
-    """
-
-    def __init__(self, feature, data=None, compute_at_init=True):
-        super().__init__(feature, data=data, compute_at_init=compute_at_init)
-
-    def _select(self, fts):
-        """Select representative sweep and use its rebound features to represent the
-        entire sweepset.
-
-        description: Lowest hyperpolarization sweep. If 3 lowest sweeps are NaN,
-        then the first sweep is selected, meaning the feature is set to NaN."""
-        rebound = self.lookup_sweep_feature("rebound")
-        nan_rebounds = np.isnan(rebound)
-        if all(nan_rebounds[:3]):
-            idx = 0
-        else:
-            idx = np.arange(len(rebound))[~nan_rebounds][0]
-
-        self._update_diagnostics(
-            {"selected_idx": idx, "selection": parse_desc(self._select)}
-        )
-        return fts[idx]
-
-    def _aggregate(self, fts):
-        self._update_diagnostics(
-            {"aggregation": "not an aggregate features, only single index is selected."}
-        )
-        return fts.item()
-
-
-class Sweepset_sag(SweepsetFeature):
-    """Obtain sweepset level sag related feature.
-
-    This includes the following features:
-    - sag
-    - sag area
-    - sag time
-    - sag ratio
-    - sag fraction"""
-
-    def __init__(self, feature, data=None, compute_at_init=True):
-        super().__init__(feature, data=data, compute_at_init=compute_at_init)
-
-    def _select(self, fts):
-        """Select representative sweep and use its sag features to represent the
-        entire sweepset.
-
-        description: Lowest hyperpolarization sweep that is not NaN. If 3 lowest
-        sweeps are NaN, then the first sweep is selected, meaning the feature is set
-        to NaN."""
-        sag = self.lookup_sweep_feature("sag")
-        nan_sags = np.isnan(sag)
-        if all(nan_sags[:3]):
-            idx = 0
-        else:
-            idx = np.arange(len(sag))[~nan_sags][0]
-
-        self._update_diagnostics(
-            {"selected_idx": idx, "selection": parse_desc(self._select)}
-        )
-        return fts[idx]
-
-    def _aggregate(self, fts):
-        self._update_diagnostics(
-            {"aggregation": "not an aggregate features, only single index is selected."}
-        )
-        return fts.item()
-
-
-class Sweepset_spiking(SweepsetFeature):
-    """Obtain sweepset level spiking related feature.
-
-    This includes the following features:
-    - number of spikes
-    - spike frequency
-    - spike frequency adaptation (SFA)
-    - spike amplitude slope
-    - ISI fano factor
-    - ISI AP fano factor
-    - ISI CV
-    - AP CV
-    """
-
-    def __init__(self, feature, data=None, compute_at_init=True):
-        super().__init__(feature, data=data, compute_at_init=compute_at_init)
-
-    def _select(self, fts):
-        """Select representative sweep and use its spiking features to represent the
-        entire sweepset.
-
-        description: Highest non wild trace (wildness == cell dying)."""
-        num_spikes = self.lookup_sweep_feature("num_ap")
-        wildness = self.lookup_sweep_feature("wildness")
-        is_non_wild = np.isnan(wildness)
-        idx = pd.Series(num_spikes)[is_non_wild].idxmax()
-
-        self._update_diagnostics(
-            {
-                "selected_idx": idx,
-                "selection": parse_desc(self._select),
-            }
-        )
-        return fts[idx]
-
-    def _aggregate(self, fts):
-        self._update_diagnostics(
-            {"aggregation": "not an aggregate features, only single index is selected."}
-        )
-        return fts.item()
-
-
-class Sweepset_max(SweepsetFeature):
-    """Obtain sweepset level maximum feature.
-
-    This includes the following features:
-    - number of bursts
-    - wildness
-    """
-
-    def __init__(self, feature, data=None, compute_at_init=True):
-        super().__init__(feature, data=data, compute_at_init=compute_at_init)
-
-    def _select(self, fts):
-        """Select representative sweep and use its features to represent the
-        entire sweepset.
-
-        description: select arg max."""
-        fts = self.lookup_sweep_feature(self.name)
-        idx = slice(0) if np.isnan(fts).all() else np.nanargmax(fts)
-        self._update_diagnostics(
-            {
-                "selected_idx": idx,
-                "selection": parse_desc(self._select),
-            }
-        )
-        return np.array([float("nan")]) if np.isnan(fts).all() else fts[idx]
-
-    def _aggregate(self, fts):
-        self._update_diagnostics({"aggregation": "select max feature."})
-        return fts.item()
-
-
-class Sweepset_median_first5(SweepsetFeature):
-    """Obtain sweepset level median feature.
-
-    This includes the following features:
-    - burstiness
-    - ISI adaptation
-    - average ISI adaptation
-    - AP amplitude adaptation
-    - average AP amplitude adaptation
-    """
-
-    def __init__(self, feature, data=None, compute_at_init=True):
-        super().__init__(feature, data=data, compute_at_init=compute_at_init)
-
-    def _select(self, fts):
-        """Select representative sweep and use its features to represent the
-        entire sweepset.
-
-        description: select all features."""
-
-        na_fts = np.isnan(fts)
-        if not np.all(na_fts):
-            return fts[~na_fts][:5]
-        return np.array([])
-
-    def _aggregate(self, fts):
-        self._update_diagnostics({"aggregation": "select median feature."})
-        if np.isnan(fts).all() or len(fts) == 0:
-            return float("nan")
-        return np.nanmedian(fts).item()
-
-
-class Hyperpol_median(SweepsetFeature):
-    """Obtain sweepset level hyperpolarization feature."""
-
-    def __init__(self, feature, data=None, compute_at_init=True):
-        super().__init__(feature, data=data, compute_at_init=compute_at_init)
-
-    def _select(self, fts):
-        """Select representative sweep and use its features to represent the
-        entire sweepset.
-
-        description: select all features."""
-        is_hyperpol = self.lookup_sweep_feature("stim_amp") < 0
-        return fts[is_hyperpol]
-
-    def _aggregate(self, fts):
-        self._update_diagnostics({"aggregation": "select median feature."})
-        return np.nanmedian(fts).item()
-
-
-class Sweepset_AP_latency(SweepsetFeature):
-    """Obtain sweepset level AP latency feature."""
-
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(AP_latency, data=data, compute_at_init=compute_at_init)
-
-    def _select(self, fts):
-        """Select representative sweep and use its sag features to represent the
-        entire sweepset.
-
-        description: first depolarization trace that has non-nan ap_latency."""
-        is_depol = self.lookup_sweep_feature("stim_amp") > 0
-        ap_latency = self.lookup_sweep_feature("ap_latency")
-        idx = pd.Series(is_depol).index[is_depol & ~np.isnan(ap_latency)][0]
-        self._update_diagnostics(
-            {
-                "selected_idx": idx,
-                "selection": parse_desc(self._select),
-            }
-        )
-        return fts[idx]
-
-    def _aggregate(self, fts):
-        self._update_diagnostics(
-            {"aggregation": "not an aggregate features, only single index is selected."}
-        )
-        return fts.item()
-
-
-class dfdI(SweepsetFeature):
-    """Obtain sweepset level dfdI feature."""
-
-    # TODO: Keep `feature` around as input for API consistency?
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(
-            AbstractEphysFeature,
-            data=data,
-            compute_at_init=compute_at_init,
-            name="dfdI",
-        )
-
-    def _select(self, fts):
-        return fts
-
-    def _aggregate(self, fts):
-        return fts.item()
-
-    def _compute(self, recompute=False, store_diagnostics=False):
-        is_depol = self.lookup_sweep_feature("stim_amp", recompute=recompute) > 0
-        ap_freq = self.lookup_sweep_feature("ap_freq", recompute=recompute)
-        stim_amp = self.lookup_sweep_feature("stim_amp", recompute=recompute)
-
-        f = ap_freq[is_depol]
-        i = stim_amp[is_depol]
-
-        dfdi = float("nan")
-        has_spikes = ~np.isnan(f)
-        # TODO: Check if this is a sensible idea!!!
-        # (In case of 4 nans for example this will skip, even though sweep has spikes)
-        if np.sum(has_spikes) > 4 and len(np.unique(f[:5])) > 3:
-            i_s = i[has_spikes][:5]
-            f_s = f[has_spikes][:5]
-
-            ransac.fit(i_s.reshape(-1, 1), f_s.reshape(-1, 1))
-            dfdi = ransac.coef_[0, 0]
-            f_intercept = ransac.intercept_[0]
-
-            if store_diagnostics:
-                self._update_diagnostics(
-                    {
-                        "i_fit": i_s,
-                        "f_fit": f_s,
-                        "f": f,
-                        "i": i,
-                        "f_intercept": f_intercept,
-                    }
-                )
-        return dfdi
-
-
-class Rheobase(SweepsetFeature):
-    """Obtain sweepset level rheobase feature."""
-
-    def __init__(self, data=None, compute_at_init=True, dc_offset=0):
-        self.dc_offset = dc_offset
-        super().__init__(
-            AbstractEphysFeature,
-            data=data,
-            compute_at_init=compute_at_init,
-            name="rheobase",
-        )
-
-    def _select(self, fts):
-        return fts
-
-    def _aggregate(self, fts):
-        return fts.item()
-
-    def _compute(self, recompute=False, store_diagnostics=False):
-        dc_offset = self.dc_offset
-        rheobase = float("nan")
-        is_depol = self.lookup_sweep_feature("stim_amp", recompute=recompute) > 0
-        ap_freq = self.lookup_sweep_feature("ap_freq", recompute=recompute)
-        stim_amp = self.lookup_sweep_feature("stim_amp", recompute=recompute)
-        dfdi = self.lookup_sweepset_feature("dfdi", recompute=recompute)
-
-        f = ap_freq[is_depol]
-        i = stim_amp[is_depol]
-
-        has_spikes = ~np.isnan(f)
-        # sometimes all depolarization traces spike
-        i_sub = (
-            0 if all(has_spikes) else i[~has_spikes][0]
-        )  # last stim < spike threshold
-        i_sup = i[has_spikes][0]  # first stim > spike threshold
-
-        if not np.isnan(dfdi):
-            rheobase = float(ransac.predict(np.array([[0]]))) / dfdi
-
-            if rheobase < i_sub or rheobase > i_sup:
-                rheobase = i_sup
-        else:
-            rheobase = i_sup
-        rheobase -= dc_offset
-
-        if store_diagnostics:
-            self._update_diagnostics(
-                {
-                    "i_sub": i_sub,
-                    "i_sup": i_sup,
-                    "f_sup": f[has_spikes][0],
-                    "dfdi": dfdi,
-                    "dc_offset": dc_offset,
-                }
-            )
-        return rheobase
-
-
-class Sweepset_r_input(SweepsetFeature):
-    """Obtain sweepset level r_input feature."""
-
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(
-            AbstractEphysFeature,
-            data=data,
-            compute_at_init=compute_at_init,
-            name="r_input",
-        )
-
-    def _select(self, fts):
-        return fts
-
-    def _aggregate(self, fts):
-        return fts.item()
-
-    def _compute(self, recompute=False, store_diagnostics=False):
-        r_input = float("nan")
-        is_hyperpol = self.lookup_sweep_feature("stim_amp", recompute=recompute) < 0
-        v_deflect = self.lookup_sweep_feature("v_deflect", recompute=recompute)
-        v_deflect = v_deflect[is_hyperpol].reshape(-1, 1)
-        i_amp = self.lookup_sweep_feature("stim_amp", recompute=recompute)
-        i_amp = i_amp[is_hyperpol].reshape(-1, 1)
-
-        if len(v_deflect) >= 3:
-            ransac.fit(i_amp, v_deflect)
-            r_input = ransac.coef_[0, 0] * 1000
-            v_intercept = ransac.intercept_[0]
-            if store_diagnostics:
-                self._update_diagnostics(
-                    {
-                        "raw_slope": r_input / 1000,
-                        "v_intercept": v_intercept,
-                        "i_amp": i_amp,
-                        "v_deflect": v_deflect,
-                    }
-                )
-        return r_input
-
-
-class Slow_hyperpolarization(SweepsetFeature):
-    """Obtain sweepset level slow_hyperpolarization feature."""
-
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(
-            AbstractEphysFeature,
-            data=data,
-            compute_at_init=compute_at_init,
-            name="slow_hyperpolarization",
-        )
-
-    def _select(self, fts):
-        return fts
-
-    def _aggregate(self, fts):
-        return fts.item()
-
-    def _compute(self, recompute=False, store_diagnostics=False):
-        # is_hyperpol = self.lookup_sweep_feature("stim_amp", recompute=recompute) < 0
-        # TODO: ASK IF THIS IS ONLY TAKEN FOR HYPERPOLARIZING TRACES (I THINK NOT)
-        v_baseline = self.lookup_sweep_feature("v_baseline", recompute=recompute)
-
-        slow_hyperpolarization = v_baseline.max() - v_baseline.min()
-
-        if store_diagnostics:
-            self._update_diagnostics(
-                {
-                    "v_baseline": v_baseline,
-                }
-            )
-        return slow_hyperpolarization
-
-
-def available_spike_features():
-    return {
-        "ap_peak": ap_peak,
-        "ap_width": ap_width,
-        "ap_trough": ap_trough,
-        "ap_thresh": ap_thresh,
-        "ap_amp": ap_amp,
-        "ap_udr": ap_udr,
-        "ap_ahp": ap_ahp,
-        "ap_adp": ap_adp,
-        "isi": isi,
-    }
-
-
-def available_sweep_features(compute_at_init=False, store_diagnostics=False):
-    features = {
-        "stim_amp": Stim_amp,
-        "stim_onset": Stim_onset,
-        "stim_end": Stim_end,
-        "num_ap": Num_AP,
-        "ap_freq": AP_freq,
-        "ap_latency": AP_latency,
-        "v_baseline": V_baseline,
-        "v_deflect": V_deflect,
-        "tau": Tau,
-        "ap_freq_adapt": AP_freq_adapt,
-        "ap_amp_slope": AP_amp_slope,
-        "isi_ff": ISI_FF,
-        "isi_cv": ISI_CV,
-        "ap_ff": AP_FF,
-        "ap_cv": AP_CV,
-        "isi_adapt": ISI_adapt,
-        "isi_adapt_avg": ISI_adapt_avg,
-        "ap_amp_adapt": AP_amp_adapt,
-        "ap_amp_adapt_avg": AP_amp_adapt_avg,
-        "r_input": R_input,
-        "sag": Sag,
-        "v_steady": V_steady,
-        "sag_ratio": Sag_ratio,
-        "sag_fraction": Sag_fraction,
-        "sag_area": Sag_area,
-        "sag_time": Sag_time,
-        "v_plateau": V_plateau,
-        "rebound": Rebound,
-        "rebound_aps": Rebound_APs,
-        "rebound_area": Rebound_area,
-        "rebound_latency": Rebound_latency,
-        "rebound_avg": Rebound_avg,
-        "v_rest": V_rest,
-        "num_bursts": Num_bursts,
-        "burstiness": Burstiness,
-        "wildness": Wildness,
-        "ap_adp": AP_ADP,
-        "ap_ahp": AP_AHP,
-        "ap_thresh": AP_thresh,
-        "ap_amp": AP_amp,
-        "ap_width": AP_width,
-        "ap_peak": AP_peak,
-        "ap_trough": AP_trough,
-        "ap_udr": AP_UDR,
-    }
-    if any((compute_at_init, store_diagnostics)):
-        return {
-            k: lambda *args, **kwargs: v(
-                compute_at_init=compute_at_init, store_diagnostics=store_diagnostics
-            )
-            for k, v in features.items()
-        }
-    else:
-        return features
-
-
-def available_sweepset_features(compute_at_init=False, store_diagnostics=False):
-    features = {
-        "tau": Hyperpol_median(Tau),
-        "v_rest": Hyperpol_median(V_rest),
-        "v_baseline": Hyperpol_median(V_baseline),
-        "sag": Sweepset_sag(Sag),
-        "sag_ratio": Sweepset_sag(Sag_ratio),
-        "sag_fraction": Sweepset_sag(Sag_fraction),
-        "sag_area": Sweepset_sag(Sag_area),
-        "sag_time": Sweepset_sag(Sag_time),
-        "rebound": Sweepset_rebound(Rebound),
-        "rebound_APs": Sweepset_rebound(Rebound_APs),
-        "rebound_area": Sweepset_rebound(Rebound_area),
-        "rebound_latency": Sweepset_rebound(Rebound_latency),
-        "rebound_avg": Sweepset_rebound(Rebound_avg),
-        "num_ap": Sweepset_spiking(Num_AP),
-        "ap_freq": Sweepset_spiking(AP_freq),
-        "wildness": Sweepset_max(Wildness),
-        "ap_freq_adapt": Sweepset_spiking(AP_freq_adapt),
-        "ap_amp_slope": Sweepset_spiking(AP_amp_slope),
-        "isi_ff": Sweepset_spiking(ISI_FF),
-        "isi_cv": Sweepset_spiking(ISI_CV),
-        "ap_ff": Sweepset_spiking(AP_FF),
-        "ap_cv": Sweepset_spiking(AP_CV),
-        "isi": Sweepset_spiking(ISI),
-        "burstiness": Sweepset_median_first5(Burstiness),
-        "num_bursts": Sweepset_median_first5(Num_bursts),
-        "isi_adapt": Sweepset_median_first5(ISI_adapt),
-        "isi_adapt_avg": Sweepset_median_first5(ISI_adapt_avg),
-        "ap_amp_adapt": Sweepset_median_first5(AP_amp_adapt),
-        "ap_amp_adapt_avg": Sweepset_median_first5(AP_amp_adapt_avg),
-        "ap_ahp": Sweepset_AP(AP_AHP),
-        "ap_adp": Sweepset_AP(AP_ADP),
-        "ap_thresh": Sweepset_AP(AP_thresh),
-        "ap_amp": Sweepset_AP(AP_amp),
-        "ap_width": Sweepset_AP(AP_width),
-        "ap_peak": Sweepset_AP(AP_peak),
-        "ap_trough": Sweepset_AP(AP_trough),
-        "ap_udr": Sweepset_AP(AP_UDR),
-        "r_input": Sweepset_r_input(),
-        "slow_hyperpolarization": Slow_hyperpolarization(),
-        "ap_latency": Sweepset_AP_latency(),
-        "dfdi": dfdI(),
-        "rheobase": Rheobase(),
-    }
-    if any((compute_at_init, store_diagnostics)):
-        return {
-            k: lambda *args, **kwargs: v(
-                compute_at_init=compute_at_init, store_diagnostics=store_diagnostics
-            )
-            for k, v in features.items()
-        }
-    else:
-        return features
