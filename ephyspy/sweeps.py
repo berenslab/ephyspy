@@ -15,17 +15,24 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import numpy as np
 
-from typing import Callable, Optional, Union, List, Dict, Any
+from typing import Any, Callable, Dict, List, Optional, Union
+
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.pyplot import Axes
 from numpy import ndarray
 
 import ephyspy.allen_sdk.ephys_extractor as efex
-from ephyspy.allen_sdk.ephys_extractor import EphysSweepFeatureExtractor
-from ephyspy.allen_sdk.ephys_extractor import EphysSweepSetFeatureExtractor
-import matplotlib.pyplot as plt
-
-from ephyspy.plot import plot_spike_feature, plottable_spike_features
+from ephyspy.allen_sdk.ephys_extractor import (
+    EphysSweepFeatureExtractor,
+    EphysSweepSetFeatureExtractor,
+)
+from ephyspy.plot import (
+    plot_spike_feature,
+    plot_spike_features,
+    plottable_spike_features,
+)
 
 
 def is_spike_feature(ft):
@@ -124,7 +131,13 @@ class EphysSweep(EphysSweepFeatureExtractor):
         ax.legend()
         return ax
 
-    def plot_features(self, fts: List[str], ax=None, show_sweep=True, **kwargs):
+    def plot_features(
+        self,
+        fts: List[str],
+        ax: Optional[Axes] = None,
+        show_sweep: bool = True,
+        **kwargs,
+    ):
         if ax is None:
             fig, ax = plt.subplots()
         if show_sweep:

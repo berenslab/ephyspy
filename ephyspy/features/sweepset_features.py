@@ -15,19 +15,18 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
 import numpy as np
 import pandas as pd
-from ephyspy.features.sweep_features import *
-
 from sklearn import linear_model
+
+from ephyspy.features.sweep_features import *
 
 # ransac = linear_model.RANSACRegressor()
 ransac = linear_model.LinearRegression()
 
 
-from typing import TYPE_CHECKING
-
-from ephyspy.features.base import SweepsetFeature, AbstractEphysFeature
+from ephyspy.features.base import AbstractEphysFeature, SweepsetFeature
 
 
 def available_sweepset_features(compute_at_init=False, store_diagnostics=False):

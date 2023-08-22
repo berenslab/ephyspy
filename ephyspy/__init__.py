@@ -15,11 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from ephyspy.sweeps import *
-from ephyspy.utils import *
-from ephyspy.plot import *
 from ephyspy.features.base import *
-from ephyspy.features.utils import *
 from ephyspy.features.spike_features import *
 from ephyspy.features.sweep_features import *
 from ephyspy.features.sweepset_features import *
+from ephyspy.features.utils import *
+from ephyspy.plot import *
+from ephyspy.sweeps import *
+from ephyspy.utils import *

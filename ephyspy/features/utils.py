@@ -15,14 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-from typing import Dict, Callable, Any, Tuple, List, Union
-import re
-import warnings
-import inspect
 
+import inspect
+import re
+import sys
+import warnings
+from typing import Any, Callable, Dict, List, Tuple, Union
 
 import numpy as np
-import sys
 from numpy import ndarray
 
 from ephyspy.sweeps import EphysSweep, EphysSweepSet
