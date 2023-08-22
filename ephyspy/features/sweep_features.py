@@ -15,29 +15,29 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+import warnings
+from typing import Callable, Optional
+
 import numpy as np
 from numpy import ndarray
-import warnings
+from scipy.integrate import cumulative_trapezoid
+from scipy.optimize import curve_fit
 
-from ephyspy.utils import where_between
+import ephyspy.allen_sdk.ephys_features as ft
+from ephyspy.features.base import EphysFeature
 from ephyspy.features.utils import (
     FeatureError,
-    where_stimulus,
-    parse_desc,
-    has_stimulus,
-    has_spikes,
-    is_hyperpol,
+    get_sweep_burst_metrics,
     get_sweep_sag_idxs,
     has_rebound,
-    get_sweep_burst_metrics,
+    has_spikes,
+    has_stimulus,
+    is_hyperpol,
+    parse_desc,
+    where_stimulus,
 )
-
-from scipy.optimize import curve_fit
-from scipy.integrate import cumulative_trapezoid
-import ephyspy.allen_sdk.ephys_features as ft
-
-from typing import Callable, Optional
-from ephyspy.features.base import EphysFeature
+from ephyspy.utils import where_between, featureplot
 
 
 def available_sweep_features(compute_at_init=False, store_diagnostics=False):
@@ -109,7 +109,23 @@ class Stim_amp(EphysFeature):
 
     def _compute(self, recompute=False, store_diagnostics=True):
         idx = np.argmax(abs(self.data.i).T, axis=0)
+
+        if store_diagnostics:
+            self.diagnostics.update({"idx": idx, "t": self.data.t[idx]})
         return self.data.i[idx]
+
+    @featureplot
+    def plot(self, ax=None, show_sweep=False, **kwargs):
+        amp = self.value
+        t = self.diagnostics["t"]
+        ax.plot(
+            t,
+            amp,
+            "x",
+            label=self.name,
+            **kwargs,
+        )
+        return ax
 
 
 class Stim_onset(EphysFeature):
@@ -125,8 +141,25 @@ class Stim_onset(EphysFeature):
     def _compute(self, recompute=False, store_diagnostics=True):
         stim_onset = float("nan")
         if has_stimulus(self.data):
+            where_stim = where_stimulus(self.data)
             stim_onset = self.data.t[where_stimulus(self.data)][0]
+            i_onset = self.data.t[where_stim][0]
+            if store_diagnostics:
+                self.diagnostics.update({"i_onset": i_onset, "where_stim": where_stim})
         return stim_onset
+
+    @featureplot
+    def plot(self, ax=None, show_sweep=False, **kwargs):
+        onset = self.value
+        i_onset = self.diagnostics["i_onset"]
+        ax.plot(
+            onset,
+            i_onset,
+            "x",
+            label=self.name,
+            **kwargs,
+        )
+        return ax
 
 
 class Stim_end(EphysFeature):
@@ -142,8 +175,25 @@ class Stim_end(EphysFeature):
     def _compute(self, recompute=False, store_diagnostics=True):
         stim_end = float("nan")
         if has_stimulus(self.data):
-            stim_end = self.data.t[where_stimulus(self.data)][-1]
+            where_stim = where_stimulus(self.data)
+            stim_end = self.data.t[where_stim][-1]
+            i_end = self.data.t[where_stim][-1]
+            if store_diagnostics:
+                self.diagnostics.update({"i_end": i_end, "where_stim": where_stim})
         return stim_end
+
+    @featureplot
+    def plot(self, ax=None, show_sweep=False, **kwargs):
+        end = self.value
+        i_end = self.diagnostics["i_end"]
+        ax.plot(
+            end,
+            i_end,
+            "x",
+            label=self.name,
+            **kwargs,
+        )
+        return ax
 
 
 class Num_AP(EphysFeature):
@@ -180,6 +230,19 @@ class Num_AP(EphysFeature):
             )
         return num_ap
 
+    @featureplot
+    def plot(self, ax=None, show_sweep=False, **kwargs):
+        peak_t = self.diagnostics["peak_t"]
+        peak_v = self.diagnostics["peak_v"]
+        ax.plot(
+            peak_t,
+            peak_v,
+            "x",
+            label=self.name,
+            **kwargs,
+        )
+        return ax
+
 
 class AP_freq(EphysFeature):
     """Extract sweep level spike rate feature.
@@ -203,6 +266,12 @@ class AP_freq(EphysFeature):
                 {"ap_freq": ap_freq, "num_ap": num_ap, "onset": onset, "end": end}
             )
         return ap_freq
+
+    @featureplot
+    def plot(self, ax=None, show_sweep=False, **kwargs):
+        num_ap = self.lookup_sweep_feature("num_ap", return_value=False)
+        ax = num_ap.plot(ax=ax, **kwargs)
+        return ax
 
 
 class AP_latency(EphysFeature):
@@ -243,6 +312,17 @@ class AP_latency(EphysFeature):
                     )
         return ap_latency
 
+    @featureplot
+    def plot(self, ax=None, show_sweep=False, **kwargs):
+        ax.hlines(
+            self.diagnostics["v_first_spike"],
+            self.diagnostics["onset"],
+            self.diagnostics["t_first_spike"],
+            label=self.name,
+            **kwargs,
+        )
+        return ax
+
 
 class V_baseline(EphysFeature):
     """Extract sweep level baseline voltage feature.
@@ -281,6 +361,24 @@ class V_baseline(EphysFeature):
             )
         return v_baseline_avg
 
+    @featureplot
+    def plot(self, ax=None, show_sweep=False, **kwargs):
+        ax.plot(
+            ft["t_baseline"],
+            ft["v_baseline"],
+            label="v_baseline interval",
+            **kwargs,
+        )
+        # ax.plot(
+        #     ft["t_baseline"],
+        #     np.ones_like(ft["t_baseline"]) * ft["value"],
+        #     ls="--",
+        # color=color,
+        #     label="v_baseline",
+        # )
+        ax.axhline(ft["value"], ls="--", label=self.name, **kwargs)
+        return ax
+
 
 class V_deflect(EphysFeature):
     """Extract sweep level voltage deflection feature.
@@ -313,6 +411,23 @@ class V_deflect(EphysFeature):
                     }
                 )
         return v_deflect_avg
+
+    @featureplot
+    def plot(self, ax=None, show_sweep=False, **kwargs):
+        ax.plot(
+            ft["t_deflect"],
+            ft["v_deflect"],
+            label="v_deflect interval",
+            **kwargs,
+        )
+        ax.plot(
+            ft["t_deflect"],
+            np.ones_like(ft["t_deflect"]) * ft["value"],
+            ls="--",
+            label=self.name,
+            **kwargs,
+        )
+        return ax
 
 
 class Tau(EphysFeature):
@@ -375,6 +490,23 @@ class Tau(EphysFeature):
                 )
         return tau
 
+    @featureplot
+    def plot(self, ax=None, show_sweep=False, **kwargs):
+        y = lambda t: ft["y0"] + ft["a"] * np.exp(-ft["inv_tau"] * t)
+        where_fit = where_between(self.data.t, ft["fit_start"], ft["fit_end"])
+        t_offset = self.data.t[where_fit][0]
+        t_fit = self.data.t[where_fit] - t_offset
+        ax.plot(
+            t_fit + t_offset,
+            self.data.v[where_fit],
+            label=self.name + " interval",
+            **kwargs,
+        )
+        ax.plot(
+            t_fit + t_offset, y(t_fit), ls="--", color="k", label=self.name + " fit"
+        )
+        return ax
+
 
 class AP_freq_adapt(EphysFeature):
     """Extract sweep level spike frequency adaptation feature.
@@ -423,6 +555,11 @@ class AP_freq_adapt(EphysFeature):
                 )
         return ap_freq_adapt
 
+    @featureplot
+    def plot(self, ax=None, show_sweep=False, **kwargs):
+        warnings.warn(f" {self.name} plotting not implemented yet")
+        return ax
+
 
 class AP_amp_slope(EphysFeature):
     """Extract sweep level spike count feature.
@@ -462,6 +599,11 @@ class AP_amp_slope(EphysFeature):
                 )
         return ap_amp_slope
 
+    @featureplot
+    def plot(self, ax=None, show_sweep=False, **kwargs):
+        warnings.warn(f" {self.name} plotting not implemented yet")
+        return ax
+
 
 class ISI_FF(EphysFeature):
     """Extract sweep level inter-spike-interval (ISI) Fano factor feature.
@@ -489,6 +631,11 @@ class ISI_FF(EphysFeature):
                         }
                     )
         return isi_ff
+
+    @featureplot
+    def plot(self, ax=None, show_sweep=False, **kwargs):
+        warnings.warn(f" {self.name} plotting not implemented yet")
+        return ax
 
 
 class ISI_CV(EphysFeature):
@@ -518,6 +665,11 @@ class ISI_CV(EphysFeature):
                     )
         return isi_cv
 
+    @featureplot
+    def plot(self, ax=None, show_sweep=False, **kwargs):
+        warnings.warn(f" {self.name} plotting not implemented yet")
+        return ax
+
 
 class AP_FF(EphysFeature):
     """Extract sweep level AP amplitude Fano factor feature.
@@ -546,6 +698,11 @@ class AP_FF(EphysFeature):
                     )
         return ap_ff
 
+    @featureplot
+    def plot(self, ax=None, show_sweep=False, **kwargs):
+        warnings.warn(f" {self.name} plotting not implemented yet")
+        return ax
+
 
 class AP_CV(EphysFeature):
     """Extract sweep level AP amplitude coefficient of variation (CV) feature.
@@ -573,6 +730,11 @@ class AP_CV(EphysFeature):
                         }
                     )
         return ap_cv
+
+    @featureplot
+    def plot(self, ax=None, show_sweep=False, **kwargs):
+        warnings.warn(f" {self.name} plotting not implemented yet")
+        return ax
 
 
 class R_input(EphysFeature):
@@ -603,6 +765,11 @@ class R_input(EphysFeature):
                     }
                 )
         return r_input
+
+    @featureplot
+    def plot(self, ax=None, show_sweep=False, **kwargs):
+        warnings.warn(f" {self.name} plotting not implemented yet")
+        return ax
 
 
 class Sag(EphysFeature):
@@ -647,6 +814,11 @@ class V_steady(EphysFeature):
             )
 
         return v_steady
+
+    @featureplot
+    def plot(self, ax=None, show_sweep=False, **kwargs):
+        warnings.warn(f" {self.name} plotting not implemented yet")
+        return ax
 
 
 class Sag_fraction(EphysFeature):
@@ -702,6 +874,11 @@ class Sag_fraction(EphysFeature):
                     )
         return sag_fraction
 
+    @featureplot
+    def plot(self, ax=None, show_sweep=False, **kwargs):
+        warnings.warn(f" {self.name} plotting not implemented yet")
+        return ax
+
 
 class Sag_ratio(EphysFeature):
     """Extract sweep level sag ratio feature.
@@ -737,6 +914,11 @@ class Sag_ratio(EphysFeature):
                     )
         return sag_ratio
 
+    @featureplot
+    def plot(self, ax=None, show_sweep=False, **kwargs):
+        warnings.warn(f" {self.name} plotting not implemented yet")
+        return ax
+
 
 class Sag_area(EphysFeature):
     """Extract sweep level sag area feature.
@@ -771,6 +953,11 @@ class Sag_area(EphysFeature):
 
         return sag_area
 
+    @featureplot
+    def plot(self, ax=None, show_sweep=False, **kwargs):
+        warnings.warn(f" {self.name} plotting not implemented yet")
+        return ax
+
 
 class Sag_time(EphysFeature):
     """Extract sweep level sag duration feature.
@@ -798,6 +985,11 @@ class Sag_time(EphysFeature):
                         }
                     )
         return sag_time
+
+    @featureplot
+    def plot(self, ax=None, show_sweep=False, **kwargs):
+        warnings.warn(f" {self.name} plotting not implemented yet")
+        return ax
 
 
 class V_plateau(EphysFeature):
@@ -828,6 +1020,11 @@ class V_plateau(EphysFeature):
                     }
                 )
         return v_avg_plateau
+
+    @featureplot
+    def plot(self, ax=None, show_sweep=False, **kwargs):
+        warnings.warn(f" {self.name} plotting not implemented yet")
+        return ax
 
 
 class Rebound(EphysFeature):
@@ -870,6 +1067,11 @@ class Rebound(EphysFeature):
                     )
         return rebound
 
+    @featureplot
+    def plot(self, ax=None, show_sweep=False, **kwargs):
+        warnings.warn(f" {self.name} plotting not implemented yet")
+        return ax
+
 
 class Rebound_APs(EphysFeature):
     """Extract sweep level number of rebounding spikes feature.
@@ -907,6 +1109,11 @@ class Rebound_APs(EphysFeature):
                             }
                         )
         return num_rebound_aps
+
+    @featureplot
+    def plot(self, ax=None, show_sweep=False, **kwargs):
+        warnings.warn(f" {self.name} plotting not implemented yet")
+        return ax
 
 
 class Rebound_area(EphysFeature):
@@ -946,6 +1153,11 @@ class Rebound_area(EphysFeature):
                         }
                     )
         return rebound_area
+
+    @featureplot
+    def plot(self, ax=None, show_sweep=False, **kwargs):
+        warnings.warn(f" {self.name} plotting not implemented yet")
+        return ax
 
 
 class Rebound_latency(EphysFeature):
@@ -988,6 +1200,11 @@ class Rebound_latency(EphysFeature):
                     )
         return rebound_latency
 
+    @featureplot
+    def plot(self, ax=None, show_sweep=False, **kwargs):
+        warnings.warn(f" {self.name} plotting not implemented yet")
+        return ax
+
 
 class Rebound_avg(EphysFeature):
     """Extract sweep level average rebound feature.
@@ -1025,6 +1242,11 @@ class Rebound_avg(EphysFeature):
                     )
         return v_rebound_avg
 
+    @featureplot
+    def plot(self, ax=None, show_sweep=False, **kwargs):
+        warnings.warn(f" {self.name} plotting not implemented yet")
+        return ax
+
 
 class V_rest(EphysFeature):
     """Extract sweep level resting potential feature.
@@ -1056,6 +1278,11 @@ class V_rest(EphysFeature):
         except KeyError:
             pass
         return v_rest
+
+    @featureplot
+    def plot(self, ax=None, show_sweep=False, **kwargs):
+        warnings.warn(f" {self.name} plotting not implemented yet")
+        return ax
 
 
 class Num_bursts(EphysFeature):
@@ -1092,6 +1319,11 @@ class Num_bursts(EphysFeature):
                         }
                     )
         return num_bursts
+
+    @featureplot
+    def plot(self, ax=None, show_sweep=False, **kwargs):
+        warnings.warn(f" {self.name} plotting not implemented yet")
+        return ax
 
 
 class Burstiness(EphysFeature):
@@ -1133,6 +1365,11 @@ class Burstiness(EphysFeature):
                     )
         return max_burstiness
 
+    @featureplot
+    def plot(self, ax=None, show_sweep=False, **kwargs):
+        warnings.warn(f" {self.name} plotting not implemented yet")
+        return ax
+
 
 class ISI_adapt(EphysFeature):
     """Extract sweep level inter-spike-interval (ISI) adaptation index feature.
@@ -1154,6 +1391,11 @@ class ISI_adapt(EphysFeature):
             if store_diagnostics:
                 self._update_diagnostics({"isi": isi})
         return isi_adapt
+
+    @featureplot
+    def plot(self, ax=None, show_sweep=False, **kwargs):
+        warnings.warn(f" {self.name} plotting not implemented yet")
+        return ax
 
 
 class ISI_adapt_avg(EphysFeature):
@@ -1178,6 +1420,11 @@ class ISI_adapt_avg(EphysFeature):
                     self._update_diagnostics({"isi": isi})
         return isi_adapt_avg
 
+    @featureplot
+    def plot(self, ax=None, show_sweep=False, **kwargs):
+        warnings.warn(f" {self.name} plotting not implemented yet")
+        return ax
+
 
 class AP_amp_adapt(EphysFeature):
     """Extract sweep level AP amplitude adaptation index feature.
@@ -1200,6 +1447,11 @@ class AP_amp_adapt(EphysFeature):
                 self._update_diagnostics({"ap_amp": ap_amp})
 
         return ap_amp_adapt
+
+    @featureplot
+    def plot(self, ax=None, show_sweep=False, **kwargs):
+        warnings.warn(f" {self.name} plotting not implemented yet")
+        return ax
 
 
 class AP_amp_adapt_avg(EphysFeature):
@@ -1224,6 +1476,11 @@ class AP_amp_adapt_avg(EphysFeature):
                 self._update_diagnostics({"ap_amp": ap_amp})
 
         return ap_amp_adapt_avg
+
+    @featureplot
+    def plot(self, ax=None, show_sweep=False, **kwargs):
+        warnings.warn(f" {self.name} plotting not implemented yet")
+        return ax
 
 
 class Wildness(EphysFeature):
@@ -1260,6 +1517,11 @@ class Wildness(EphysFeature):
                         }
                     )
         return num_wild_spikes
+
+    @featureplot
+    def plot(self, ax=None, show_sweep=False, **kwargs):
+        warnings.warn(f" {self.name} plotting not implemented yet")
+        return ax
 
 
 class APEphysFeature(EphysFeature):
@@ -1343,6 +1605,11 @@ class APEphysFeature(EphysFeature):
                     }
                 )
         return ft_agg
+
+    @featureplot
+    def plot(self, ax=None, show_sweep=False, **kwargs):
+        warnings.warn(f" {self.name} plotting not implemented yet")
+        return ax
 
 
 class AP_AHP(APEphysFeature):
