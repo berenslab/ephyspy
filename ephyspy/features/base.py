@@ -29,7 +29,7 @@ from ephyspy.features.utils import (
     is_sweep_feature,
     is_sweepset_feature,
 )
-from ephyspy.sweeps import EphysSweepFeatureExtractor, EphysSweepSetFeatureExtractor
+from ephyspy.sweeps import EphysSweep, EphysSweepSet
 
 
 class EphysFeature(ABC):
@@ -57,7 +57,7 @@ class EphysFeature(ABC):
 
     <Some more text>'''
 
-    All computed features are added to the underlying `EphysSweepFeatureExtractor`
+    All computed features are added to the underlying `EphysSweep`
     object, and can be accessed via `lookup_sweep_feature` or `lookup_spike_feature`.
     The methods will first check if the feature is already computed, and if not,
     instantiate and compute it. This works recursively, so that features can depend
@@ -70,13 +70,13 @@ class EphysFeature(ABC):
     # TODO: Add show method!
     def __init__(
         self,
-        data: Optional[EphysSweepFeatureExtractor] = None,
+        data: Optional[EphysSweep] = None,
         compute_at_init: bool = True,
         name: Optional[str] = None,
     ):
         r"""
         Args:
-            data: EphysSweepFeatureExtractor object.
+            data: EphysSweep object.
                 Can also be passed later with `__call__`.
             compute_at_init: If True, compute the feature at initialization.
                 Otherwise the feature is only copmuted when `__call__` or
@@ -102,22 +102,20 @@ class EphysFeature(ABC):
             self.units = None if not "units" in attrs else attrs["units"]
             self.units = "" if self.units == "/" else self.units
 
-    def _data_init(self, data: EphysSweepFeatureExtractor):
-        """Initialize the feature with a EphysSweepFeatureExtractor object.
+    def _data_init(self, data: EphysSweep):
+        """Initialize the feature with a EphysSweep object.
 
         This method is called at initialization and when the feature is
-        called with a new EphysSweepFeatureExtractor object. It should
+        called with a new EphysSweep object. It should
         be used to set the `self.data` attribute, and add the feature
         to the `self.data.features` dictionary.
 
         Args:
-            data: EphysSweepFeatureExtractor object.
+            data: EphysSweep object.
         """
         self.data = data
         if data is not None:
-            assert isinstance(
-                data, EphysSweepFeatureExtractor
-            ), "data must be EphysSweepFeatureExtractor"
+            assert isinstance(data, EphysSweep), "data must be EphysSweep"
             self.type = type(data).__name__
             if not "features" in self.data.__dict__:
                 self.data.features = {}
@@ -163,7 +161,7 @@ class EphysFeature(ABC):
 
         This method will first check if the feature is already computed,
         and if not, compute all spike level features using `process_spikes` from
-        the underlying `EphysSweepFeatureExtractor` object, and then
+        the underlying `EphysSweep` object, and then
         instantiate and compute the feature.
 
         Args:
@@ -291,7 +289,7 @@ class EphysFeature(ABC):
 
     def __call__(
         self,
-        data: EphysSweepFeatureExtractor = None,
+        data: EphysSweep = None,
         compute: bool = False,
         store_diagnostics: bool = True,
         return_value: bool = False,
@@ -302,7 +300,7 @@ class EphysFeature(ABC):
 
         Args:
             data: The dataset to compute the feature for, i.e. an instance of
-                `EphysSweepFeatureExtractor`.
+                `EphysSweep`.
             compute: If True, compute the feature even if it is already
                 computed.
             store_diagnostics: If True, store any additional information about
@@ -346,7 +344,7 @@ class AbstractEphysFeature(EphysFeature):
 
 class SweepsetFeature(EphysFeature):
     """Base class for sweepset level features that are computed from a
-    `EphysSweepSetFeatureExtractor`. Wraps around any `EphysFeature` derived
+    `EphysSweepSet`. Wraps around any `EphysFeature` derived
     feature and extends it to the sweepset level.
 
     This class mostly acts like an `EphysFeature` and implements the same basic
@@ -393,14 +391,14 @@ class SweepsetFeature(EphysFeature):
 
     <Some more text>'''
 
-    All computed features are added to the underlying `EphysSweepSetFeatureExtractor`
+    All computed features are added to the underlying `EphysSweepSet`
     object, and can be accessed the `get_features()`.
     """
 
     def __init__(
         self,
         feature: EphysFeature,
-        data: Optional[EphysSweepSetFeatureExtractor] = None,
+        data: Optional[EphysSweepSet] = None,
         compute_at_init: bool = True,
         name: Optional[str] = None,
     ):
@@ -440,22 +438,22 @@ class SweepsetFeature(EphysFeature):
         """Proxy for self.data at the sweepset level."""
         return np.array([self.feature(sw) for sw in self.data.sweeps()])
 
-    def _data_init(self, data: EphysSweepSetFeatureExtractor):
-        """Initialize the feature with a EphysSweepSetFeatureExtractor object.
+    def _data_init(self, data: EphysSweepSet):
+        """Initialize the feature with a EphysSweepSet object.
 
         This method is called at initialization and when the feature is
-        called with a new EphysSweepSetFeatureExtractor object. It should
+        called with a new EphysSweepSet object. It should
         be used to set the `self.data` attribute, and add the feature
         to the `self.data.features` dictionary.
 
         Args:
-            data: EphysSweepSetFeatureExtractor object.
+            data: EphysSweepSet object.
         """
         self.data = data
         if data is not None:
             assert isinstance(
-                data, EphysSweepSetFeatureExtractor
-            ), "data must be a EphysSweepSetFeatureExtractor object"
+                data, EphysSweepSet
+            ), "data must be a EphysSweepSet object"
             self.type = type(data).__name__
             for ft in self.dataset:
                 if not "features" in ft.data.__dict__:
@@ -472,7 +470,7 @@ class SweepsetFeature(EphysFeature):
 
     def __call__(
         self,
-        data: EphysSweepSetFeatureExtractor = None,
+        data: EphysSweepSet = None,
         compute: bool = False,
         store_diagnostics: bool = True,
         return_value: bool = False,
@@ -483,7 +481,7 @@ class SweepsetFeature(EphysFeature):
 
         Args:
             data: The dataset to compute the feature for, i.e. an instance of
-                `EphysSweepSetFeatureExtractor`.
+                `EphysSweepSet`.
             compute: If True, compute the feature even if it is already
                 computed.
             store_diagnostics: If True, store any additional information about

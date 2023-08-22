@@ -19,7 +19,7 @@ import numpy as np
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ephyspy.sweeps import EphysSweepFeatureExtractor
+    from ephyspy.sweeps import EphysSweep
 
 
 def available_spike_features():
@@ -36,7 +36,7 @@ def available_spike_features():
     }
 
 
-def ap_amp(sweep: EphysSweepFeatureExtractor) -> float:
+def ap_amp(sweep: EphysSweep) -> float:
     """Extract spike level peak height feature.
 
     depends on: threshold_v, peak_v.
@@ -44,7 +44,7 @@ def ap_amp(sweep: EphysSweepFeatureExtractor) -> float:
     units: mV.
 
     Args:
-        sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
+        sweep (EphysSweep): Sweep to extract feature from.
 
     Returns:
         float: Spike peak height feature.
@@ -55,7 +55,7 @@ def ap_amp(sweep: EphysSweepFeatureExtractor) -> float:
     return peak_height if len(v_peak) > 0 else np.array([])
 
 
-def ap_ahp(sweep: EphysSweepFeatureExtractor) -> float:
+def ap_ahp(sweep: EphysSweep) -> float:
     """Extract spike level after hyperpolarization feature.
 
     depends on: threshold_v, fast_trough_v.
@@ -63,7 +63,7 @@ def ap_ahp(sweep: EphysSweepFeatureExtractor) -> float:
     units: mV.
 
     Args:
-        sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
+        sweep (EphysSweep): Sweep to extract feature from.
 
     Returns:
         float: Spike after hyperpolarization feature.
@@ -73,7 +73,7 @@ def ap_ahp(sweep: EphysSweepFeatureExtractor) -> float:
     return v_fast_trough - threshold_v
 
 
-def ap_adp(sweep: EphysSweepFeatureExtractor) -> float:
+def ap_adp(sweep: EphysSweep) -> float:
     """Extract spike level after depolarization feature.
 
     depends on: adp_v, fast_trough_v.
@@ -81,7 +81,7 @@ def ap_adp(sweep: EphysSweepFeatureExtractor) -> float:
     units: mV.
 
     Args:
-        sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
+        sweep (EphysSweep): Sweep to extract feature from.
 
     Returns:
         float: Spike after depolarization feature.
@@ -91,7 +91,7 @@ def ap_adp(sweep: EphysSweepFeatureExtractor) -> float:
     return v_adp - v_fast_trough
 
 
-def ap_peak(sweep: EphysSweepFeatureExtractor) -> float:
+def ap_peak(sweep: EphysSweep) -> float:
     """Extract spike level peak feature.
 
     depends on: peak_v.
@@ -99,7 +99,7 @@ def ap_peak(sweep: EphysSweepFeatureExtractor) -> float:
     units: mV.
 
     Args:
-        sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
+        sweep (EphysSweep): Sweep to extract feature from.
 
     Returns:
         float: AP peak feature.
@@ -108,7 +108,7 @@ def ap_peak(sweep: EphysSweepFeatureExtractor) -> float:
     return v_peak
 
 
-def ap_thresh(sweep: EphysSweepFeatureExtractor) -> float:
+def ap_thresh(sweep: EphysSweep) -> float:
     """Extract spike level ap threshold feature.
 
     depends on: threshold_v.
@@ -116,7 +116,7 @@ def ap_thresh(sweep: EphysSweepFeatureExtractor) -> float:
     units: mV.
 
     Args:
-        sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
+        sweep (EphysSweep): Sweep to extract feature from.
 
     Returns:
         float: AP threshold feature.
@@ -125,7 +125,7 @@ def ap_thresh(sweep: EphysSweepFeatureExtractor) -> float:
     return v_thresh
 
 
-def ap_trough(sweep: EphysSweepFeatureExtractor) -> float:
+def ap_trough(sweep: EphysSweep) -> float:
     """Extract spike level ap trough feature.
 
     depends on: through_v.
@@ -133,7 +133,7 @@ def ap_trough(sweep: EphysSweepFeatureExtractor) -> float:
     units: mV.
 
     Args:
-        sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
+        sweep (EphysSweep): Sweep to extract feature from.
 
     Returns:
         float: AP trough feature.
@@ -142,7 +142,7 @@ def ap_trough(sweep: EphysSweepFeatureExtractor) -> float:
     return v_thresh
 
 
-def ap_width(sweep: EphysSweepFeatureExtractor) -> float:
+def ap_width(sweep: EphysSweep) -> float:
     """Extract spike level ap width feature.
 
     depends on: width.
@@ -150,7 +150,7 @@ def ap_width(sweep: EphysSweepFeatureExtractor) -> float:
     units: s.
 
     Args:
-        sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
+        sweep (EphysSweep): Sweep to extract feature from.
 
     Returns:
         float: AP width feature.
@@ -159,7 +159,7 @@ def ap_width(sweep: EphysSweepFeatureExtractor) -> float:
     return width
 
 
-def ap_udr(sweep: EphysSweepFeatureExtractor) -> float:
+def ap_udr(sweep: EphysSweep) -> float:
     """Extract spike level ap udr feature.
 
     depends on: upstroke, downstroke.
@@ -168,7 +168,7 @@ def ap_udr(sweep: EphysSweepFeatureExtractor) -> float:
     units: /.
 
     Args:
-        sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
+        sweep (EphysSweep): Sweep to extract feature from.
 
     Returns:
         float: AP udr feature.
@@ -178,7 +178,7 @@ def ap_udr(sweep: EphysSweepFeatureExtractor) -> float:
     return upstroke / downstroke
 
 
-def isi(sweep: EphysSweepFeatureExtractor) -> float:
+def isi(sweep: EphysSweep) -> float:
     """Extract spike level inter-spike-interval feature.
 
     depends on: threshold_t.
@@ -187,7 +187,7 @@ def isi(sweep: EphysSweepFeatureExtractor) -> float:
     units: s.
 
     Args:
-        sweep (EphysSweepFeatureExtractor): Sweep to extract feature from.
+        sweep (EphysSweep): Sweep to extract feature from.
 
     Returns:
         float: inter-spike-interval feature.

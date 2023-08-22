@@ -25,7 +25,7 @@ import numpy as np
 import sys
 from numpy import ndarray
 
-from ephyspy.sweeps import EphysSweepFeatureExtractor, EphysSweepSetFeatureExtractor
+from ephyspy.sweeps import EphysSweep, EphysSweepSet
 
 CUSTOM_SWEEP_FEATURES = []
 CUSTOM_SWEEPSET_FEATURES = []
@@ -44,9 +44,9 @@ def register_custom_feature(Feature: Any):
     """
     if isinstance(Feature, Callable):
         CUSTOM_SPIKE_FEATURES.append(Feature)
-    elif issubclass(Feature, EphysSweepFeatureExtractor):
+    elif issubclass(Feature, EphysSweep):
         CUSTOM_SWEEP_FEATURES.append(Feature)
-    elif issubclass(Feature, EphysSweepSetFeatureExtractor):
+    elif issubclass(Feature, EphysSweepSet):
         CUSTOM_SWEEPSET_FEATURES.append(Feature)
 
 
@@ -82,7 +82,7 @@ class FeatureError(ValueError):
 
 
 def get_sweep_burst_metrics(
-    sweep: EphysSweepFeatureExtractor,
+    sweep: EphysSweep,
 ) -> Tuple[ndarray, ndarray, ndarray]:
     """Calculate burst metrics for a sweep.
 
@@ -90,7 +90,7 @@ def get_sweep_burst_metrics(
     Handles case where no bursts are found.
 
     Args:
-        sweep (EphysSweepFeatureExtractor): Sweep to calculate burst metrics for.
+        sweep (EphysSweep): Sweep to calculate burst metrics for.
 
     Returns:
         Tuple[ndarray, ndarray, ndarray]: returns burst index, burst start index,
@@ -109,7 +109,7 @@ def get_sweep_sag_idxs(feature: Any, recompute: bool = False) -> ndarray:
     description: all idxs below steady state and during stimulus.
 
     Args:
-        sweep (EphysSweepFeatureExtractor): sweep to analyze.
+        sweep (EphysSweep): sweep to analyze.
 
     Returns:
         boolean array with length of sweep.t; where sag.
@@ -141,16 +141,14 @@ is_sweep_feature = (
 is_sweepset_feature = lambda ft: "SweepsetFeature" in ft.__base__.__name__
 
 
-def where_stimulus(
-    data: Union[EphysSweepFeatureExtractor, EphysSweepSetFeatureExtractor]
-) -> Union[bool, ndarray]:
+def where_stimulus(data: Union[EphysSweep, EphysSweepSet]) -> Union[bool, ndarray]:
     """Checks where the stimulus is non-zero.
 
     Checks where stimulus is non-zero for a single sweep or each sweep in a
     sweepset.
 
     Args:
-        data (EphysSweepFeatureExtractor or EphysSweepSetFeatureExtractor):
+        data (EphysSweep or EphysSweepSet):
             Sweep or sweepset to check.
 
     Returns:
@@ -159,11 +157,11 @@ def where_stimulus(
     return data.i.T != 0
 
 
-def has_spikes(sweep: EphysSweepFeatureExtractor) -> bool:
+def has_spikes(sweep: EphysSweep) -> bool:
     """Check if sweep has spikes.
 
     Args:
-        sweep (EphysSweepFeatureExtractor): Sweep to check.
+        sweep (EphysSweep): Sweep to check.
 
     Returns:
         bool: True if sweep has spikes.
@@ -173,13 +171,11 @@ def has_spikes(sweep: EphysSweepFeatureExtractor) -> bool:
     return False
 
 
-def has_stimulus(
-    data: Union[EphysSweepFeatureExtractor, EphysSweepSetFeatureExtractor]
-) -> Union[bool, ndarray]:
+def has_stimulus(data: Union[EphysSweep, EphysSweepSet]) -> Union[bool, ndarray]:
     """Check if sweep has stimulus that is non-zero.
 
     Args:
-        data (EphysSweepFeatureExtractor or EphysSweepSetFeatureExtractor):
+        data (EphysSweep or EphysSweepSet):
             Sweep or sweepset to check.
 
     Returns:
@@ -187,13 +183,11 @@ def has_stimulus(
     return np.any(where_stimulus(data), axis=0)
 
 
-def is_hyperpol(
-    data: Union[EphysSweepFeatureExtractor, EphysSweepSetFeatureExtractor]
-) -> Union[bool, ndarray]:
+def is_hyperpol(data: Union[EphysSweep, EphysSweepSet]) -> Union[bool, ndarray]:
     """Check if sweep is hyperpolarizing, i.e. if the stimulus < 0.
 
     Args:
-        data (EphysSweepFeatureExtractor or EphysSweepSetFeatureExtractor):
+        data (EphysSweep or EphysSweepSet):
             Sweep or sweepset to check.
 
     Returns:
@@ -201,13 +195,11 @@ def is_hyperpol(
     return np.any(data.i.T < 0, axis=0)
 
 
-def is_depol(
-    data: Union[EphysSweepFeatureExtractor, EphysSweepSetFeatureExtractor]
-) -> Union[bool, ndarray]:
+def is_depol(data: Union[EphysSweep, EphysSweepSet]) -> Union[bool, ndarray]:
     """Check if sweep is depolarizing, i.e. if the stimulus > 0.
 
     Args:
-        data (EphysSweepFeatureExtractor or EphysSweepSetFeatureExtractor):
+        data (EphysSweep or EphysSweepSet):
             Sweep or sweepset to check.
 
     Returns:

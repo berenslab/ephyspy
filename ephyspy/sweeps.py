@@ -21,15 +21,11 @@ from typing import Callable, Optional, Union, List, Dict, Any
 from numpy import ndarray
 
 import ephyspy.allen_sdk.ephys_extractor as efex
-from ephyspy.allen_sdk.ephys_extractor import (
-    EphysSweepFeatureExtractor as AllenEphysSweepFeatureExtractor,
-)
-from ephyspy.allen_sdk.ephys_extractor import (
-    EphysSweepSetFeatureExtractor as AllenEphysSweepSetFeatureExtractor,
-)
+from ephyspy.allen_sdk.ephys_extractor import EphysSweepFeatureExtractor
+from ephyspy.allen_sdk.ephys_extractor import EphysSweepSetFeatureExtractor
 import matplotlib.pyplot as plt
 
-from ephyspy.plot import plot_spike_feature
+from ephyspy.plot import plot_spike_feature, plottable_spike_features
 
 
 def is_spike_feature(ft):
@@ -46,11 +42,11 @@ def is_sweepset_feature(ft):
     return "SweepsetFeature" in type(ft).__base__.__name__
 
 
-class EphysSweepFeatureExtractor(AllenEphysSweepFeatureExtractor):
+class EphysSweep(EphysSweepFeatureExtractor):
     """Wrapper around EphysSweepFeatureExtractor from the AllenSDK to
     support additional functionality.
 
-    Mainly it supports the addition of new spike features.
+    Mainly it supports the addition of new spike features and plotting them.
     """
 
     def __init__(self, *args, **kwargs):
@@ -100,34 +96,51 @@ class EphysSweepFeatureExtractor(AllenEphysSweepFeatureExtractor):
                     for k, ft in self.features.items()
                 }
 
-    def show(self, ax=None):
+    def plot(self, ax=None, **kwargs):
         # TODO: Make nice and add options!
         if ax is None:
             fig, ax = plt.subplots()
-        ax.plot(self.t.T * 1000, self.v.T)
-        ax.set_xlabel("Time (ms)")
+        ax.plot(self.t.T, self.v.T, **kwargs)
+        ax.set_xlabel("Time (s)")
         ax.set_ylabel("Voltage (mV)")
         return ax
 
-    def plot_feature(self, ft: str, ax=None, **kwargs):
+    def plot_feature(self, ft: str, ax=None, show_sweep=True, **kwargs):
         if ax is None:
             fig, ax = plt.subplots()
-        self.show(ax=ax)
+        if show_sweep:
+            self.plot(ax=ax, color="k")
+
+        # sweep feature
+        # if ft in self.features:
+        #     self.features[ft].plot(ax=ax, **kwargs)
+
+        # spike feature
         if not self._spikes_df.empty:
-            if ft in self._spikes_df.columns:
+            if ft in plottable_spike_features:
                 plot_spike_feature(self, ft, ax=ax, **kwargs)
-        # else:
-        #     if ft in self.features:
-        #         self.features[ft].plot(ax=ax, **kwargs)
+        else:
+            raise ValueError(f"Feature {ft} not found.")
         ax.legend()
+        return ax
+
+    def plot_features(self, fts: List[str], ax=None, show_sweep=True, **kwargs):
+        if ax is None:
+            fig, ax = plt.subplots()
+        if show_sweep:
+            self.plot(ax=ax, color="k")
+        for ft in fts:
+            self.plot_feature(ft, ax=ax, show_sweep=False, **kwargs)
         return ax
 
 
 # overwrite AllenSDK EphysSweepFeatureExtractor with wrapper
-efex.EphysSweepFeatureExtractor = EphysSweepFeatureExtractor
+# this is needed to EphysSweepSet is uses EphysSweep to initialize the individual sweeps
+# instead of using the AllenSDK EphysSweepFeatureExtractor
+efex.EphysSweepFeatureExtractor = EphysSweep
 
 
-class EphysSweepSetFeatureExtractor(AllenEphysSweepSetFeatureExtractor):
+class EphysSweepSet(EphysSweepSetFeatureExtractor):
     """Wrapper around EphysSweepSetFeatureExtractor from the AllenSDK to
     support additional functionality.
 
@@ -136,8 +149,8 @@ class EphysSweepSetFeatureExtractor(AllenEphysSweepSetFeatureExtractor):
         v_set (ndarray): Voltage array for set of sweeps.
         i_set (ndarray): Current array for set of sweeps.
         metadata (dict, optional): Metadata for the sweep set. Defaults to None.
-        *args: Additional arguments for AllenEphysSweepSetFeatureExtractor.
-        **kwargs: Additional keyword arguments for AllenEphysSweepSetFeatureExtractor.
+        *args: Additional arguments for EphysSweepSetFeatureExtractor.
+        **kwargs: Additional keyword arguments for EphysSweepSetFeatureExtractor.
 
     Attributes:
         metadata (dict): Metadata for the sweep set.
@@ -202,13 +215,13 @@ class EphysSweepSetFeatureExtractor(AllenEphysSweepSetFeatureExtractor):
     def __len__(self):
         return len(self.sweeps())
 
-    def __getitem__(self, idx: int) -> EphysSweepFeatureExtractor:
+    def __getitem__(self, idx: int) -> EphysSweep:
         return self.sweeps()[idx]
 
     def add_spike_feature(self, feature_name: str, feature_func: Callable):
         """Add a new spike feature to the extractor.
 
-        Adds new spike feature to each `EphysSweepFeatureExtractor` instance.
+        Adds new spike feature to each `EphysSweep` instance.
 
         Args:
             feature_name (str): Name of the new feature.

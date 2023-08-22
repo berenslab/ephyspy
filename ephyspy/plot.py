@@ -23,7 +23,7 @@ import numpy as np
 import warnings
 
 if TYPE_CHECKING:
-    from ephyspy.sweeps import EphysSweepFeatureExtractor
+    from ephyspy.sweeps import EphysSweep
 from ephyspy.utils import where_between, fwhm
 
 ############################
@@ -31,14 +31,12 @@ from ephyspy.utils import where_between, fwhm
 ############################
 
 
-def plot_ap_width(
-    sweep: EphysSweepFeatureExtractor, ax: Axes, color=None, **plot_kwargs
-) -> Axes:
-    ap_fts = sweep._aps_df
+def plot_ap_width(sweep: EphysSweep, ax: Axes, color=None, **plot_kwargs) -> Axes:
+    ap_fts = sweep._spikes_df
     if ap_fts.size:
-        if not np.all(ap_fts["width"].isnan()):
-            t_threshold = sweep.ap_feature("threshold_t", include_clipped=True)
-            t_peak = sweep.ap_feature("peak_t", include_clipped=True)
+        if not np.all(np.isnan(ap_fts["width"])):
+            t_threshold = sweep.spike_feature("threshold_t", include_clipped=True)
+            t_peak = sweep.spike_feature("peak_t", include_clipped=True)
             t_next = t_peak + 1.0 * (
                 t_peak - t_threshold
             )  # T interval w.r.t. threshold
@@ -62,12 +60,10 @@ def plot_ap_width(
     return ax
 
 
-def plot_ap_adp(
-    sweep: EphysSweepFeatureExtractor, ax: Axes, color=None, **plot_kwargs
-) -> Axes:
-    ap_fts = sweep._aps_df
+def plot_ap_adp(sweep: EphysSweep, ax: Axes, color=None, **plot_kwargs) -> Axes:
+    ap_fts = sweep._spikes_df
     if ap_fts.size:
-        if not np.all(ap_fts["adp_v"].isnan()):
+        if not np.all(np.isnan(ap_fts["adp_v"])):
             ax.vlines(
                 0.5 * (ap_fts[f"adp_t"] + ap_fts["fast_trough_t"]),
                 ap_fts["adp_v"],
@@ -81,12 +77,10 @@ def plot_ap_adp(
     return ax
 
 
-def plot_ap_ahp(
-    sweep: EphysSweepFeatureExtractor, ax: Axes, color=None, **plot_kwargs
-) -> Axes:
-    ap_fts = sweep._aps_df
+def plot_ap_ahp(sweep: EphysSweep, ax: Axes, color=None, **plot_kwargs) -> Axes:
+    ap_fts = sweep._spikes_df
     if ap_fts.size:
-        if not np.all(ap_fts["fast_trough_v"].isnan()):
+        if not np.all(np.isnan(ap_fts["fast_trough_v"])):
             ax.vlines(
                 0.5 * (ap_fts[f"fast_trough_t"] + ap_fts["threshold_t"]),
                 ap_fts["fast_trough_v"],
@@ -100,24 +94,18 @@ def plot_ap_ahp(
     return ax
 
 
-def plot_ap_amp(
-    sweep: EphysSweepFeatureExtractor, ax: Axes, color=None, **plot_kwargs
-) -> Axes:
+def plot_ap_amp(sweep: EphysSweep, ax: Axes, color=None, **plot_kwargs) -> Axes:
     warnings.warn("ap ap_amp plotting is not yet implemented!")
     return ax
 
 
-def plot_isi(
-    sweep: EphysSweepFeatureExtractor, ax: Axes, color=None, **plot_kwargs
-) -> Axes:
+def plot_isi(sweep: EphysSweep, ax: Axes, color=None, **plot_kwargs) -> Axes:
     warnings.warn("isi plotting is not yet implemented!")
     return ax
 
 
-def plot_spike_feature(
-    sweep: EphysSweepFeatureExtractor, ft: str, ax: Axes, **plot_kwargs
-) -> Axes:
-    ap_fts = sweep._aps_df
+def plot_spike_feature(sweep: EphysSweep, ft: str, ax: Axes, **plot_kwargs) -> Axes:
+    ap_fts = sweep._spikes_df
     base_fts = [
         "peak",
         "threshold",
@@ -138,7 +126,7 @@ def plot_spike_feature(
             ax = plot_ap_ahp(sweep, ax, **plot_kwargs)
         elif ft == "isi":
             ax = plot_isi(sweep, ax, **plot_kwargs)
-        elif ft in base_fts and not np.all(ap_fts[f"{ft}_v"].isnan()):
+        elif ft in base_fts and not np.all(np.isnan(ap_fts[f"{ft}_v"])):
             ax.scatter(
                 ap_fts[f"{ft}_t"],
                 ap_fts[f"{ft}_v"],
@@ -157,16 +145,16 @@ plottable_spike_features = [
     "threshold",
     "upstroke",
     "downstroke",
-    "width",
+    "ap_width",
     "fast_trough",
     "slow_trough",
-    "adp",
-    "ahp",
+    "ap_adp",
+    "ap_ahp",
 ]
 
 
 def plot_spike_features(
-    sweep: EphysSweepFeatureExtractor, window: Tuple = [0.4, 0.45]
+    sweep: EphysSweep, window: Tuple = [0.4, 0.45]
 ) -> Tuple[Figure, Axes]:
     mosaic = "aaabb\naaabb\ncccbb"
     fig, axes = plt.subplot_mosaic(mosaic, figsize=(12, 4), constrained_layout=True)
