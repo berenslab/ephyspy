@@ -75,6 +75,15 @@ def fetch_available_fts(include: str = "all") -> List[str]:
     return feature_classes + CUSTOM_SWEEP_FEATURES + CUSTOM_SWEEPSET_FEATURES
 
 
+def SweepsetFt(SweepsetFt, Ft):
+    def _SweepsetFt(*args, **kwargs):
+        return SweepsetFt(Ft, *args, **kwargs)
+
+    _SweepsetFt.__base__ = SweepsetFt.__base__
+    _SweepsetFt.__name__ = Ft.__name__
+    return _SweepsetFt
+
+
 class FeatureError(ValueError):
     """Error raised when a feature is unknown."""
 

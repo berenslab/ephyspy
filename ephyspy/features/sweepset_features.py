@@ -27,14 +27,7 @@ ransac = linear_model.LinearRegression()
 
 
 from ephyspy.features.base import AbstractEphysFeature, SweepsetFeature
-
-
-def SweepsetFt(SweepsetFt, Ft):
-    def _SweepsetFt(*args, **kwargs):
-        return SweepsetFt(Ft, *args, **kwargs)
-
-    _SweepsetFt.__base__ = SweepsetFt.__base__
-    return _SweepsetFt
+from ephyspy.features.utils import SweepsetFt
 
 
 def available_sweepset_features(compute_at_init=False, store_diagnostics=False):
