@@ -103,13 +103,15 @@ def get_sweep_burst_metrics(
     return idx_burst, idx_burst_start.astype(int), idx_burst_end.astype(int)
 
 
-def get_sweep_sag_idxs(feature: Any, recompute: bool = False) -> ndarray:
+def get_sweep_sag_idxs(
+    sag_instance: Any, recompute: bool = False, store_diagnostics=False
+) -> ndarray:
     """determine idxs in a sweep that are part of the sag.
 
     description: all idxs below steady state and during stimulus.
 
     Args:
-        sweep (EphysSweep): sweep to analyze.
+        feature (EphysSweep): sag_feature object.
 
     Returns:
         boolean array with length of sweep.t; where sag.
@@ -121,17 +123,30 @@ def get_sweep_sag_idxs(feature: Any, recompute: bool = False) -> ndarray:
     # set all True ones after to False
     # also if steady state is never reached again, sag will be massive
     # -> set all idxs to False ?
-    sweep = feature.data
+    sweep = sag_instance.data
     v_deflect = sweep.voltage_deflection("min")[0]
-    v_steady = feature.lookup_sweep_feature("v_deflect", recompute=recompute)
+    v_steady = sag_instance.lookup_sweep_feature("v_deflect", recompute=recompute)
     if v_steady - v_deflect < 4:  # The sag should have a minimum depth of 4 mV
-        start = feature.lookup_sweep_feature("stim_onset", recompute=recompute)
-        end = feature.lookup_sweep_feature("stim_end", recompute=recompute)
+        start = sag_instance.lookup_sweep_feature("stim_onset", recompute=recompute)
+        end = sag_instance.lookup_sweep_feature("stim_end", recompute=recompute)
         where_stimulus = np.logical_and(
             sweep.t > start, sweep.t < end
-        )  # same as where_between
-        return np.logical_and(where_stimulus, sweep.v < v_steady)
-    return np.zeros_like(sweep.t, dtype=bool)
+        )  # same as where_between (saves on import)
+        sag_idxs = np.logical_and(where_stimulus, sweep.v < v_steady)
+    else:
+        sag_idxs = np.zeros_like(sweep.t, dtype=bool)
+
+    if store_diagnostics:
+        sag_instance._update_diagnostics(
+            {
+                "sag_idxs": sag_idxs,
+                "v_deflect": v_deflect,
+                "v_steady": v_steady,
+                "t_sag": sweep.t[sag_idxs],
+                "v_sag": sweep.v[sag_idxs],
+            }
+        )
+    return sag_idxs
 
 
 is_sweep_feature = (
