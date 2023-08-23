@@ -63,6 +63,7 @@ def available_sweep_features(compute_at_init=False, store_diagnostics=False):
         "ap_amp_adapt_avg": AP_amp_adapt_avg,
         "r_input": R_input,
         "sag": Sag,
+        "v_sag": V_sag,
         "v_steady": V_steady,
         "sag_ratio": Sag_ratio,
         "sag_fraction": Sag_fraction,
@@ -143,9 +144,16 @@ class Stim_onset(EphysFeature):
         if has_stimulus(self.data):
             where_stim = where_stimulus(self.data)
             stim_onset = self.data.t[where_stim][0]
-            i_onset = self.data.t[where_stim][0]
+            i_onset = self.data.i[where_stim][0]
+            idx_onset = np.arange(len(where_stim))[where_stim][0]
             if store_diagnostics:
-                self._update_diagnostics({"i_onset": i_onset, "where_stim": where_stim})
+                self._update_diagnostics(
+                    {
+                        "i_onset": i_onset,
+                        "where_stim": where_stim,
+                        "idx_onset": idx_onset,
+                    }
+                )
         return stim_onset
 
     @featureplot
@@ -171,9 +179,12 @@ class Stim_end(EphysFeature):
         if has_stimulus(self.data):
             where_stim = where_stimulus(self.data)
             stim_end = self.data.t[where_stim][-1]
-            i_end = self.data.t[where_stim][-1]
+            i_end = self.data.i[where_stim][-1]
+            idx_end = np.arange(len(where_stim))[where_stim][-1]
             if store_diagnostics:
-                self._update_diagnostics({"i_end": i_end, "where_stim": where_stim})
+                self._update_diagnostics(
+                    {"i_end": i_end, "where_stim": where_stim, "idx_end": idx_end}
+                )
         return stim_end
 
     @featureplot
@@ -740,24 +751,107 @@ class R_input(EphysFeature):
         return ax
 
 
+class V_sag(EphysFeature):
+    """Extract sweep level sag voltage feature.
+
+    depends on: v_deflect, v_baseline.
+    description: Average voltage around max deflection.
+    units: mV."""
+
+    def __init__(self, data=None, compute_at_init=True, peak_width=0.005):
+        super().__init__(data, compute_at_init=False)
+        self.peak_width = peak_width
+        if compute_at_init and data is not None:  # because of peak_width
+            self.get_value()
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        v_sag = float("nan")
+        if is_hyperpol(self.data):
+            where_sag = get_sweep_sag_idxs(self, store_diagnostics=store_diagnostics)
+            if np.sum(where_sag) > 10:  # TODO: what should be min sag duration!?
+                # The following can also be found in sweep.estimate_sag()
+                v_deflect, idx_deflect = self.data.voltage_deflection("min")
+
+                if self.data.v[idx_deflect] < -200:
+                    warnings.warn("Downward peak < 200 mV")
+                    # Look for another local minimum closer to stimulus onset
+                    idx_deflect -= ft.find_time_index(
+                        self.data.t, 0.12
+                    ) - ft.find_time_index(self.data.t, 0.1)
+
+                t_deflect = self.data.t[idx_deflect]
+
+                start = t_deflect - self.peak_width / 2.0
+                end = t_deflect + self.peak_width / 2.0
+                v_sag = ft.average_voltage(
+                    self.data.v,
+                    self.data.t,
+                    start=start,
+                    end=end,
+                )
+
+                if store_diagnostics:
+                    self._update_diagnostics(
+                        {
+                            "where_sag": where_sag,
+                            "v_deflect": v_deflect,
+                            "idx_deflect": idx_deflect,
+                            "t_deflect": t_deflect,
+                            "start": start,
+                            "end": end,
+                        }
+                    )
+        return v_sag
+
+    @featureplot
+    def plot(self, ax=None, **kwargs):
+        start, end = unpack(self.diagnostics, ["start", "end"])
+        ax.hlines(self.value, start, end, ls="--", label=self.name, **kwargs)
+        return ax
+
+
 class Sag(EphysFeature):
     """Extract sweep level sag feature.
 
-    depends on: /.
+    depends on: v_sag.
     description: magnitude of the depolarization peak.
     units: mV."""
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, compute_at_init=True, peak_width=0.005):
+        self.peak_width = peak_width
+        super().__init__(data, compute_at_init=False)
+        if compute_at_init and data is not None:  # because of peak_width
+            self.get_value()
 
     def _compute(self, recompute=False, store_diagnostics=True):
         sag = float("nan")
         if is_hyperpol(self.data):
-            try:  # sometimes fails if stim just below 0pA
-                sag_ = self.data.estimate_sag()
-            except FeatureError:
-                pass
+            where_sag = get_sweep_sag_idxs(self, store_diagnostics=store_diagnostics)
+            if np.sum(where_sag) > 10:  # TODO: what should be min sag duration!?
+                v_sag = self.lookup_sweep_feature("v_sag", recompute=recompute)
+                v_baseline = self.lookup_sweep_feature(
+                    "v_baseline", recompute=recompute
+                )
+                sag = v_sag - v_baseline
+
+                if store_diagnostics:
+                    self._update_diagnostics(
+                        {
+                            "v_sag": v_sag,
+                            "where_sag": where_sag,
+                            "v_baseline": v_baseline,
+                        }
+                    )
         return sag
+
+    @featureplot
+    def plot(self, ax=None, **kwargs):
+        v_baseline, v_sag = unpack(self.diagnostics, ["v_baseline", "v_sag"])
+        sag_voltage_ft = self.lookup_sweep_feature("v_sag", return_value=False)
+        t_deflect = unpack(sag_voltage_ft.diagnostics, ["t_deflect"])
+
+        ax.vlines(t_deflect, v_baseline, v_sag, label="sag", **kwargs)
+        return ax
 
 
 class V_steady(EphysFeature):
@@ -774,18 +868,23 @@ class V_steady(EphysFeature):
         v_steady = float("nan")
         if is_hyperpol(self.data):
             stim_end = self.lookup_sweep_feature("stim_end", recompute=recompute)
+            start = stim_end - self.data.baseline_interval
             v_steady = ft.average_voltage(
                 self.data.v,
                 self.data.t,
-                start=stim_end - self.data.baseline_interval,
+                start=start,
                 end=stim_end,
             )
+
+            if store_diagnostics:
+                self._update_diagnostics({"start": start, "end": stim_end})
 
         return v_steady
 
     @featureplot
     def plot(self, ax=None, **kwargs):
-        warnings.warn(f" {self.name} plotting not implemented.")
+        start, end = unpack(self.diagnostics, ["start", "end"])
+        ax.hlines(self.value, start, end, ls="--", label=self.name, **kwargs)
         return ax
 
 
@@ -797,46 +896,28 @@ class Sag_fraction(EphysFeature):
     units: /."""
 
     def __init__(self, data=None, compute_at_init=True, peak_width=0.005):
-        super().__init__(data, compute_at_init=False)
         self.peak_width = peak_width
+        super().__init__(data, compute_at_init=False)
         if compute_at_init and data is not None:  # because of peak_width
             self.get_value()
 
     def _compute(self, recompute=False, store_diagnostics=True):
         sag_fraction = float("nan")
         if is_hyperpol(self.data):
-            where_sag = get_sweep_sag_idxs(self)
+            where_sag = get_sweep_sag_idxs(self, store_diagnostics=store_diagnostics)
             if np.sum(where_sag) > 10:  # TODO: what should be min sag duration!?
                 sag = self.lookup_sweep_feature("sag", recompute=recompute)
+                v_sag = self.lookup_sweep_feature("v_sag", recompute=recompute)
                 v_steady = self.lookup_sweep_feature("v_steady", recompute=recompute)
-                v_deflect, idx_deflect = self.data.voltage_deflection("min")
 
-                if self.data.v[idx_deflect] < -200:
-                    warnings.warn("Downward peak < 200 mV")
-                    # Look for another local minimum closer to stimulus onset
-                    idx_deflect -= ft.find_time_index(
-                        self.data.t, 0.12
-                    ) - ft.find_time_index(self.data.t, 0.1)
-
-                t_deflect = self.data.t[idx_deflect]
-
-                v_sag_peak_avg = ft.average_voltage(
-                    self.data.v,
-                    self.data.t,
-                    start=t_deflect - self.peak_width / 2.0,
-                    end=t_deflect + self.peak_width / 2.0,
-                )
-
-                sag_fraction = (v_sag_peak_avg - v_steady) / sag
+                sag_fraction = (v_sag - v_steady) / sag
 
                 if store_diagnostics:
                     self._update_diagnostics(
                         {
                             "sag": sag,
-                            "v_sag_peak_avg": v_sag_peak_avg,
+                            "v_sag": v_sag,
                             "where_sag": where_sag,
-                            "v_deflect": v_deflect,
-                            "t_deflect": t_deflect,
                             "v_steady": v_steady,
                         }
                     )
@@ -844,7 +925,14 @@ class Sag_fraction(EphysFeature):
 
     @featureplot
     def plot(self, ax=None, **kwargs):
-        warnings.warn(f" {self.name} plotting not implemented.")
+        sag_v_ft = self.lookup_sweep_feature("v_sag", return_value=False)
+        t_deflect = unpack(sag_v_ft.diagnostics, "t_deflect")
+        v_baseline = self.lookup_sweep_feature("v_baseline")
+        stim_end = self.lookup_sweep_feature("stim_end")
+        v_sag, v_steady = unpack(self.diagnostics, ["v_sag", "v_steady"])
+
+        ax.vlines(t_deflect, v_baseline, v_sag, label="sag", **kwargs)
+        ax.vlines(stim_end, v_steady, v_sag, label="v_sag - v_steady", **kwargs)
         return ax
 
 
@@ -861,7 +949,7 @@ class Sag_ratio(EphysFeature):
     def _compute(self, recompute=False, store_diagnostics=True):
         sag_ratio = float("nan")
         if is_hyperpol(self.data):
-            where_sag = get_sweep_sag_idxs(self)
+            where_sag = get_sweep_sag_idxs(self, store_diagnostics=store_diagnostics)
             if np.sum(where_sag) > 10:  # TODO: what should be min sag duration!?
                 sag = self.lookup_sweep_feature("sag", recompute=recompute)
                 v_steady = self.lookup_sweep_feature("v_steady", recompute=recompute)
@@ -884,7 +972,14 @@ class Sag_ratio(EphysFeature):
 
     @featureplot
     def plot(self, ax=None, **kwargs):
-        warnings.warn(f" {self.name} plotting not implemented.")
+        sag_v_ft = self.lookup_sweep_feature("v_sag", return_value=False)
+        t_deflect = unpack(sag_v_ft.diagnostics, "t_deflect")
+        v_sag = self.lookup_sweep_feature("v_sag")
+        stim_end = self.lookup_sweep_feature("stim_end")
+        v_baseline, v_steady = unpack(self.diagnostics, ["v_baseline", "v_steady"])
+
+        ax.vlines(stim_end, v_steady, v_baseline, label="v_steady - v_base", **kwargs)
+        ax.vlines(t_deflect, v_baseline, v_sag, label="sag", **kwargs)
         return ax
 
 
@@ -901,7 +996,7 @@ class Sag_area(EphysFeature):
     def _compute(self, recompute=False, store_diagnostics=True):
         sag_area = float("nan")
         if is_hyperpol(self.data):
-            where_sag = get_sweep_sag_idxs(self)
+            where_sag = get_sweep_sag_idxs(self, store_diagnostics=store_diagnostics)
             if np.sum(where_sag) > 10:  # TODO: what should be min sag duration!?
                 v_sag = self.data.v[where_sag]
                 t_sag = self.data.t[where_sag]
@@ -923,7 +1018,11 @@ class Sag_area(EphysFeature):
 
     @featureplot
     def plot(self, ax=None, **kwargs):
-        warnings.warn(f" {self.name} plotting not implemented.")
+        t_sag, v_sag, v_sagline = unpack(
+            self.diagnostics, ["t_sag", "v_sag", "v_sagline"]
+        )
+        ax.plot(t_sag, v_sag, **kwargs)
+        ax.fill_between(t_sag, v_sag, v_sagline, alpha=0.5, label=self.name)
         return ax
 
 
@@ -940,7 +1039,7 @@ class Sag_time(EphysFeature):
     def _compute(self, recompute=False, store_diagnostics=True):
         sag_time = float("nan")
         if is_hyperpol(self.data):
-            where_sag = get_sweep_sag_idxs(self)
+            where_sag = get_sweep_sag_idxs(self, store_diagnostics=store_diagnostics)
             if np.sum(where_sag) > 10:  # TODO: what should be min sag duration!?
                 sag_t_start, sag_t_end = self.data.t[where_sag][[0, -1]]
                 sag_time = sag_t_end - sag_t_start
@@ -956,7 +1055,11 @@ class Sag_time(EphysFeature):
 
     @featureplot
     def plot(self, ax=None, **kwargs):
-        warnings.warn(f" {self.name} plotting not implemented.")
+        where_sag, sag_start, sag_end = unpack(
+            self.diagnostics, ["where_sag", "sag_t_start", "sag_t_end"]
+        )
+        v = self.data.v[where_sag][0]
+        ax.hlines(v, xmin=sag_start, xmax=sag_end, label=self.name, **kwargs)
         return ax
 
 
@@ -967,15 +1070,18 @@ class V_plateau(EphysFeature):
     description: average voltage during the plateau.
     units: mV."""
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, compute_at_init=True, T_plateau=0.1):
+        self.T_plateau = T_plateau
+        super().__init__(data, compute_at_init=False)
+        if compute_at_init and data is not None:  # because of T_plateau
+            self.get_value()
 
     def _compute(self, recompute=False, store_diagnostics=True):
         v_avg_plateau = float("nan")
         if is_hyperpol(self.data):
             end = self.lookup_sweep_feature("stim_end", recompute=recompute)
             # same as voltage deflection
-            where_plateau = where_between(self.data.t, end - 0.1, end)
+            where_plateau = where_between(self.data.t, end - self.T_plateau, end)
             v_plateau = self.data.v[where_plateau]
             t_plateau = self.data.t[where_plateau]
             v_avg_plateau = ft.average_voltage(v_plateau, t_plateau)
@@ -991,7 +1097,9 @@ class V_plateau(EphysFeature):
 
     @featureplot
     def plot(self, ax=None, **kwargs):
-        warnings.warn(f" {self.name} plotting not implemented.")
+        t, v = unpack(self.diagnostics, ["t_plateau", "v_plateau"])
+        ax.plot(t, v, label=self.name + " interval", **kwargs)
+        ax.hlines(self.value, *t[[0, -1]], ls="--", label=self.name, **kwargs)
         return ax
 
 
@@ -1003,8 +1111,8 @@ class Rebound(EphysFeature):
     units: mV."""
 
     def __init__(self, data=None, compute_at_init=True, T_rebound=0.3):
-        super().__init__(data, compute_at_init=False)
         self.T_rebound = T_rebound
+        super().__init__(data, compute_at_init=False)
         if compute_at_init and data is not None:  # because of T_rebound
             self.get_value()
 
@@ -1036,8 +1144,15 @@ class Rebound(EphysFeature):
         return rebound
 
     @featureplot
-    def plot(self, ax=None, **kwargs):
-        warnings.warn(f" {self.name} plotting not implemented.")
+    def plot(self, ax=None, include_details=False, **kwargs):
+        t_rebound, v_rebound, idx_rebound, v_baseline = unpack(
+            self.diagnostics, ["t_rebound", "v_rebound", "idx_rebound", "v_baseline"]
+        )
+        t = self.data.t[idx_rebound]
+        v = self.data.v[idx_rebound]
+        ax.vlines(t, v_baseline, v, label=self.name, **kwargs)
+        if include_details:
+            ax.plot(t_rebound, v_rebound, label=self.name + " interval", **kwargs)
         return ax
 
 
@@ -1049,8 +1164,8 @@ class Rebound_APs(EphysFeature):
     units: /."""
 
     def __init__(self, data=None, compute_at_init=True, T_rebound=0.3):
-        super().__init__(data, compute_at_init=False)
         self.T_rebound = T_rebound
+        super().__init__(data, compute_at_init=False)
         if compute_at_init and data is not None:  # because of T_rebound
             self.get_value()
 
@@ -1093,8 +1208,8 @@ class Rebound_area(EphysFeature):
     units: mV*s."""
 
     def __init__(self, data=None, compute_at_init=True, T_rebound=0.3):
-        super().__init__(data, compute_at_init=False)
         self.T_rebound = T_rebound
+        super().__init__(data, compute_at_init=False)
         if compute_at_init and data is not None:  # because of T_rebound
             self.get_value()
 
@@ -1124,7 +1239,13 @@ class Rebound_area(EphysFeature):
 
     @featureplot
     def plot(self, ax=None, **kwargs):
-        warnings.warn(f" {self.name} plotting not implemented.")
+        t, v = self.data.t, self.data.v
+        v_baseline, where_rebound = unpack(
+            self.diagnostics, ["v_baseline", "where_rebound"]
+        )
+        ax.fill_between(
+            t, v, v_baseline, where=where_rebound, alpha=0.5, label=self.name, **kwargs
+        )
         return ax
 
 
@@ -1137,8 +1258,8 @@ class Rebound_latency(EphysFeature):
     units: s."""
 
     def __init__(self, data=None, compute_at_init=True, T_rebound=0.3):
-        super().__init__(data, compute_at_init=False)
         self.T_rebound = T_rebound
+        super().__init__(data, compute_at_init=False)
         if compute_at_init and data is not None:  # because of T_rebound
             self.get_value()
 
@@ -1170,7 +1291,14 @@ class Rebound_latency(EphysFeature):
 
     @featureplot
     def plot(self, ax=None, **kwargs):
-        warnings.warn(f" {self.name} plotting not implemented.")
+        t, v = self.data.t, self.data.v
+        t_rebound_reached = unpack(self.diagnostics, "t_rebound_reached")
+        stim_end = self.lookup_sweep_feature("stim_end", return_value=False)
+        end_idx = unpack(stim_end.diagnostics, "idx_end")
+        until_rebound = where_between(t, t[end_idx], t_rebound_reached)
+        ax.fill_between(
+            t, v, v[end_idx], where=until_rebound, alpha=0.5, label=self.name, **kwargs
+        )
         return ax
 
 
@@ -1183,8 +1311,8 @@ class Rebound_avg(EphysFeature):
     units: mV."""
 
     def __init__(self, data=None, compute_at_init=True, T_rebound=0.3):
-        super().__init__(data, compute_at_init=False)
         self.T_rebound = T_rebound
+        super().__init__(data, compute_at_init=False)
         if compute_at_init and data is not None:  # because of T_rebound
             self.get_value()
 
@@ -1212,7 +1340,17 @@ class Rebound_avg(EphysFeature):
 
     @featureplot
     def plot(self, ax=None, **kwargs):
-        warnings.warn(f" {self.name} plotting not implemented.")
+        t_rebound, v_rebound = unpack(self.diagnostics, ["t_rebound", "v_rebound"])
+        v_baseline = unpack(self.diagnostics, "v_baseline")
+        ax.plot(t_rebound, v_rebound, label=self.name + " interval", **kwargs)
+        ax.hlines(
+            [self.value + v_baseline],
+            # np.mean(v_rebound),
+            *t_rebound[[0, -1]],
+            ls="--",
+            label=self.name,
+            **kwargs,
+        )
         return ax
 
 
@@ -1224,8 +1362,8 @@ class V_rest(EphysFeature):
     units: mV."""
 
     def __init__(self, data=None, compute_at_init=True, dc_offset=0):
-        super().__init__(data, compute_at_init=False)
         self.dc_offset = dc_offset
+        super().__init__(data, compute_at_init=False)
         if compute_at_init and data is not None:  # because of dc_offset
             self.get_value()
 
@@ -1249,7 +1387,11 @@ class V_rest(EphysFeature):
 
     @featureplot
     def plot(self, ax=None, **kwargs):
-        warnings.warn(f" {self.name} plotting not implemented.")
+        r_input, dc_offset = unpack(self.diagnostics, ["r_input", "dc_offset"])
+        t, v = self.data.t, self.data.v
+        v -= r_input * dc_offset * 1e-3
+        ax.plot(t, v, label="v(t) - r_in*dc_offset", **kwargs)
+        ax.axhline(self.value, ls="--", label=self.name)
         return ax
 
 
@@ -1290,7 +1432,17 @@ class Num_bursts(EphysFeature):
 
     @featureplot
     def plot(self, ax=None, **kwargs):
-        warnings.warn(f" {self.name} plotting not implemented.")
+        t_burst_start, t_burst_end = unpack(
+            self.diagnostics, ["t_burst_start", "t_burst_end"]
+        )
+        for i, (t_start, t_end) in enumerate(zip(t_burst_start, t_burst_end)):
+            ax.axvspan(
+                t_start,
+                t_end,
+                alpha=0.5,
+                label=f"burst {i+1}",
+                **kwargs,
+            )
         return ax
 
 
@@ -1335,7 +1487,8 @@ class Burstiness(EphysFeature):
 
     @featureplot
     def plot(self, ax=None, **kwargs):
-        warnings.warn(f" {self.name} plotting not implemented.")
+        num_bursts = self.lookup_sweep_feature("num_bursts", return_value=False)
+        ax = num_bursts.plot(ax=ax, **kwargs)
         return ax
 
 
