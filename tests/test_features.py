@@ -88,7 +88,7 @@ def test_sweep_feature(Ft, sweep):
     available_sweepset_features().values(),
     ids=available_sweepset_features().keys(),
 )
-def test_sweep_feature(Ft):
+def test_sweepset_feature(Ft):
     ft = Ft(test_sweepset)
     assert isinstance(ft.value, (float, int)), "Feature is not a number."
 
