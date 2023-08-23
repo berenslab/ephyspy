@@ -53,11 +53,12 @@ class EphysSweep(EphysSweepFeatureExtractor):
     """Wrapper around EphysSweepFeatureExtractor from the AllenSDK to
     support additional functionality.
 
-    Mainly it supports the addition of new spike features and plotting them.
+    Mainly it supports the addition of new spike features and metadata.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, metadata: Dict = {}, **kwargs):
         super().__init__(*args, **kwargs)
+        self.metadata = metadata
         self.added_spike_features = {}
         self.features = {}
 
@@ -128,6 +129,7 @@ class EphysSweep(EphysSweepFeatureExtractor):
         if show_sweep:
             self.plot(ax=ax, color="k")
 
+        # TODO
         # sweep feature
         # if ft in self.features:
         #     self.features[ft].plot(ax=ax, **kwargs)
@@ -187,7 +189,6 @@ class EphysSweepSet(EphysSweepSetFeatureExtractor):
         t_start: Optional[Union[List, ndarray, float]] = None,
         t_end: Optional[Union[List, ndarray, float]] = None,
         metadata: Dict = {},
-        dc_offset: float = 0,
         *args,
         **kwargs,
     ):
@@ -207,11 +208,8 @@ class EphysSweepSet(EphysSweepSetFeatureExtractor):
 
         super().__init__(t_set, v_set, i_set, t_start, t_end, *args, **kwargs)
         self.metadata = metadata
-        self.dc_offset = {
-            "value": dc_offset,
-            "units": "pA",
-            "description": "offset current",
-        }
+        for sweep in self.sweeps():
+            sweep.metadata = metadata
         self.features = {}
 
     @property
