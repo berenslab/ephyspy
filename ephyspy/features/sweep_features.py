@@ -110,8 +110,8 @@ class Stim_amp(EphysFeature):
     def _compute(self, recompute=False, store_diagnostics=True):
         idx = np.argmax(abs(self.data.i).T, axis=0)
 
-        if store_diagnostics:
-            self.diagnostics.update({"idx": idx, "t": self.data.t[idx]})
+        # if store_diagnostics:
+        #     self.diagnostics.update({"idx": idx, "t": self.data.t[idx]})
         return self.data.i[idx]
 
     @featureplot
@@ -142,10 +142,10 @@ class Stim_onset(EphysFeature):
         stim_onset = float("nan")
         if has_stimulus(self.data):
             where_stim = where_stimulus(self.data)
-            stim_onset = self.data.t[where_stimulus(self.data)][0]
+            stim_onset = self.data.t[where_stim][0]
             i_onset = self.data.t[where_stim][0]
             if store_diagnostics:
-                self.diagnostics.update({"i_onset": i_onset, "where_stim": where_stim})
+                self._update_diagnostics({"i_onset": i_onset, "where_stim": where_stim})
         return stim_onset
 
     @featureplot
@@ -179,7 +179,7 @@ class Stim_end(EphysFeature):
             stim_end = self.data.t[where_stim][-1]
             i_end = self.data.t[where_stim][-1]
             if store_diagnostics:
-                self.diagnostics.update({"i_end": i_end, "where_stim": where_stim})
+                self._update_diagnostics({"i_end": i_end, "where_stim": where_stim})
         return stim_end
 
     @featureplot
