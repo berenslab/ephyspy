@@ -103,13 +103,23 @@ class EphysSweep(EphysSweepFeatureExtractor):
                     for k, ft in self.features.items()
                 }
 
-    def plot(self, ax=None, **kwargs):
-        # TODO: Make nice and add options!
+    def plot(self, ax=None, show_stimulus=False, **kwargs):
         if ax is None:
-            fig, ax = plt.subplots()
-        ax.plot(self.t.T, self.v.T, **kwargs)
-        ax.set_xlabel("Time (s)")
-        ax.set_ylabel("Voltage (mV)")
+            if show_stimulus:
+                fig, ax = plt.subplots(
+                    2, 1, sharex=True, gridspec_kw={"height_ratios": [3, 1]}
+                )
+                ax[1].plot(self.t.T, self.i.T, **kwargs)
+                ax[1].set_ylabel("Current (pA)")
+                ax[1].set_xlabel("Time (s)")
+                v_ax = ax[0]
+            else:
+                fig, ax = plt.subplots()
+                v_ax = ax
+
+        v_ax.plot(self.t.T, self.v.T, **kwargs)
+        v_ax.set_xlabel("Time (s)")
+        v_ax.set_ylabel("Voltage (mV)")
         return ax
 
     def plot_feature(self, ft: str, ax=None, show_sweep=True, **kwargs):

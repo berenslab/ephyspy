@@ -18,6 +18,7 @@ from __future__ import annotations
 
 from typing import Tuple
 
+import matplotlib.pyplot as plt
 import numpy as np
 from numpy import ndarray
 
@@ -53,18 +54,42 @@ def fwhm(
     return fwhm, hm_up_t, hm_down_t
 
 
+def unpack(dict, keys):
+    """Unpack dict to tuple of values."""
+    if isinstance(keys, str):
+        return dict[keys]
+    return tuple(dict[k] for k in keys)
+
+
 def featureplot(func):
     """Decorator to make ax optional in plot functions."""
 
-    def wrapper(self, *args, ax=None, show_sweep=False, **kwargs):
-        if ax is None:
-            import matplotlib.pyplot as plt
+    def wrapper(self, *args, ax=None, show_sweep=False, show_stimulus=False, **kwargs):
+        is_stim_ft = self.name in ["stim_amp", "stim_onset", "stim_end"]
+        if show_sweep:
+            show_stimulus = is_stim_ft or show_stimulus
+            axes = self.data.plot(color="k", show_stimulus=show_stimulus, **kwargs)
+        else:
+            axes = plt.gca() if ax is None else ax
+            if show_stimulus:
+                axes.plot(self.data.t, self.data.i, color="k")
+                axes.set_ylabel("Current (pA)")
 
-            ax = plt.gca()
-            if np.isnan(self.value):
-                return
-            if show_sweep:
-                self.plot(ax=ax, **kwargs)
-        return func(self, *args, ax=ax, **kwargs)
+        if np.isnan(self.value):
+            return axes
+
+        if isinstance(axes, np.ndarray):
+            ax = axes[1] if is_stim_ft else axes[0]
+        else:
+            ax = axes
+
+        ax = func(self, *args, ax=ax, **kwargs)
+
+        if not ax.get_xlabel():
+            ax.set_xlabel("Time (s)")
+        if not ax.get_ylabel():
+            ax.set_ylabel("Voltage (mV)")
+        ax.legend()
+        return axes
 
     return wrapper
