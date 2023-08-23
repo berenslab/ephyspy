@@ -68,7 +68,6 @@ class EphysFeature(ABC):
     computed will be reused, unless `recompute=True` is passed.
     """
 
-    # TODO: Add show method!
     def __init__(
         self,
         data: Optional[EphysSweep] = None,
@@ -118,6 +117,7 @@ class EphysFeature(ABC):
         if data is not None:
             assert isinstance(data, EphysSweep), "data must be EphysSweep"
             self.type = type(data).__name__
+            self.ensure_correct_hyperparams()
             if not "features" in self.data.__dict__:
                 self.data.features = {}
             if not self.name in self.data.features:
@@ -126,6 +126,12 @@ class EphysFeature(ABC):
                 features = self.data.features
                 self._value = features[self.name]._value
                 self._diagnostics = features[self.name]._diagnostics
+
+    def ensure_correct_hyperparams(self):
+        metadata = self.data.metadata
+        new_defaults = {kw: v for kw, v in metadata.items() if kw in self.__dict__}
+        if len(new_defaults) > 0:
+            self.__dict__.update(new_defaults)
 
     def lookup_sweep_feature(
         self, feature_name: str, recompute: bool = False, return_value: bool = True
@@ -228,9 +234,9 @@ class EphysFeature(ABC):
         Returns:
             The value of the feature.
         """
-        # load dependencies(recompute=recompute)
+        # load dependencies using lookup_sweep_feature or lookup_spike_feature
         # do some computation
-        # save diagnostics
+        # save diagnostics using _update_diagnostics
         return
 
     def recompute(self) -> float:
@@ -332,8 +338,9 @@ class EphysFeature(ABC):
             return self._value
         return self
 
-    def show(self):
-        return
+    def plot(self, ax=None, **kwargs):
+        # implements a plotting method
+        return ax
 
 
 class AbstractEphysFeature(EphysFeature):
@@ -466,6 +473,7 @@ class SweepsetFeature(EphysFeature):
                 data, EphysSweepSet
             ), "data must be a EphysSweepSet object"
             self.type = type(data).__name__
+            self.ensure_correct_hyperparams()
             for ft in self.dataset:
                 if not "features" in ft.data.__dict__:
                     ft.data.features = {}
