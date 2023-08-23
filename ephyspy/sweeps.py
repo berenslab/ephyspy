@@ -36,17 +36,15 @@ from ephyspy.plot import (
 
 
 def is_spike_feature(ft):
-    return type(ft).__name__ == "function"
+    return not hasattr(ft, "__base__")
 
 
 def is_sweep_feature(ft):
-    if hasattr(ft, "__base__"):  # TODO: Find better criterion
-        return "EphysFeature" in ft.__base__.__name__
-    return False
+    return "EphysFeature" in ft.__base__.__name__
 
 
 def is_sweepset_feature(ft):
-    return "SweepsetFeature" in type(ft).__base__.__name__
+    return "SweepsetFeature" in ft.__base__.__name__
 
 
 class EphysSweep(EphysSweepFeatureExtractor):
@@ -258,12 +256,12 @@ class EphysSweepSet(EphysSweepSetFeatureExtractor):
         for ft in features:
             if is_spike_feature(ft):
                 self.add_spike_feature(ft.__name__, ft)
-            elif is_sweepset_feature(ft):  # needs to be checked b4 sweep feature
-                feature = ft(self, compute=False)
-                self.features.update({feature.name: feature})
             elif is_sweep_feature(ft):
                 for sweep in self:
                     sweep.add_features([ft])
+            elif is_sweepset_feature(ft):  # needs to be checked b4 sweep feature
+                feature = ft(self, compute_at_init=False)
+                self.features.update({feature.name: feature})
             else:
                 raise TypeError("Feature is not of a known type.")
 

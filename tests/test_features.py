@@ -93,7 +93,9 @@ def test_sweepset_feature(Ft):
     assert isinstance(ft.value, (float, int)), "Feature is not a number."
 
 
-# def test_sweepset_pipe():
-#     test_sweepset.add_features(available_spike_features())
-#     # sweepset.add_features(available_sweep_features())
-#     test_sweepset.add_features(available_sweepset_features())
+def test_sweepset_pipe():
+    # TODO: rm clear features from sweepset and sweeps?
+    test_sweepset.add_features(available_spike_features())
+    # sweepset.add_features(available_sweep_features())
+    test_sweepset.add_features(available_sweepset_features())
+    test_sweepset.get_features()

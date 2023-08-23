@@ -91,7 +91,10 @@ def available_sweep_features(compute_at_init=False, store_diagnostics=False):
     if any((compute_at_init, store_diagnostics)):
         return {
             k: lambda *args, **kwargs: v(
-                compute_at_init=compute_at_init, store_diagnostics=store_diagnostics
+                *args,
+                compute_at_init=compute_at_init,
+                store_diagnostics=store_diagnostics,
+                **kwargs,
             )
             for k, v in features.items()
         }

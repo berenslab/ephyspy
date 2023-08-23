@@ -33,6 +33,7 @@ def SweepsetFt(SweepsetFt, Ft):
     def _SweepsetFt(*args, **kwargs):
         return SweepsetFt(Ft, *args, **kwargs)
 
+    _SweepsetFt.__base__ = SweepsetFt.__base__
     return _SweepsetFt
 
 
@@ -84,7 +85,10 @@ def available_sweepset_features(compute_at_init=False, store_diagnostics=False):
     if any((compute_at_init, store_diagnostics)):
         return {
             k: lambda *args, **kwargs: v(
-                compute_at_init=compute_at_init, store_diagnostics=store_diagnostics
+                *args,
+                compute_at_init=compute_at_init,
+                store_diagnostics=store_diagnostics,
+                **kwargs,
             )
             for k, v in features.items()
         }
