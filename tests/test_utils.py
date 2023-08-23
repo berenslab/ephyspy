@@ -16,7 +16,7 @@ test_sweepset = EphysSweepSet(
     u_set,
     i_set,
     filter=5,
-    dc_offset=-14.52083,
+    metadata={"dc_offset": -14.52083},
 )
 test_sweepset.add_features(available_spike_features())
 
