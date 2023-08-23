@@ -287,8 +287,8 @@ class AP_latency(EphysFeature):
                             "onset": onset,
                             "end": end,
                             "spike_times_during_stim": thresh_t_stim,
-                            "t_first_spike": t_first_spike,
-                            "v_first_spike": v_first_spike,
+                            "t_first": t_first_spike,
+                            "v_first": v_first_spike,
                         }
                     )
         return ap_latency

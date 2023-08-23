@@ -62,8 +62,6 @@ def unpack(dict, keys):
 
 
 def featureplot(func):
-    """Decorator to make ax optional in plot functions."""
-
     def wrapper(self, *args, ax=None, show_sweep=False, show_stimulus=False, **kwargs):
         is_stim_ft = self.name in ["stim_amp", "stim_onset", "stim_end"]
         if show_sweep:
@@ -84,6 +82,37 @@ def featureplot(func):
             ax = axes
 
         ax = func(self, *args, ax=ax, **kwargs)
+
+        if not ax.get_xlabel():
+            ax.set_xlabel("Time (s)")
+        if not ax.get_ylabel():
+            ax.set_ylabel("Voltage (mV)")
+        ax.legend()
+        return axes
+
+    return wrapper
+
+
+def has_spike_feature(sweep, ft):
+    if not hasattr(sweep, "_spikes_df"):
+        sweep.process_spikes()
+    ap_fts = sweep._spikes_df
+    if ap_fts.size:
+        if ft in ap_fts.columns:
+            if not np.all(np.isnan(ap_fts[ft])):
+                return True
+    return False
+
+
+def spikefeatureplot(func):
+    def wrapper(sweep, *args, ax=None, show_sweep=False, show_stimulus=False, **kwargs):
+        if show_sweep:
+            axes = sweep.plot(color="k", show_stimulus=show_stimulus, **kwargs)
+        else:
+            axes = plt.gca() if ax is None else ax
+
+        ax = axes[0] if isinstance(axes, np.ndarray) else axes
+        ax = func(sweep, *args, ax=ax, **kwargs)
 
         if not ax.get_xlabel():
             ax.set_xlabel("Time (s)")

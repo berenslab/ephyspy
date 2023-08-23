@@ -26,133 +26,133 @@ from matplotlib.pyplot import Axes, Figure
 if TYPE_CHECKING:
     from ephyspy.sweeps import EphysSweep
 
-from ephyspy.utils import fwhm, where_between
+from ephyspy.utils import fwhm, where_between, spikefeatureplot, has_spike_feature
 
 ############################
 ### spike level features ###
 ############################
 
 
-def plot_ap_width(sweep: EphysSweep, ax: Axes, color=None, **plot_kwargs) -> Axes:
-    ap_fts = sweep._spikes_df
-    if ap_fts.size:
-        if not np.all(np.isnan(ap_fts["width"])):
-            t_threshold = sweep.spike_feature("threshold_t", include_clipped=True)
-            t_peak = sweep.spike_feature("peak_t", include_clipped=True)
-            t_next = t_peak + 1.0 * (
-                t_peak - t_threshold
-            )  # T interval w.r.t. threshold
+@spikefeatureplot
+def plot_ap_width(sweep: EphysSweep, ax: Axes = None, **kwargs) -> Axes:
+    if has_spike_feature(sweep, "threshold_t"):
+        ap_fts = sweep._spikes_df
+        t_threshold = sweep.spike_feature("threshold_t", include_clipped=True)
+        t_peak = sweep.spike_feature("peak_t", include_clipped=True)
+        t_next = t_peak + 1.0 * (t_peak - t_threshold)  # T interval w.r.t. threshold
 
-            fwhm_v = np.zeros_like(t_threshold)
-            hm_up_t = np.zeros_like(t_threshold)
-            hm_down_t = np.zeros_like(t_threshold)
-            for i, (t_th, t_n) in enumerate(zip(t_threshold, t_next)):
-                fwhm_i = fwhm(sweep.t, sweep.v, t_th, t_n)
-                fwhm_v[i], hm_up_t[i], hm_down_t[i] = fwhm_i
+        fwhm_v = np.zeros_like(t_threshold)
+        hm_up_t = np.zeros_like(t_threshold)
+        hm_down_t = np.zeros_like(t_threshold)
+        for i, (t_th, t_n) in enumerate(zip(t_threshold, t_next)):
+            fwhm_i = fwhm(sweep.t, sweep.v, t_th, t_n)
+            fwhm_v[i], hm_up_t[i], hm_down_t[i] = fwhm_i
 
-            ax.hlines(
-                fwhm_v,
-                hm_up_t,
-                hm_down_t,
-                label="width",
-                ls="--",
-                colors=color,
-                **plot_kwargs,
-            )
+        ax.hlines(fwhm_v, hm_up_t, hm_down_t, label="width", ls="--", **kwargs)
     return ax
 
 
-def plot_ap_adp(sweep: EphysSweep, ax: Axes, color=None, **plot_kwargs) -> Axes:
-    ap_fts = sweep._spikes_df
-    if ap_fts.size:
-        if not np.all(np.isnan(ap_fts["adp_v"])):
-            ax.vlines(
-                0.5 * (ap_fts[f"adp_t"] + ap_fts["fast_trough_t"]),
-                ap_fts["adp_v"],
-                ap_fts["fast_trough_v"],
-                ls="--",
-                lw=1,
-                label="adp",
-                colors=color,
-                **plot_kwargs,
-            )
+@spikefeatureplot
+def plot_ap_adp(sweep: EphysSweep, ax: Axes = None, **plot_kwargs) -> Axes:
+    if has_spike_feature(sweep, "adp_v"):
+        ap_fts = sweep._spikes_df
+        ax.vlines(
+            0.5 * (ap_fts[f"adp_t"] + ap_fts["fast_trough_t"]),
+            ap_fts["adp_v"],
+            ap_fts["fast_trough_v"],
+            ls="--",
+            lw=1,
+            label="adp",
+            **plot_kwargs,
+        )
     return ax
 
 
-def plot_ap_ahp(sweep: EphysSweep, ax: Axes, color=None, **plot_kwargs) -> Axes:
-    ap_fts = sweep._spikes_df
-    if ap_fts.size:
-        if not np.all(np.isnan(ap_fts["fast_trough_v"])):
-            ax.vlines(
-                0.5 * (ap_fts[f"fast_trough_t"] + ap_fts["threshold_t"]),
-                ap_fts["fast_trough_v"],
-                ap_fts["threshold_v"],
-                ls="--",
-                lw=1,
-                label="ahp",
-                colors=color,
-                **plot_kwargs,
-            )
+@spikefeatureplot
+def plot_ap_ahp(sweep: EphysSweep, ax: Axes = None, **kwargs) -> Axes:
+    if has_spike_feature(sweep, "ahp_v"):
+        ap_fts = sweep._spikes_df
+        ax.vlines(
+            0.5 * (ap_fts[f"fast_trough_t"] + ap_fts["threshold_t"]),
+            ap_fts["fast_trough_v"],
+            ap_fts["threshold_v"],
+            ls="--",
+            lw=1,
+            label="ahp",
+            **kwargs,
+        )
     return ax
 
 
-def plot_ap_amp(sweep: EphysSweep, ax: Axes, color=None, **plot_kwargs) -> Axes:
-    warnings.warn("ap ap_amp plotting is not yet implemented!")
+@spikefeatureplot
+def plot_ap_amp(sweep: EphysSweep, ax: Axes = None, **kwargs) -> Axes:
+    if has_spike_feature(sweep, "threshold_v"):
+        ap_fts = sweep._spikes_df
+        thresh_v = ap_fts["threshold_v"]
+        peak_t = ap_fts["peak_t"]
+        peak_v = ap_fts["peak_v"]
+        ax.plot(peak_t, peak_v, "x", **kwargs)
+
+        ax.vlines(peak_t, thresh_v, peak_v, ls="--", label="ap_amp", **kwargs)
     return ax
 
 
-def plot_isi(sweep: EphysSweep, ax: Axes, color=None, **plot_kwargs) -> Axes:
-    warnings.warn("isi plotting is not yet implemented!")
+@spikefeatureplot
+def plot_isi(sweep: EphysSweep, ax: Axes = None, **kwargs) -> Axes:
+    if has_spike_feature(sweep, "isi"):
+        ap_fts = sweep._spikes_df
+        thresh_t = ap_fts["threshold_t"]
+        thresh_v = ap_fts["threshold_v"]
+        isi = ap_fts["isi"].to_numpy()
+        isi[0] = 0
+
+        ax.hlines(thresh_v, thresh_t - isi, thresh_t, ls="--", label="isi", **kwargs)
+        ax.plot(thresh_t, thresh_v, "x", **kwargs)
+
     return ax
 
 
-def plot_spike_feature(sweep: EphysSweep, ft: str, ax: Axes, **plot_kwargs) -> Axes:
-    ap_fts = sweep._spikes_df
-    base_fts = [
-        "peak",
-        "threshold",
-        "trough",
-        "upstroke",
-        "downstroke",
-        "fast_trough",
-        "slow_trough",
-    ]
-    if ap_fts.size:
-        if ft == "ap_amp":
-            ax = plot_ap_amp(sweep, ax, **plot_kwargs)
-        elif ft == "ap_width":
-            ax = plot_ap_width(sweep, ax, **plot_kwargs)
-        elif ft == "ap_adp":
-            ax = plot_ap_adp(sweep, ax, **plot_kwargs)
-        elif ft == "ap_ahp":
-            ax = plot_ap_ahp(sweep, ax, **plot_kwargs)
-        elif ft == "isi":
-            ax = plot_isi(sweep, ax, **plot_kwargs)
-        elif ft in base_fts and not np.all(np.isnan(ap_fts[f"{ft}_v"])):
-            ax.scatter(
-                ap_fts[f"{ft}_t"],
-                ap_fts[f"{ft}_v"],
-                s=10,
-                label=ft,
-                **plot_kwargs,
-            )
-        else:
-            raise ValueError(f"Feature {ft} does not exist.")
+def plot_simple_spike_feature(ft):
+    @spikefeatureplot
+    def scatter_spike_ft(sweep: EphysSweep, ax: Axes = None, **kwargs) -> Axes:
+        if has_spike_feature(sweep, ft + "_v"):
+            ap_fts = sweep._spikes_df
+            ax.scatter(ap_fts[f"{ft}_t"], ap_fts[f"{ft}_v"], s=10, label=ft, **kwargs)
+        return ax
+
+    return scatter_spike_ft
+
+
+plot_peak = plot_simple_spike_feature("peak")
+plot_threshold = plot_simple_spike_feature("threshold")
+plot_trough = plot_simple_spike_feature("trough")
+plot_upstroke = plot_simple_spike_feature("upstroke")
+plot_downstroke = plot_simple_spike_feature("downstroke")
+plot_fast_trough = plot_simple_spike_feature("fast_trough")
+plot_slow_trough = plot_simple_spike_feature("slow_trough")
+
+plottable_spike_features = {
+    "peak": plot_peak,
+    "trough": plot_trough,
+    "threshold": plot_threshold,
+    "upstroke": plot_upstroke,
+    "downstroke": plot_downstroke,
+    "ap_width": plot_ap_width,
+    "fast_trough": plot_fast_trough,
+    "slow_trough": plot_slow_trough,
+    "ap_adp": plot_ap_adp,
+    "ap_ahp": plot_ap_ahp,
+    "isi": plot_isi,
+    "ap_amp": plot_ap_amp,
+}
+
+
+def plot_spike_feature(sweep: EphysSweep, ft: str, ax: Axes, **kwargs) -> Axes:
+    if ft in plottable_spike_features:
+        ax = plottable_spike_features[ft](sweep, ax=ax, **kwargs)
+    else:
+        raise ValueError(f"Feature {ft} does not exist.")
     return ax
-
-
-plottable_spike_features = [
-    "peak",
-    "trough",
-    "threshold",
-    "upstroke",
-    "downstroke",
-    "ap_width",
-    "fast_trough",
-    "slow_trough",
-    "ap_adp",
-    "ap_ahp",
-]
 
 
 def plot_spike_features(
