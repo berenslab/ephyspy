@@ -81,6 +81,8 @@ def featureplot(func):
         else:
             ax = axes
 
+        if self.diagnostics is None:
+            self.get_diagnostics(recompute=True)
         ax = func(self, *args, ax=ax, **kwargs)
 
         if not ax.get_xlabel():
