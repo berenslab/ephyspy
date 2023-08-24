@@ -34,10 +34,17 @@ from ephyspy.features.utils import (
     has_spikes,
     has_stimulus,
     is_hyperpol,
-    parse_desc,
     where_stimulus,
 )
-from ephyspy.utils import where_between, featureplot, unpack
+from ephyspy.utils import (
+    replace_line_label,
+    where_between,
+    featureplot,
+    unpack,
+    parse_desc,
+)
+
+from ephyspy.plot import plot_ap_amp, plot_isi, plot_spike_feature
 
 
 def available_sweep_features(compute_at_init=False, store_diagnostics=False):
@@ -1518,7 +1525,8 @@ class ISI_adapt(EphysFeature):
 
     @featureplot
     def plot(self, ax=None, **kwargs):
-        warnings.warn(f" {self.name} plotting not implemented.")
+        ax = plot_isi(self.data, ax=ax, selected_idxs=[1, 2], **kwargs)
+        replace_line_label(ax, "isi", self.name)
         return ax
 
 
@@ -1546,7 +1554,8 @@ class ISI_adapt_avg(EphysFeature):
 
     @featureplot
     def plot(self, ax=None, **kwargs):
-        warnings.warn(f" {self.name} plotting not implemented.")
+        ax = plot_isi(self.data, ax=ax, **kwargs)
+        replace_line_label(ax, "isi", self.name)
         return ax
 
 
@@ -1574,7 +1583,8 @@ class AP_amp_adapt(EphysFeature):
 
     @featureplot
     def plot(self, ax=None, **kwargs):
-        warnings.warn(f" {self.name} plotting not implemented.")
+        ax = plot_ap_amp(self.data, ax=ax, selected_idxs=[0, 1], **kwargs)
+        replace_line_label(ax, "ap_amp", self.name)
         return ax
 
 
@@ -1603,7 +1613,8 @@ class AP_amp_adapt_avg(EphysFeature):
 
     @featureplot
     def plot(self, ax=None, **kwargs):
-        warnings.warn(f" {self.name} plotting not implemented.")
+        ax = plot_ap_amp(self.data, ax=ax, **kwargs)
+        replace_line_label(ax, "ap_amp", self.name)
         return ax
 
 
@@ -1644,7 +1655,8 @@ class Wildness(EphysFeature):
 
     @featureplot
     def plot(self, ax=None, **kwargs):
-        warnings.warn(f" {self.name} plotting not implemented.")
+        t, v = unpack(self.diagnostics, ["t_wild_spikes", "v_wild_spikes"])
+        ax.plot(t, v, "x", label=self.name, **kwargs)
         return ax
 
 
@@ -1732,7 +1744,10 @@ class APEphysFeature(EphysFeature):
 
     @featureplot
     def plot(self, ax=None, **kwargs):
-        warnings.warn(f" {self.name} plotting not implemented.")
+        idxs = unpack(self.diagnostics, "selected_idx")
+        ax = plot_spike_feature(
+            self.data, self.name, ax=ax, selected_idxs=idxs, **kwargs
+        )
         return ax
 
 

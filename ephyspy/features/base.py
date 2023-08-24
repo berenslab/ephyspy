@@ -27,9 +27,9 @@ from ephyspy.features.utils import (
     fetch_available_fts,
     is_sweep_feature,
     is_sweepset_feature,
-    parse_deps,
-    parse_func_doc_attrs,
 )
+
+from ephyspy.utils import parse_deps, parse_func_doc_attrs
 from ephyspy.sweeps import EphysSweep, EphysSweepSet
 
 
