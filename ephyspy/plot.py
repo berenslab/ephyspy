@@ -248,7 +248,9 @@ plottable_spike_features = {
 }
 
 
-def plot_spike_feature(sweep: EphysSweep, ft: str, ax: Axes, **kwargs) -> Axes:
+def plot_spike_feature(
+    sweep: EphysSweep, ft: str, ax: Optional[Axes] = None, **kwargs
+) -> Axes:
     """Plot spike feature by name.
 
     Args:

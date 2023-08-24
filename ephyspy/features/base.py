@@ -387,6 +387,7 @@ class EphysFeature(ABC):
             # let self.data.plot handle creation of axes
             axes = self.data.plot(color="k", show_stimulus=show_stimulus, **kwargs)
             ax = axes[0] if show_stimulus else axes
+            ax = axes[1] if is_stim_ft else ax
         elif show_stimulus and is_stim_ft:
             axes = plt.gca() if ax is None else ax
             axes.plot(self.data.t, self.data.i, color="k")
@@ -408,6 +409,7 @@ class EphysFeature(ABC):
             axes[1].set_ylabel("Current (pA)")
         else:
             axes = plt.gca() if ax is None else ax
+            ax = axes
 
         if np.isnan(self.value):
             return axes
