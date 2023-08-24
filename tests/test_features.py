@@ -4,11 +4,7 @@ import numpy as np
 import pytest
 
 from ephyspy.features import *
-from tests.helpers import (
-    depol_test_sweep,
-    hyperpol_test_sweep,
-    test_sweepset,
-)
+from tests.helpers import depol_test_sweep, hyperpol_test_sweep, test_sweepset
 
 #####################
 ### general tests ###
