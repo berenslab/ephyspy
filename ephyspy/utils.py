@@ -16,7 +16,8 @@
 
 from __future__ import annotations
 
-from typing import Tuple
+from typing import Tuple, Callable, List, Dict
+import re
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -59,6 +60,12 @@ def unpack(dict, keys):
     if isinstance(keys, str):
         return dict[keys]
     return tuple(dict[k] for k in keys)
+
+
+def replace_line_label(ax, old_label, new_label):
+    for child in ax._children:
+        if old_label in child.get_label():
+            child.set_label(new_label)
 
 
 def featureplot(func):
@@ -124,3 +131,82 @@ def spikefeatureplot(func):
         return axes
 
     return wrapper
+
+
+def parse_func_doc_attrs(func: Callable) -> Dict:
+    """Parses docstrings for attributes.
+
+    Docstrings should have the following format:
+    <Some text>
+    attr: <attr text>.
+    attr: <attr text>.
+    ...
+    <Some more text>
+
+    IMPORTANT: EACH ATTRIBUTE MUST END WITH A "."
+
+    Args:
+        func (Callable): Function to parse docstring of.
+
+    Returns:
+        doc_attrs: all attributes found in document string.
+    """
+    func_doc = func.__doc__
+
+    pattern = r"([\w\s]+):"
+    matches = re.findall(pattern, func_doc)
+    attrs = [m.strip() for m in matches]
+    if "Args" in attrs:
+        attrs = attrs[: attrs.index("Args")]
+
+    doc_attrs = {}
+    for attr in attrs:
+        doc_attrs[attr] = ""
+        if func_doc is not None:  # if func has no docstring
+            regex = re.compile(f"{attr}: (.*)")
+            match = regex.search(repr(func_doc))
+            if match:
+                match = match.group(1)
+                match = " ".join(match.split())  # rm whitespaces > 1
+                match = match.split("\\n\\n")[0]  # slice at double line break
+                match = match.replace("\\n", "")
+                doc_attrs[attr] = match
+
+    for attr_r in attrs[::-1]:  # traverse attr descriptions in reverse
+        for attr_f in attrs:  # rm attr descriptions from other attr descriptions
+            doc_attrs[attr_f] = doc_attrs[attr_f].split(f"{attr_r}:")[0].strip()
+    return doc_attrs
+
+
+def parse_desc(func: Callable) -> str:
+    """Parses docstring for description.
+
+    If no description is found, returns empty string.
+    Special case of `parse_func_doc_attrs`.
+
+    Args:
+        func (Callable): Function to parse docstring of.
+
+    Returns:
+        str: Description of function."""
+    dct = parse_func_doc_attrs(func)
+    if "description" in dct:
+        return dct["description"]
+    return ""
+
+
+def parse_deps(deps_string: str) -> List[str]:
+    """Parses docstring for feature dependencies.
+
+    If no dependencies are found, returns empty list.
+    Special case of `parse_func_doc_attrs`.
+
+    Args:
+        deps_string (str): String to parse for dependencies.
+
+    Returns:
+        List[str]: List of dependencies."""
+    if deps_string == "/":
+        return []
+    else:
+        return [d.strip() for d in deps_string.split(",")]

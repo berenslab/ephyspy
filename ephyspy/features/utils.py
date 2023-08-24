@@ -17,10 +17,9 @@
 from __future__ import annotations
 
 import inspect
-import re
 import sys
 import warnings
-from typing import Any, Callable, Dict, List, Tuple, Union
+from typing import Any, Callable, List, Tuple, Union
 
 import numpy as np
 from numpy import ndarray
@@ -192,7 +191,9 @@ def has_spikes(sweep: EphysSweep) -> bool:
     """
     if hasattr(sweep, "_spikes_df"):
         return not sweep._spikes_df.empty
-    return False
+    else:
+        sweep.process_spikes()
+        return not sweep._spikes_df.empty
 
 
 def has_stimulus(data: Union[EphysSweep, EphysSweepSet]) -> Union[bool, ndarray]:
@@ -250,78 +251,6 @@ def has_rebound(feature: Any, T_rebound: float = 0.3) -> bool:
         ts_rebound = np.logical_and(sweep.t > end, sweep.t < end + T_rebound)
         return np.any(sweep.v[ts_rebound] > v_baseline)
     return False
-
-
-# TODO: FIX ! Currently not properly parsing the entire description
-def parse_func_doc_attrs(func: Callable) -> Dict:
-    """Parses docstrings for attributes.
-
-    Docstrings should have the following format:
-    <Some text>
-    attr: <attr text>.
-    attr: <attr text>.
-    ...
-    <Some more text>
-
-    IMPORTANT: EACH ATTRIBUTE MUST END WITH A "."
-
-    Args:
-        func (Callable): Function to parse docstring of.
-
-    Returns:
-        doc_attrs: all attributes found in document string.
-    """
-    func_doc = func.__doc__
-
-    pattern = r"([\w\s]+):"
-    matches = re.findall(pattern, func_doc)
-    attrs = [m.strip() for m in matches]
-    if "Args" in attrs:
-        attrs = attrs[: attrs.index("Args")]
-
-    doc_attrs = {}
-    for attr in attrs:
-        doc_attrs[attr] = ""
-        if func_doc is not None:  # if func has no docstring
-            regex = re.compile(f"{attr}: (.*)")
-            match = regex.search(func_doc)
-            if match:
-                doc_attrs[attr] = match.group(1)[:-1]
-    return doc_attrs
-
-
-def parse_desc(func: Callable) -> str:
-    """Parses docstring for description.
-
-    If no description is found, returns empty string.
-    Special case of `parse_func_doc_attrs`.
-
-    Args:
-        func (Callable): Function to parse docstring of.
-
-    Returns:
-        str: Description of function."""
-    dct = parse_func_doc_attrs(func)
-    if "description" in dct:
-        return dct["description"]
-    return ""
-
-
-def parse_deps(deps_string: str) -> List[str]:
-    """Parses docstring for feature dependencies.
-
-    If no dependencies are found, returns empty list.
-    Special case of `parse_func_doc_attrs`.
-
-    Args:
-        deps_string (str): String to parse for dependencies.
-
-    Returns:
-        List[str]: List of dependencies."""
-    if deps_string == "/":
-        return []
-    else:
-        return [d.strip() for d in deps_string.split(",")]
 
 
 get_ap_ft_at_idx = lambda sweep, x, idx: sweep.spike_feature(x, include_clipped=True)[
