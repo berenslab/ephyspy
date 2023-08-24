@@ -16,7 +16,6 @@
 
 from __future__ import annotations
 
-import warnings
 from typing import TYPE_CHECKING, Callable, Tuple, Optional
 
 import matplotlib.pyplot as plt
@@ -26,7 +25,7 @@ from matplotlib.pyplot import Axes, Figure
 if TYPE_CHECKING:
     from ephyspy.sweeps import EphysSweep
 
-from ephyspy.utils import fwhm, has_spike_feature, spikefeatureplot, where_between
+from ephyspy.utils import fwhm, has_spike_feature, spikefeatureplot
 
 ############################
 ### spike level features ###
