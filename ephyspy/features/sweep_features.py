@@ -20,6 +20,7 @@ import warnings
 from typing import Callable, Optional
 
 import numpy as np
+from matplotlib.pyplot import Axes
 from numpy import ndarray
 from scipy.integrate import cumulative_trapezoid
 from scipy.optimize import curve_fit
@@ -36,15 +37,8 @@ from ephyspy.features.utils import (
     is_hyperpol,
     where_stimulus,
 )
-from ephyspy.utils import (
-    replace_line_label,
-    where_between,
-    featureplot,
-    unpack,
-    parse_desc,
-)
-
 from ephyspy.plot import plot_ap_amp, plot_isi, plot_spike_feature
+from ephyspy.utils import parse_desc, relabel_line, unpack, where_between
 
 
 def available_sweep_features(compute_at_init=False, store_diagnostics=False):
@@ -125,8 +119,7 @@ class Stim_amp(EphysFeature):
             self._update_diagnostics({"idx": idx, "t": self.data.t[idx]})
         return self.data.i[idx]
 
-    @featureplot
-    def plot(self, ax=None, **kwargs):
+    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
         i_amp = self.value
         t = self.diagnostics["t"]
         ax.plot(
@@ -166,8 +159,7 @@ class Stim_onset(EphysFeature):
                 )
         return stim_onset
 
-    @featureplot
-    def plot(self, ax=None, **kwargs):
+    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
         onset = self.value
         i_onset = self.diagnostics["i_onset"]
         ax.plot(onset, i_onset, "x", label=self.name, **kwargs)
@@ -197,8 +189,7 @@ class Stim_end(EphysFeature):
                 )
         return stim_end
 
-    @featureplot
-    def plot(self, ax=None, **kwargs):
+    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
         end = self.value
         i_end = self.diagnostics["i_end"]
         ax.plot(end, i_end, "x", label=self.name, **kwargs)
@@ -239,8 +230,7 @@ class Num_AP(EphysFeature):
             )
         return num_ap
 
-    @featureplot
-    def plot(self, ax=None, **kwargs):
+    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
         peak_t, peak_v = unpack(self.diagnostics, ["peak_t", "peak_v"])
         ax.plot(peak_t, peak_v, "x", label=self.name, **kwargs)
         return ax
@@ -269,8 +259,7 @@ class AP_freq(EphysFeature):
             )
         return ap_freq
 
-    @featureplot
-    def plot(self, ax=None, **kwargs):
+    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
         num_ap = self.lookup_sweep_feature("num_ap", return_value=False)
         ax = num_ap.plot(ax=ax, **kwargs)
         return ax
@@ -314,8 +303,7 @@ class AP_latency(EphysFeature):
                     )
         return ap_latency
 
-    @featureplot
-    def plot(self, ax=None, **kwargs):
+    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
         v_first, t_first, onset = unpack(
             self.diagnostics, ["v_first", "t_first", "onset"]
         )
@@ -360,8 +348,7 @@ class V_baseline(EphysFeature):
             )
         return v_baseline_avg
 
-    @featureplot
-    def plot(self, ax=None, **kwargs):
+    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
         t_base, v_base = unpack(self.diagnostics, ["t_baseline", "v_baseline"])
         ax.plot(t_base, v_base, label=self.name + " interval", **kwargs)
         ax.axhline(self.value, ls="--", label=self.name, **kwargs)
@@ -400,8 +387,7 @@ class V_deflect(EphysFeature):
                 )
         return v_deflect_avg
 
-    @featureplot
-    def plot(self, ax=None, **kwargs):
+    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
         t_deflect, v_deflect = unpack(self.diagnostics, ["t_deflect", "v_deflect"])
         t_bar = np.ones_like(t_deflect) * self.value
         ax.plot(t_deflect, v_deflect, label=self.name + " interval", **kwargs)
@@ -469,8 +455,7 @@ class Tau(EphysFeature):
                 )
         return tau
 
-    @featureplot
-    def plot(self, ax=None, **kwargs):
+    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
         y0, a, inv_tau = unpack(self.diagnostics, ["y0", "a", "inv_tau"])
         fit_start, fit_end = unpack(self.diagnostics, ["fit_start", "fit_end"])
         t, v = self.data.t, self.data.v
@@ -533,8 +518,7 @@ class AP_freq_adapt(EphysFeature):
                 )
         return ap_freq_adapt
 
-    @featureplot
-    def plot(self, ax=None, **kwargs):
+    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
         num_ap = self.lookup_sweep_feature("num_ap", return_value=False)
         peaks_t, peaks_v = unpack(num_ap.diagnostics, ["peak_t", "peak_v"])
         half1, half2 = unpack(self.diagnostics, ["t_1st_half", "t_2nd_half"])
@@ -582,8 +566,7 @@ class AP_amp_slope(EphysFeature):
                 )
         return ap_amp_slope
 
-    @featureplot
-    def plot(self, ax=None, **kwargs):
+    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
         intercept, slope, peak_t = unpack(
             self.diagnostics, ["intercept", "slope", "peak_t"]
         )
@@ -621,8 +604,7 @@ class ISI_FF(EphysFeature):
                     )
         return isi_ff
 
-    @featureplot
-    def plot(self, ax=None, **kwargs):
+    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
         warnings.warn(f" {self.name} plotting not implemented.")
         return ax
 
@@ -654,8 +636,7 @@ class ISI_CV(EphysFeature):
                     )
         return isi_cv
 
-    @featureplot
-    def plot(self, ax=None, **kwargs):
+    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
         warnings.warn(f" {self.name} plotting not implemented.")
         return ax
 
@@ -687,8 +668,7 @@ class AP_FF(EphysFeature):
                     )
         return ap_ff
 
-    @featureplot
-    def plot(self, ax=None, **kwargs):
+    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
         warnings.warn(f" {self.name} plotting not implemented.")
         return ax
 
@@ -720,8 +700,7 @@ class AP_CV(EphysFeature):
                     )
         return ap_cv
 
-    @featureplot
-    def plot(self, ax=None, **kwargs):
+    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
         warnings.warn(f" {self.name} plotting not implemented.")
         return ax
 
@@ -755,8 +734,7 @@ class R_input(EphysFeature):
                 )
         return r_input
 
-    @featureplot
-    def plot(self, ax=None, **kwargs):
+    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
         warnings.warn(f" {self.name} plotting not implemented.")
         return ax
 
@@ -813,8 +791,7 @@ class V_sag(EphysFeature):
                     )
         return v_sag
 
-    @featureplot
-    def plot(self, ax=None, **kwargs):
+    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
         start, end = unpack(self.diagnostics, ["start", "end"])
         ax.hlines(self.value, start, end, ls="--", label=self.name, **kwargs)
         return ax
@@ -854,8 +831,7 @@ class Sag(EphysFeature):
                     )
         return sag
 
-    @featureplot
-    def plot(self, ax=None, **kwargs):
+    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
         v_baseline, v_sag = unpack(self.diagnostics, ["v_baseline", "v_sag"])
         sag_voltage_ft = self.lookup_sweep_feature("v_sag", return_value=False)
         t_deflect = unpack(sag_voltage_ft.diagnostics, ["t_deflect"])
@@ -891,8 +867,7 @@ class V_steady(EphysFeature):
 
         return v_steady
 
-    @featureplot
-    def plot(self, ax=None, **kwargs):
+    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
         start, end = unpack(self.diagnostics, ["start", "end"])
         ax.hlines(self.value, start, end, ls="--", label=self.name, **kwargs)
         return ax
@@ -933,8 +908,7 @@ class Sag_fraction(EphysFeature):
                     )
         return sag_fraction
 
-    @featureplot
-    def plot(self, ax=None, **kwargs):
+    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
         sag_v_ft = self.lookup_sweep_feature("v_sag", return_value=False)
         t_deflect = unpack(sag_v_ft.diagnostics, "t_deflect")
         v_baseline = self.lookup_sweep_feature("v_baseline")
@@ -980,8 +954,7 @@ class Sag_ratio(EphysFeature):
                     )
         return sag_ratio
 
-    @featureplot
-    def plot(self, ax=None, **kwargs):
+    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
         sag_v_ft = self.lookup_sweep_feature("v_sag", return_value=False)
         t_deflect = unpack(sag_v_ft.diagnostics, "t_deflect")
         v_sag = self.lookup_sweep_feature("v_sag")
@@ -1026,8 +999,7 @@ class Sag_area(EphysFeature):
 
         return sag_area
 
-    @featureplot
-    def plot(self, ax=None, **kwargs):
+    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
         t_sag, v_sag, v_sagline = unpack(
             self.diagnostics, ["t_sag", "v_sag", "v_sagline"]
         )
@@ -1063,8 +1035,7 @@ class Sag_time(EphysFeature):
                     )
         return sag_time
 
-    @featureplot
-    def plot(self, ax=None, **kwargs):
+    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
         where_sag, sag_start, sag_end = unpack(
             self.diagnostics, ["where_sag", "sag_t_start", "sag_t_end"]
         )
@@ -1105,8 +1076,7 @@ class V_plateau(EphysFeature):
                 )
         return v_avg_plateau
 
-    @featureplot
-    def plot(self, ax=None, **kwargs):
+    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
         t, v = unpack(self.diagnostics, ["t_plateau", "v_plateau"])
         ax.plot(t, v, label=self.name + " interval", **kwargs)
         ax.hlines(self.value, *t[[0, -1]], ls="--", label=self.name, **kwargs)
@@ -1153,8 +1123,7 @@ class Rebound(EphysFeature):
                     )
         return rebound
 
-    @featureplot
-    def plot(self, ax=None, include_details=False, **kwargs):
+    def _plot(self, ax=None, include_details=False, **kwargs):
         t_rebound, v_rebound, idx_rebound, v_baseline = unpack(
             self.diagnostics, ["t_rebound", "v_rebound", "idx_rebound", "v_baseline"]
         )
@@ -1203,8 +1172,7 @@ class Rebound_APs(EphysFeature):
                         )
         return num_rebound_aps
 
-    @featureplot
-    def plot(self, ax=None, **kwargs):
+    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
         warnings.warn(f" {self.name} plotting not implemented.")
         return ax
 
@@ -1247,8 +1215,7 @@ class Rebound_area(EphysFeature):
                     )
         return rebound_area
 
-    @featureplot
-    def plot(self, ax=None, **kwargs):
+    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
         t, v = self.data.t, self.data.v
         v_baseline, where_rebound = unpack(
             self.diagnostics, ["v_baseline", "where_rebound"]
@@ -1299,8 +1266,7 @@ class Rebound_latency(EphysFeature):
                     )
         return rebound_latency
 
-    @featureplot
-    def plot(self, ax=None, **kwargs):
+    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
         t, v = self.data.t, self.data.v
         t_rebound_reached = unpack(self.diagnostics, "t_rebound_reached")
         stim_end = self.lookup_sweep_feature("stim_end", return_value=False)
@@ -1348,8 +1314,7 @@ class Rebound_avg(EphysFeature):
                     )
         return v_rebound_avg
 
-    @featureplot
-    def plot(self, ax=None, **kwargs):
+    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
         t_rebound, v_rebound = unpack(self.diagnostics, ["t_rebound", "v_rebound"])
         v_baseline = unpack(self.diagnostics, "v_baseline")
         ax.plot(t_rebound, v_rebound, label=self.name + " interval", **kwargs)
@@ -1395,8 +1360,7 @@ class V_rest(EphysFeature):
             pass
         return v_rest
 
-    @featureplot
-    def plot(self, ax=None, **kwargs):
+    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
         r_input, dc_offset = unpack(self.diagnostics, ["r_input", "dc_offset"])
         t, v = self.data.t, self.data.v
         v -= r_input * dc_offset * 1e-3
@@ -1440,8 +1404,7 @@ class Num_bursts(EphysFeature):
                     )
         return num_bursts
 
-    @featureplot
-    def plot(self, ax=None, **kwargs):
+    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
         t_burst_start, t_burst_end = unpack(
             self.diagnostics, ["t_burst_start", "t_burst_end"]
         )
@@ -1495,8 +1458,7 @@ class Burstiness(EphysFeature):
                     )
         return max_burstiness
 
-    @featureplot
-    def plot(self, ax=None, **kwargs):
+    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
         num_bursts = self.lookup_sweep_feature("num_bursts", return_value=False)
         ax = num_bursts.plot(ax=ax, **kwargs)
         return ax
@@ -1523,10 +1485,9 @@ class ISI_adapt(EphysFeature):
                 self._update_diagnostics({"isi": isi})
         return isi_adapt
 
-    @featureplot
-    def plot(self, ax=None, **kwargs):
+    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
         ax = plot_isi(self.data, ax=ax, selected_idxs=[1, 2], **kwargs)
-        replace_line_label(ax, "isi", self.name)
+        relabel_line(ax, "isi", self.name)
         return ax
 
 
@@ -1552,10 +1513,9 @@ class ISI_adapt_avg(EphysFeature):
                     self._update_diagnostics({"isi": isi})
         return isi_adapt_avg
 
-    @featureplot
-    def plot(self, ax=None, **kwargs):
+    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
         ax = plot_isi(self.data, ax=ax, **kwargs)
-        replace_line_label(ax, "isi", self.name)
+        relabel_line(ax, "isi", self.name)
         return ax
 
 
@@ -1581,10 +1541,9 @@ class AP_amp_adapt(EphysFeature):
 
         return ap_amp_adapt
 
-    @featureplot
-    def plot(self, ax=None, **kwargs):
+    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
         ax = plot_ap_amp(self.data, ax=ax, selected_idxs=[0, 1], **kwargs)
-        replace_line_label(ax, "ap_amp", self.name)
+        relabel_line(ax, "ap_amp", self.name)
         return ax
 
 
@@ -1611,10 +1570,9 @@ class AP_amp_adapt_avg(EphysFeature):
 
         return ap_amp_adapt_avg
 
-    @featureplot
-    def plot(self, ax=None, **kwargs):
+    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
         ax = plot_ap_amp(self.data, ax=ax, **kwargs)
-        replace_line_label(ax, "ap_amp", self.name)
+        relabel_line(ax, "ap_amp", self.name)
         return ax
 
 
@@ -1653,8 +1611,7 @@ class Wildness(EphysFeature):
                     )
         return num_wild_spikes
 
-    @featureplot
-    def plot(self, ax=None, **kwargs):
+    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
         t, v = unpack(self.diagnostics, ["t_wild_spikes", "v_wild_spikes"])
         ax.plot(t, v, "x", label=self.name, **kwargs)
         return ax
@@ -1742,8 +1699,7 @@ class APEphysFeature(EphysFeature):
                 )
         return ft_agg
 
-    @featureplot
-    def plot(self, ax=None, **kwargs):
+    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
         idxs = unpack(self.diagnostics, "selected_idx")
         ax = plot_spike_feature(
             self.data, self.name, ax=ax, selected_idxs=idxs, **kwargs

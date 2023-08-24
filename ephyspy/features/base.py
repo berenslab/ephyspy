@@ -19,18 +19,19 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Dict, Optional, Union
 
+import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.pyplot import Axes
 from numpy import ndarray
 
-from ephyspy.features.utils import (
-    FeatureError,
-    fetch_available_fts,
+from ephyspy.features.utils import FeatureError, fetch_available_fts
+from ephyspy.sweeps import EphysSweep, EphysSweepSet
+from ephyspy.utils import (
     is_sweep_feature,
     is_sweepset_feature,
+    parse_deps,
+    parse_func_doc_attrs,
 )
-
-from ephyspy.utils import parse_deps, parse_func_doc_attrs
-from ephyspy.sweeps import EphysSweep, EphysSweepSet
 
 
 class EphysFeature(ABC):
@@ -45,8 +46,8 @@ class EphysFeature(ABC):
     The description of the feature should contain a short description of the
     feature, and a list of dependencies. The dependencies should be listed
     as a comma separated list of feature names. It is parsed and can be displayed
-    but has no functional use. Furthermore, the units of the feature should be
-    specified. If the feature is unitless, the units should be set to "/".
+    but has no functional use for now. Furthermore, the units of the feature
+    should be specified. If the feature is unitless, the units should be set to "/".
 
     The docstring should have the following format:
 
@@ -66,6 +67,11 @@ class EphysFeature(ABC):
     or `lookup_spike_feature`. Hence any feature can be computed at any point,
     without having to compute any dependencies first. Any dependencies already
     computed will be reused, unless `recompute=True` is passed.
+
+    `EphysFeature`s can also implement a _plot method, that displays the diagnostic
+    information or the feature itself. If the feature cannot be displayed in a V(t)
+    or I(t) plot, instead the `plot` method should be overwritten directly. This
+    is because `plot` wraps `_plot` adds additional functionality ot it.
     """
 
     def __init__(
@@ -128,6 +134,13 @@ class EphysFeature(ABC):
                 self._diagnostics = features[self.name]._diagnostics
 
     def ensure_correct_hyperparams(self):
+        """Ensure that the feature hyperparameters match those supplied via metadata.
+
+        This method is called in `_data_init` and should be used to ensure that
+        the feature hyperparameters match those supplied via metadata i.e. it
+        checks if any hyperparameters in the dictionary match those in self.__dict__
+        and replaces them. This is useful when the hyperparameters stored in
+        metadata are different from the default parameters of the feature."""
         metadata = self.data.metadata
         new_defaults = {kw: v for kw, v in metadata.items() if kw in self.__dict__}
         if len(new_defaults) > 0:
@@ -338,7 +351,80 @@ class EphysFeature(ABC):
             return self._value
         return self
 
-    def plot(self, ax=None, **kwargs):
+    def plot(
+        self,
+        *args,
+        ax: Optional[Axes] = None,
+        show_sweep: bool = False,
+        show_stimulus: bool = False,
+        **kwargs,
+    ) -> Axes:
+        """Adds additional kwargs and functionality to `EphysFeature`._plot`.
+
+        Before calling `EphysFeature._plot`, this function checks if the feature
+        is a stimulus feature and if so, ensures the feature is plotteed onto
+        the stimulus axis. Additionally along with every feature, the sweep
+        can be plotted. Same goes for the stimulus.
+
+        If no axis is provided one is created.
+        This function can be (and should be overwritten) if the feature cannot
+        be plotted on top of the unterlying sweep.
+
+        Args:
+            self (EphysFeature): Feature to plot. Needs to have a `plot` method.
+            *args: Additional arguments to pass to `self.plot`.
+            ax (Optional[Axes], optional): Axes to plot on.
+            show_sweep (bool, optional): Whether to plot the sweep. Defaults to False.
+            show_stimulus (bool, optional): Whether to plot the stimulus. Defaults to False.
+            kwargs: Additional kwargs to pass to `self.plot`.
+
+        Returns:
+            Axes: Axes of plot.
+        """
+        is_stim_ft = self.name in ["stim_amp", "stim_onset", "stim_end"]
+        if show_sweep:
+            show_stimulus = is_stim_ft or show_stimulus
+            # let self.data.plot handle creation of axes
+            axes = self.data.plot(color="k", show_stimulus=show_stimulus, **kwargs)
+            ax = axes[0] if show_stimulus else axes
+        elif show_stimulus and is_stim_ft:
+            axes = plt.gca() if ax is None else ax
+            axes.plot(self.data.t, self.data.i, color="k")
+            axes.set_ylabel("Current (pA)")
+            ax = axes
+        elif show_stimulus and not is_stim_ft:
+            if ax is None:
+                fig, axes = plt.subplots(
+                    2,
+                    1,
+                    sharex=True,
+                    gridspec_kw={"height_ratios": [3, 1]},
+                    constrained_layout=True,
+                )
+                ax = axes[0]
+            else:
+                axes = ax
+            axes[1].plot(self.data.t, self.data.i, color="k")
+            axes[1].set_ylabel("Current (pA)")
+        else:
+            axes = plt.gca() if ax is None else ax
+
+        if np.isnan(self.value):
+            return axes
+
+        if self.diagnostics is None:
+            self.get_diagnostics(recompute=True)
+        ax = self._plot(*args, ax=ax, **kwargs)
+
+        if not ax.get_xlabel():
+            ax.set_xlabel("Time (s)")
+        if not ax.get_ylabel():
+            ax.set_ylabel("Voltage (mV)")
+        ax.legend()
+        return axes
+
+    def _plot(self, *args, ax: Optional[Axes] = None, **kwargs) -> Axes:
+        raise NotImplementedError(f"This method does not exist for {self.name}.")
         # implements a plotting method
         return ax
 
@@ -700,3 +786,12 @@ class SweepsetFeature(EphysFeature):
     def get_features(self):
         """List all computed features."""
         return {k: ft for k, ft in self.data.features.items()}
+
+    def plot(self, *args, ax: Optional[Axes] = None, **kwargs) -> Axes:
+        ax = self._plot(*args, ax=ax, **kwargs)
+        return ax
+
+    def _plot(self, *args, ax: Optional[Axes] = None, **kwargs) -> Axes:
+        raise NotImplementedError(f"This method does not exist for {self.name}.")
+        # implements a plotting method
+        return ax

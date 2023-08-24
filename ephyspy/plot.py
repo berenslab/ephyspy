@@ -17,7 +17,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING, Callable, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -26,7 +26,7 @@ from matplotlib.pyplot import Axes, Figure
 if TYPE_CHECKING:
     from ephyspy.sweeps import EphysSweep
 
-from ephyspy.utils import fwhm, where_between, spikefeatureplot, has_spike_feature
+from ephyspy.utils import fwhm, has_spike_feature, spikefeatureplot, where_between
 
 ############################
 ### spike level features ###
@@ -37,6 +37,18 @@ from ephyspy.utils import fwhm, where_between, spikefeatureplot, has_spike_featu
 def plot_ap_width(
     sweep: EphysSweep, ax: Axes = None, selected_idxs=None, **kwargs
 ) -> Axes:
+    r"""Plot action potential width feature for all or selected aps.
+
+    Inherits additional kwargs / functionality from `spikefeatureplot`.
+
+    Args:
+        sweep (EphysSweep): Sweep to plot the feature for.
+        ax (Axes, optional): Matplotlib axes. Defaults to None.
+        selected_idxs (slice, optional): Slice object to select aps. Defaults to None.
+        **kwargs: Additional kwargs are passed to the plotting function.
+
+    Returns:
+        Axes: Matplotlib axes."""
     if has_spike_feature(sweep, "threshold_t"):
         idxs = slice(None) if selected_idxs is None else selected_idxs
         t_threshold = sweep.spike_feature("threshold_t", include_clipped=True)[idxs]
@@ -58,6 +70,18 @@ def plot_ap_width(
 def plot_ap_adp(
     sweep: EphysSweep, ax: Axes = None, selected_idxs=None, **kwargs
 ) -> Axes:
+    """Plot action potential afterdepolarization feature for all or selected aps.
+
+    Inherits additional kwargs / functionality from `spikefeatureplot`.
+
+    Args:
+        sweep (EphysSweep): Sweep to plot the feature for.
+        ax (Axes, optional): Matplotlib axes. Defaults to None.
+        selected_idxs (slice, optional): Slice object to select aps. Defaults to None.
+        **kwargs: Additional kwargs are passed to the plotting function.
+
+    Returns:
+        Axes: Matplotlib axes."""
     if has_spike_feature(sweep, "adp_v"):
         idxs = slice(None) if selected_idxs is None else selected_idxs
         adp_t = sweep.spike_feature("adp_t", include_clipped=True)[idxs]
@@ -80,6 +104,18 @@ def plot_ap_adp(
 def plot_ap_ahp(
     sweep: EphysSweep, ax: Axes = None, selected_idxs=None, **kwargs
 ) -> Axes:
+    """Plot action potential afterhyperpolarization feature for all or selected aps.
+
+    Inherits additional kwargs / functionality from `spikefeatureplot`.
+
+    Args:
+        sweep (EphysSweep): Sweep to plot the feature for.
+        ax (Axes, optional): Matplotlib axes. Defaults to None.
+        selected_idxs (slice, optional): Slice object to select aps. Defaults to None.
+        **kwargs: Additional kwargs are passed to the plotting function.
+
+    Returns:
+        Axes: Matplotlib axes."""
     if has_spike_feature(sweep, "ahp_v"):
         idxs = slice(None) if selected_idxs is None else selected_idxs
         trough_t = sweep.spike_feature("fast_trough_t", include_clipped=True)[idxs]
@@ -102,6 +138,18 @@ def plot_ap_ahp(
 def plot_ap_amp(
     sweep: EphysSweep, ax: Axes = None, selected_idxs=None, **kwargs
 ) -> Axes:
+    """Plot action potential ap amplitude feature for all or selected aps.
+
+    Inherits additional kwargs / functionality from `spikefeatureplot`.
+
+    Args:
+        sweep (EphysSweep): Sweep to plot the feature for.
+        ax (Axes, optional): Matplotlib axes. Defaults to None.
+        selected_idxs (slice, optional): Slice object to select aps. Defaults to None.
+        **kwargs: Additional kwargs are passed to the plotting function.
+
+    Returns:
+        Axes: Matplotlib axes."""
     if has_spike_feature(sweep, "threshold_v"):
         idxs = slice(None) if selected_idxs is None else selected_idxs
         thresh_v = sweep.spike_feature("threshold_v", include_clipped=True)[idxs]
@@ -115,6 +163,18 @@ def plot_ap_amp(
 
 @spikefeatureplot
 def plot_isi(sweep: EphysSweep, ax: Axes = None, selected_idxs=None, **kwargs) -> Axes:
+    """Plot action potential inter spike interval feature for all or selected aps.
+
+    Inherits additional kwargs / functionality from `spikefeatureplot`.
+
+    Args:
+        sweep (EphysSweep): Sweep to plot the feature for.
+        ax (Axes, optional): Matplotlib axes. Defaults to None.
+        selected_idxs (slice, optional): Slice object to select aps. Defaults to None.
+        **kwargs: Additional kwargs are passed to the plotting function.
+
+    Returns:
+        Axes: Matplotlib axes."""
     if has_spike_feature(sweep, "isi"):
         idxs = slice(None) if selected_idxs is None else selected_idxs
         thresh_t = sweep.spike_feature("threshold_t", include_clipped=True)[idxs]
@@ -127,11 +187,33 @@ def plot_isi(sweep: EphysSweep, ax: Axes = None, selected_idxs=None, **kwargs) -
     return ax
 
 
-def plot_simple_spike_feature(ft):
+def plot_simple_spike_feature(ft: str) -> Callable:
+    """Plot simple spike feature, i.e. a single value per ap.
+
+    Args:
+        ft (str): Name of the feature to plot (all lowercase).
+            Can plot all features that are included in the `EphysSweep._spikes_df`.
+
+    Returns:
+        callable: Function that plots the feature for all or selected aps.
+    """
+
     @spikefeatureplot
     def scatter_spike_ft(
         sweep: EphysSweep, ax: Axes = None, selected_idxs=None, **kwargs
     ) -> Axes:
+        f"""Plot action potential {ft} feature for all or selected aps.
+
+        Inherits additional kwargs / functionality from `spikefeatureplot`.
+
+        Args:
+            sweep (EphysSweep): Sweep to plot the feature for.
+            ax (Axes, optional): Matplotlib axes. Defaults to None.
+            selected_idxs (slice, optional): Slice object to select aps. Defaults to None.
+            **kwargs: Additional kwargs are passed to the plotting function.
+
+        Returns:
+            Axes: Matplotlib axes."""
         if has_spike_feature(sweep, ft + "_v"):
             idxs = slice(None) if selected_idxs is None else selected_idxs
             t = sweep.spike_feature(ft + "_t", include_clipped=True)[idxs]
@@ -167,6 +249,19 @@ plottable_spike_features = {
 
 
 def plot_spike_feature(sweep: EphysSweep, ft: str, ax: Axes, **kwargs) -> Axes:
+    """Plot spike feature by name.
+
+    Args:
+        sweep (EphysSweep): Sweep to plot the feature for.
+        ft (str): Name of the feature to plot (all lowercase).
+            Can plot all features that are included in the `EphysSweep._spikes_df`
+            and all features in `plottable_spike_features`.
+        ax (Axes): Matplotlib axes.
+        **kwargs: Additional kwargs are passed to the plotting function.
+
+    Returns:
+        Axes: Matplotlib axes.
+    """
     if ft in plottable_spike_features:
         ax = plottable_spike_features[ft](sweep, ax=ax, **kwargs)
     else:
@@ -177,6 +272,16 @@ def plot_spike_feature(sweep: EphysSweep, ft: str, ax: Axes, **kwargs) -> Axes:
 def plot_spike_features(
     sweep: EphysSweep, window: Tuple = [0.4, 0.45]
 ) -> Tuple[Figure, Axes]:
+    """Plot overview of the extracted spike features for a sweep.
+
+    Args:
+        sweep (EphysSweep): Sweep to plot the features for.
+        window (Tuple, optional): Specific Time window to zoom in on a subset or
+            single spikes to see more detail. Defaults to [0.4, 0.45].
+
+    Returns:
+        Tuple[Figure, Axes]: Matplotlib figure and axes."""
+
     mosaic = "aaabb\naaabb\ncccbb"
     fig, axes = plt.subplot_mosaic(mosaic, figsize=(12, 4), constrained_layout=True)
 

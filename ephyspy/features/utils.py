@@ -19,23 +19,28 @@ from __future__ import annotations
 import inspect
 import sys
 import warnings
-from typing import Any, Callable, List, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, List, Tuple, Union
 
 import numpy as np
 from numpy import ndarray
+from pandas import DataFrame
 
 from ephyspy.sweeps import EphysSweep, EphysSweepSet
+
+if TYPE_CHECKING:
+    from ephyspy.features.base import EphysFeature, SweepsetFeature
 
 CUSTOM_SWEEP_FEATURES = []
 CUSTOM_SWEEPSET_FEATURES = []
 CUSTOM_SPIKE_FEATURES = []
 
 
-def register_custom_feature(Feature: Any):
+def register_custom_feature(Feature: Union[Callable, SweepsetFeature, EphysFeature]):
     """Add a custom feature class that inherits from `EphysFeature`
     or from `SweepsetFeature`. This makes the feature available to all the
     the EphysPy functionalities such as recursive computation of all dependend
-    features that are called with `lookup_X_feature`.
+    features that are called with `lookup_X_feature`, where X can be spike,
+    sweep or sweepset.
 
     Args:
         Feature: Feature class to be added to EphysPy ecosystem. Feature
@@ -49,7 +54,19 @@ def register_custom_feature(Feature: Any):
         CUSTOM_SWEEPSET_FEATURES.append(Feature)
 
 
-def fetch_available_fts(include: str = "all") -> List[str]:
+def fetch_available_fts() -> List[str]:
+    """Fetch all available features.
+
+    Returns a list of all available feature functions and classes that are
+    either part of the EphysPy package or have been registered as custom
+    features with `register_custom_feature`.
+
+    Returns:
+        List[str]: List of all available features.
+
+    Warnings:
+        If a custom feature has the same name as a feature that is part of
+        EphysPy, a warning is raised."""
     classes = inspect.getmembers(sys.modules["ephyspy"], inspect.isclass)
     classes = [c[1] for c in classes if "ephyspy.features" in c[1].__module__]
     feature_classes = [c for c in classes if "Feature" not in c.__name__]
@@ -74,7 +91,22 @@ def fetch_available_fts(include: str = "all") -> List[str]:
     return feature_classes + CUSTOM_SWEEP_FEATURES + CUSTOM_SWEEPSET_FEATURES
 
 
-def SweepsetFt(SweepsetFt, Ft):
+def SweepsetFt(SweepsetFt: SweepsetFeature, Ft: EphysFeature):
+    """Wraps SweepsetFeature and EphysFeature to act like EphysFeature.
+
+    This is a workaround to make SweepsetFeature classes act like EphysFeature
+    which means the first input argument is `data` and that it has to be
+    instantiated first. Otherwise SweepsetFeature(EphysFeature) would have to be
+    instantiated with EphysFeature first and then the `__call__` method would
+    have to be used to init `SwepsetFeature` with `data`.
+
+    Args:
+        SweepsetFt (SweepsetFeature): SweepsetFeature class to be created.
+        Ft (EphysFeature): EphysFeature class to be used as base class.
+
+    Returns:
+        SweepsetFt: SweepsetFeature class that inherits from Ft."""
+
     def _SweepsetFt(*args, **kwargs):
         return SweepsetFt(Ft, *args, **kwargs)
 
@@ -106,7 +138,7 @@ def get_sweep_burst_metrics(
     """
     burst_metrics = sweep._process_bursts()
     if len(burst_metrics) == 0:
-        return float("nan"), slice(0), slice(0)
+        return float("nan"), slice(0), slice(0)  # slice(0) acts as empty index
     idx_burst, idx_burst_start, idx_burst_end = burst_metrics.T
     return idx_burst, idx_burst_start.astype(int), idx_burst_end.astype(int)
 
@@ -155,13 +187,6 @@ def get_sweep_sag_idxs(
             }
         )
     return sag_idxs
-
-
-is_sweep_feature = (
-    lambda ft: "EphysFeature" in ft.__base__.__name__
-)  # EphysFeature or APEphysFeature
-
-is_sweepset_feature = lambda ft: "SweepsetFeature" in ft.__base__.__name__
 
 
 def where_stimulus(data: Union[EphysSweep, EphysSweepSet]) -> Union[bool, ndarray]:
@@ -253,12 +278,18 @@ def has_rebound(feature: Any, T_rebound: float = 0.3) -> bool:
     return False
 
 
-get_ap_ft_at_idx = lambda sweep, x, idx: sweep.spike_feature(x, include_clipped=True)[
-    idx
-]
+def median_idx(d: DataFrame) -> Union[int, slice]:
+    """Get index of median value in a DataFrame.
 
+    If median is unique return index, otherwise return all indices that are
+    closest to the median. If dataframe is empty or all nan return slice(0).
 
-def median_idx(d):
+    Args:
+        d (DataFrame): DataFrame to get median index from.
+
+    Returns:
+        Union[int, slice]: Index of median value or slice(0) if d is empty or
+            all nan."""
     if len(d) > 0:
         is_median = d == d.median()
         if any(is_median):

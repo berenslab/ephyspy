@@ -16,12 +16,17 @@
 
 from __future__ import annotations
 
-from typing import Tuple, Callable, List, Dict
 import re
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.axes import Axes
 from numpy import ndarray
+
+if TYPE_CHECKING:
+    from ephyspy.sweeps import EphysSweep
+
 
 where_between = lambda t, t0, tend: np.logical_and(t > t0, t < tend)
 
@@ -55,54 +60,49 @@ def fwhm(
     return fwhm, hm_up_t, hm_down_t
 
 
-def unpack(dict, keys):
+def unpack(
+    dict: Dict, keys: Union[str, Tuple[str, ...]]
+) -> Union[Any, Tuple[Any, ...]]:
     """Unpack dict to tuple of values."""
     if isinstance(keys, str):
         return dict[keys]
     return tuple(dict[k] for k in keys)
 
 
-def replace_line_label(ax, old_label, new_label):
+def relabel_line(ax: Axes, old_label: str, new_label: str):
+    """Rename line label in one given axes."""
     for child in ax._children:
         if old_label in child.get_label():
             child.set_label(new_label)
 
 
-def featureplot(func):
-    def wrapper(self, *args, ax=None, show_sweep=False, show_stimulus=False, **kwargs):
-        is_stim_ft = self.name in ["stim_amp", "stim_onset", "stim_end"]
-        if show_sweep:
-            show_stimulus = is_stim_ft or show_stimulus
-            axes = self.data.plot(color="k", show_stimulus=show_stimulus, **kwargs)
-        else:
-            axes = plt.gca() if ax is None else ax
-            if show_stimulus:
-                axes.plot(self.data.t, self.data.i, color="k")
-                axes.set_ylabel("Current (pA)")
-
-        if np.isnan(self.value):
-            return axes
-
-        if isinstance(axes, np.ndarray):
-            ax = axes[1] if is_stim_ft else axes[0]
-        else:
-            ax = axes
-
-        if self.diagnostics is None:
-            self.get_diagnostics(recompute=True)
-        ax = func(self, *args, ax=ax, **kwargs)
-
-        if not ax.get_xlabel():
-            ax.set_xlabel("Time (s)")
-        if not ax.get_ylabel():
-            ax.set_ylabel("Voltage (mV)")
-        ax.legend()
-        return axes
-
-    return wrapper
+def is_spike_feature(ft: Any) -> bool:
+    return not hasattr(ft, "__base__")
 
 
-def has_spike_feature(sweep, ft):
+def is_sweep_feature(ft: Any) -> bool:
+    return "EphysFeature" in ft.__base__.__name__
+
+
+def is_sweepset_feature(ft: Any) -> bool:
+    return "SweepsetFeature" in ft.__base__.__name__
+
+
+def has_spike_feature(sweep: EphysSweep, ft: str) -> bool:
+    """Checks if sweep has a given spike feature.
+
+    First checks for `_spikes_df` attribute, which should get instantiated if
+    spikes have already been processed. If not present `process_spikes` will be
+    called. Then, if the feature is present in the `_spikes_df` and not all values
+    are NaN, returns True.
+
+    Args:
+        sweep (EphysSweep): Sweep to check for existance of spike feature.
+        ft (str): Spike feature to check for. Feature must be present in `_spikes_df`
+            for a healthy spiking sweep.
+
+    Returns:
+        bool: Whether sweep has the given spike feature."""
     if not hasattr(sweep, "_spikes_df"):
         sweep.process_spikes()
     ap_fts = sweep._spikes_df
@@ -113,24 +113,58 @@ def has_spike_feature(sweep, ft):
     return False
 
 
-def spikefeatureplot(func):
-    def wrapper(sweep, *args, ax=None, show_sweep=False, show_stimulus=False, **kwargs):
+def spikefeatureplot(func: Callable) -> Callable:
+    """Decorator for plotting spike features.
+
+    Args:
+        func (Callable): Function to decorate.
+
+    Returns:
+        Callable: Decorated function."""
+
+    def _spikefeatureplot(
+        sweep: EphysSweep,
+        *args,
+        ax: Axes = None,
+        show_sweep: bool = False,
+        show_stimulus: bool = False,
+        **kwargs,
+    ):
+        """Adds additional kwargs and functionality to functions that plot spike features.
+
+        Checks if the sweep has spikes. Additionally along with every feature,
+        the sweep and stimulus can be plotted.
+
+        If no axis is provided one is created.
+
+        Args:
+            self (EphysFeature): Feature to plot. Needs to have a `plot` method.
+            *args: Additional arguments to pass to `self.plot`.
+            ax (Optional[Axes], optional): Axes to plot on.
+            show_sweep (bool, optional): Whether to plot the sweep. Defaults to False.
+            show_stimulus (bool, optional): Whether to plot the stimulus. Defaults to False.
+            kwargs: Additional kwargs to pass to `self.plot`.
+
+        Returns:
+            Axes: Axes of plot.
+        """
         if show_sweep:
             axes = sweep.plot(color="k", show_stimulus=show_stimulus, **kwargs)
         else:
             axes = plt.gca() if ax is None else ax
 
         ax = axes[0] if isinstance(axes, np.ndarray) else axes
-        ax = func(sweep, *args, ax=ax, **kwargs)
+        if has_spike_feature(sweep, "threshold_v"):  # has thresh_v -> presence of APs
+            ax = func(sweep, *args, ax=ax, **kwargs)
 
-        if not ax.get_xlabel():
-            ax.set_xlabel("Time (s)")
-        if not ax.get_ylabel():
-            ax.set_ylabel("Voltage (mV)")
-        ax.legend()
+            if not ax.get_xlabel():
+                ax.set_xlabel("Time (s)")
+            if not ax.get_ylabel():
+                ax.set_ylabel("Voltage (mV)")
+            ax.legend()
         return axes
 
-    return wrapper
+    return _spikefeatureplot
 
 
 def parse_func_doc_attrs(func: Callable) -> Dict:
