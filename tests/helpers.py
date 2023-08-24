@@ -1,8 +1,10 @@
 import numpy as np
 import pytest
+import matplotlib.pyplot as plt
 
 from ephyspy.features import available_spike_features
 from ephyspy.sweeps import EphysSweep, EphysSweepSet
+from functools import wraps
 
 # load test data
 test_data = np.load("tests/test_sweepset.npz", allow_pickle=True)
@@ -28,3 +30,20 @@ hyperpol_test_sweep = EphysSweep(t_set[0], u_set[0], i_set[0], start, end, filte
 # hyperpol_test_sweep.process_spikes()
 
 # create custom dummy feature for custom import test
+
+
+def close_fig_b4_raising(test_func):
+    """Ensure the figues are closed if test fails.
+    Does not work with pytes without functools.wraps for some reason."""
+
+    @wraps(test_func)
+    def wrapped_test(*args, **kwargs):
+        try:
+            ax = test_func(*args, **kwargs)
+            plt.close()
+            return ax
+        except Exception as e:
+            plt.close()
+            raise e
+
+    return wrapped_test
