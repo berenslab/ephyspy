@@ -197,7 +197,7 @@ def isi(sweep: EphysSweep) -> float:
     spike_times = sweep.spike_feature("threshold_t", include_clipped=True)
     if len(spike_times) > 1:
         isi = np.diff(spike_times)
-        isi = np.insert(isi, 0, np.nan)
+        isi = np.insert(isi, 0, 0)
         return isi
     elif len(spike_times) == 1:
         return np.array([float("nan")])
