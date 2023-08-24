@@ -17,7 +17,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Callable, Tuple
+from typing import TYPE_CHECKING, Callable, Tuple, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -224,6 +224,32 @@ def plot_simple_spike_feature(ft: str) -> Callable:
     return scatter_spike_ft
 
 
+@spikefeatureplot
+def plot_udr(sweep: EphysSweep, ax: Axes = None, selected_idxs=None, **kwargs) -> Axes:
+    """Plot upstroke downstroke ratio feature for all or selected aps.
+
+    Inherits additional kwargs / functionality from `spikefeatureplot`.
+
+    Args:
+        sweep (EphysSweep): Sweep to plot the feature for.
+        ax (Axes, optional): Matplotlib axes. Defaults to None.
+        selected_idxs (slice, optional): Slice object to select aps. Defaults to None.
+        **kwargs: Additional kwargs are passed to the plotting function.
+
+    Returns:
+        Axes: Matplotlib axes."""
+    if has_spike_feature(sweep, "isi"):
+        idxs = slice(None) if selected_idxs is None else selected_idxs
+        upstroke_t = sweep.spike_feature("upstroke_t", include_clipped=True)[idxs]
+        upstroke_v = sweep.spike_feature("upstroke_v", include_clipped=True)[idxs]
+        downstroke_t = sweep.spike_feature("downstroke_t", include_clipped=True)[idxs]
+        downstroke_v = sweep.spike_feature("downstroke_v", include_clipped=True)[idxs]
+
+        ax.plot(upstroke_t, upstroke_v, "x", **kwargs)
+        ax.plot(downstroke_t, downstroke_v, "x", **kwargs)
+    return ax
+
+
 plot_peak = plot_simple_spike_feature("peak")
 plot_threshold = plot_simple_spike_feature("threshold")
 plot_trough = plot_simple_spike_feature("trough")
@@ -236,6 +262,9 @@ plottable_spike_features = {
     "peak": plot_peak,
     "trough": plot_trough,
     "threshold": plot_threshold,
+    "ap_peak": plot_peak,
+    "ap_trough": plot_trough,
+    "ap_thresh": plot_threshold,
     "upstroke": plot_upstroke,
     "downstroke": plot_downstroke,
     "ap_width": plot_ap_width,
@@ -245,6 +274,8 @@ plottable_spike_features = {
     "ap_ahp": plot_ap_ahp,
     "isi": plot_isi,
     "ap_amp": plot_ap_amp,
+    "ap_udr": plot_udr,
+    "udr": plot_udr,
 }
 
 

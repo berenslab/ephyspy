@@ -38,7 +38,13 @@ from ephyspy.features.utils import (
     where_stimulus,
 )
 from ephyspy.plot import plot_ap_amp, plot_isi, plot_spike_feature
-from ephyspy.utils import parse_desc, relabel_line, unpack, where_between
+from ephyspy.utils import (
+    has_spike_feature,
+    parse_desc,
+    relabel_line,
+    unpack,
+    where_between,
+)
 
 
 def available_sweep_features(compute_at_init=False, store_diagnostics=False):
