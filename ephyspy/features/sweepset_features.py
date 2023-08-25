@@ -23,6 +23,8 @@ from sklearn import linear_model
 from ephyspy.features.sweep_features import *
 
 # ransac = linear_model.RANSACRegressor()
+from typing import Optional, Iterable
+
 ransac = linear_model.LinearRegression()
 
 
@@ -146,6 +148,16 @@ class Sweepset_AP(SweepsetFeature):
             {"aggregation": "not an aggregate features, only single index is selected."}
         )
         return fts.item()
+
+    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
+        idxs = unpack(self.diagnostics, "selected_idx")
+        idxs = idxs if isinstance(idxs, Iterable) else [idxs]
+
+        for idx in idxs:
+            data = self.data[idx]
+            ax = data.features[self.name].plot(ax=ax, **kwargs)
+            data.plot(ax=ax, **kwargs)
+        return ax
 
 
 class Sweepset_rebound(SweepsetFeature):
@@ -557,6 +569,13 @@ class Slow_hyperpolarization(SweepsetFeature):
             self._update_diagnostics(
                 {
                     "v_baseline": v_baseline,
+                    "v_baseline_max": v_baseline.max(),
+                    "v_baseline_min": v_baseline.min(),
                 }
             )
         return slow_hyperpolarization
+
+    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
+        v_max, v_min = unpack(self.diagnostics, ["v_baseline_max", "v_baseline_min"])
+        ax.vlines(0, v_min, v_max, linestyle="--", label=self.name)
+        return ax

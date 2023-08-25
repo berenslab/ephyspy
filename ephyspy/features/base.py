@@ -357,6 +357,7 @@ class EphysFeature(ABC):
         ax: Optional[Axes] = None,
         show_sweep: bool = False,
         show_stimulus: bool = False,
+        sweep_kwargs: Optional[Dict[str, Any]] = {"color": "grey", "alpha": 0.5},
         **kwargs,
     ) -> Axes:
         """Adds additional kwargs and functionality to `EphysFeature`._plot`.
@@ -385,12 +386,12 @@ class EphysFeature(ABC):
         if show_sweep:
             show_stimulus = is_stim_ft or show_stimulus
             # let self.data.plot handle creation of axes
-            axes = self.data.plot(color="k", show_stimulus=show_stimulus, **kwargs)
+            axes = self.data.plot(show_stimulus=show_stimulus, **sweep_kwargs)
             ax = axes[0] if show_stimulus else axes
             ax = axes[1] if is_stim_ft else ax
         elif show_stimulus and is_stim_ft:
             axes = plt.gca() if ax is None else ax
-            axes.plot(self.data.t, self.data.i, color="k")
+            axes.plot(self.data.t, self.data.i, **sweep_kwargs)
             axes.set_ylabel("Current (pA)")
             ax = axes
         elif show_stimulus and not is_stim_ft:
@@ -405,7 +406,7 @@ class EphysFeature(ABC):
                 ax = axes[0]
             else:
                 axes = ax
-            axes[1].plot(self.data.t, self.data.i, color="k")
+            axes[1].plot(self.data.t, self.data.i, **sweep_kwargs)
             axes[1].set_ylabel("Current (pA)")
         else:
             axes = plt.gca() if ax is None else ax
@@ -788,10 +789,6 @@ class SweepsetFeature(EphysFeature):
     def get_features(self):
         """List all computed features."""
         return {k: ft for k, ft in self.data.features.items()}
-
-    def plot(self, *args, ax: Optional[Axes] = None, **kwargs) -> Axes:
-        ax = self._plot(*args, ax=ax, **kwargs)
-        return ax
 
     def _plot(self, *args, ax: Optional[Axes] = None, **kwargs) -> Axes:
         raise NotImplementedError(f"This method does not exist for {self.name}.")
