@@ -35,6 +35,7 @@ from ephyspy.features.utils import (
     has_spikes,
     has_stimulus,
     is_hyperpol,
+    median_idx,
     where_stimulus,
 )
 from ephyspy.plot import plot_ap_amp, plot_isi, plot_spike_feature
@@ -530,7 +531,7 @@ class AP_freq_adapt(EphysFeature):
         half1, half2 = unpack(self.diagnostics, ["t_1st_half", "t_2nd_half"])
         for i, (half, m) in enumerate(zip([half1, half2], ["+", "x"])):
             in_half = where_between(peaks_t, *half[[0, -1]])
-            ax.plot(peaks_t[in_half], peaks_v[in_half], m, label=f"{i}/2", **kwargs)
+            ax.plot(peaks_t[in_half], peaks_v[in_half], m, label=f"{i+1}/2", **kwargs)
         return ax
 
 
@@ -1674,6 +1675,7 @@ class APEphysFeature(EphysFeature):
         if np.isnan(X).all():
             return float("nan")
         elif self.ft_aggregator is None:
+            self._update_diagnostics({"aggregate_idx": median_idx(X)})
             return np.nanmedian(X).item()
         else:
             return self.ft_aggregator(X)

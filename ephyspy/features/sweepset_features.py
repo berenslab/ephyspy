@@ -664,5 +664,27 @@ class Slow_hyperpolarization(SweepsetFeature):
 
     def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
         v_max, v_min = unpack(self.diagnostics, ["v_baseline_max", "v_baseline_min"])
-        ax.vlines(0, v_min, v_max, linestyle="--", label=self.name)
+        ax.vlines(0.05, v_min, v_max, linestyle="--", label=self.name)
+        return ax
+
+
+class AbstractSweepsetFeature(SweepsetFeature):
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(
+            AbstractEphysFeature,
+            data=data,
+            compute_at_init=compute_at_init,
+            name="abstract_sweepset_feature",
+        )
+
+    def _select(self, fts):
+        return fts
+
+    def _aggregate(self, fts):
+        return fts.item()
+
+    def _compute(self, recompute=False, store_diagnostics=False):
+        return None
+
+    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
         return ax
