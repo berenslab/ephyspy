@@ -23,7 +23,7 @@ import numpy as np
 from matplotlib.pyplot import Axes, Figure
 
 if TYPE_CHECKING:
-    from ephyspy.sweeps import EphysSweep
+    from ephyspy.sweeps import EphysSweep, EphysSweepSet
 
 from ephyspy.utils import fwhm, has_spike_feature, spikefeatureplot
 
@@ -341,4 +341,150 @@ def plot_spike_features(
             plot_spike_feature(sweep, ft, axes[x])
 
     axes["b"].legend(loc="center left", bbox_to_anchor=(1.0, 0.5))
+    return fig, axes
+
+
+def plot_sweepset_diagnostics(
+    sweepset: EphysSweepSet,
+) -> Tuple[Figure, Axes]:
+    """Plot diagnostics overview for the whole sweepset.
+
+    This function is useful to diagnose outliers on the sweepset level.
+
+    Args:
+        sweepset (EphysSweepSet): sweepset to diagnose.
+
+    Returns:
+        Fig, Axes: figure and axes with plot.
+    """
+    mosaic = [
+        ["set_fts", "set_fts", "set_fts", "r_input"],
+        ["fp_trace", "fp_trace", "fp_trace", "rheobase"],
+        ["ap_trace", "ap_trace", "ap_trace", "ap_window"],
+        ["sag_fts", "set_hyperpol_fts", "set_hyperpol_fts", "rebound_fts"],
+    ]
+    fig, axes = plt.subplot_mosaic(mosaic, figsize=(14, 14), constrained_layout=True)
+    # onset, end = (
+    #     sweepset.get_sweep_features()
+    #     .applymap(strip_info)
+    #     .iloc[0][["stim_onset", "stim_end"]]
+    # )
+    t0, tfin = sweepset.sweeps()[0].t[[0, -1]]
+    for ax in axes.values():
+        ax.set_xlim(t0, tfin)
+
+    axes["set_fts"].plot(sweepset.t.T, sweepset.v.T, color="grey", alpha=0.5)
+    # selection_dict = {
+    #     "rebound": default_rebound_sweep_selector(sweepset),
+    #     "ap": default_ap_sweep_selector(sweepset),
+    #     "sag": default_sag_sweep_selector(sweepset),
+    #     "fp": default_spiking_sweep_selector(sweepset),
+    #     "tau": sweepset.get_sweepset_feature("tau")["selected_idx"],
+    #     "wildness": sweepset.get_sweepset_feature("wildness")["selected_idx"],
+    # }
+    # selected_sweeps = {
+    #     k: np.array(sweepset.sweeps())[v] for k, v in selection_dict.items()
+    # }
+    # for ft, idx in selection_dict.items():
+    #     selected_sweep = np.array(sweepset.sweeps())[idx]
+    # if isinstance(selected_sweep, EphysSweepFeatureExtractor):
+    #     axes["set_fts"].plot(
+    #         selected_sweep.t, selected_sweep.v, label=f"{ft} @ idx={idx}"
+    #     )
+    axes["set_fts"].legend(title="feature sweeps")
+
+    # axes["fp_trace"].plot(
+    #     selected_sweeps["fp"].t,
+    #     selected_sweeps["fp"].v,
+    #     color="k",
+    # )
+
+    # axes["ap_trace"].plot(
+    #     selected_sweeps["ap"].t,
+    #     selected_sweeps["ap"].v,
+    #     color="k",
+    # )
+    # axes["ap_window"].plot(
+    #     selected_sweeps["ap"].t,
+    #     selected_sweeps["ap"].v,
+    #     color="k",
+    # )
+    # ap_idx = selected_sweeps["ap"].sweep_feature("ap_peak")["selected_idx"]
+    # ap_start = selected_sweeps["ap"].spike_feature("threshold_t")[ap_idx] - 5e-3
+    # ap_end = selected_sweeps["ap"].spike_feature("fast_trough_t")[ap_idx] + 5e-3
+    axes["ap_window"].set_xlim(ap_start, ap_end)
+    # for ft, plot_func in get_available_spike_diagnostics().items():
+    #     plot_func(selected_sweeps["fp"], axes["fp_trace"])
+    #     plot_func(selected_sweeps["ap"], axes["ap_trace"])
+    #     plot_func(selected_sweeps["ap"], axes["ap_window"])
+    axes["ap_trace"].axvline(ap_start, color="grey")
+    axes["ap_trace"].axvline(ap_end, color="grey", label="selected ap")
+    axes["ap_trace"].legend()
+
+    # sweep_is_hyperpol = [is_hyperpol(s) for s in sweepset.sweeps()]
+    # hyperpol_idcs = np.where(sweep_is_hyperpol)[0]
+    # axes["set_hyperpol_fts"].plot(
+    #     sweepset.t[sweep_is_hyperpol].T, sweepset.v[sweep_is_hyperpol].T, color="k"
+    # )
+    # for selected_sweep in selected_sweeps["tau"]:
+    #     plot_sweep_tau(selected_sweep, axes["set_hyperpol_fts"], color="r")
+    # plot_sweepset_v_baseline(sweepset, axes["set_hyperpol_fts"])
+    axes["set_hyperpol_fts"].legend()
+
+    h, l = axes["set_hyperpol_fts"].get_legend_handles_labels()
+    d = {k: v for k, v in zip(l, h)}
+    axes["set_hyperpol_fts"].legend(d.values(), d.keys())
+
+    # sag
+    # axes["sag_fts"].plot(selected_sweeps["sag"].t, selected_sweeps["sag"].v, color="k")
+    # axes["sag_fts"].set_xlim(onset - 0.05, end + 0.05)
+    # plot_sweep_sag_area(selected_sweeps["sag"], axes["sag_fts"])
+    # plot_sweep_sag_time(selected_sweeps["sag"], axes["sag_fts"])
+    axes["sag_fts"].legend()
+
+    # rebound
+    # axes["rebound_fts"].plot(
+    #     selected_sweeps["rebound"].t, selected_sweeps["rebound"].v, color="k"
+    # )
+    # axes["rebound_fts"].set_xlim(end - 0.05, None)
+    # plot_sweep_rebound(selected_sweeps["rebound"], axes["rebound_fts"])
+    # plot_sweep_rebound_latency(selected_sweeps["rebound"], axes["rebound_fts"])
+    # plot_sweep_rebound_area(selected_sweeps["rebound"], axes["rebound_fts"])
+    # plot_sweep_rebound_avg(selected_sweeps["rebound"], axes["rebound_fts"])
+    axes["rebound_fts"].legend()
+
+    fig.text(
+        -0.02,
+        0.5,
+        "U (mV)",
+        va="center",
+        rotation="vertical",
+        fontsize=16,
+    )
+    fig.text(
+        0.5,
+        -0.02,
+        "t (s)",
+        ha="center",
+        fontsize=16,
+    )
+
+    # plot_sweepset_rheobase(sweepset, axes["rheobase"])
+    axes["rheobase"].set_xlabel("I (pA)")
+    axes["rheobase"].set_ylabel("f (Hz)")
+    axes["rheobase"].legend()
+
+    # plot_sweepset_r_input(sweepset, axes["r_input"])
+    axes["r_input"].set_xlabel("I (pA)")
+    axes["r_input"].set_ylabel("U (mV)")
+    axes["r_input"].legend()
+
+    axes["set_fts"].set_title("All sweeps")
+    axes["fp_trace"].set_title("Representative spiking sweep")
+    axes["ap_trace"].set_title("Representative AP sweep")
+    axes["ap_window"].set_title("Representative AP")
+    axes["set_hyperpol_fts"].set_title("Hyperpolarization sweeps")
+    axes["sag_fts"].set_title("sag")
+    axes["rebound_fts"].set_title("rebound")
+    axes["rheobase"].set_title("Rheobase")
     return fig, axes

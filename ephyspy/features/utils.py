@@ -278,18 +278,20 @@ def has_rebound(feature: Any, T_rebound: float = 0.3) -> bool:
     return False
 
 
-def median_idx(d: DataFrame) -> Union[int, slice]:
+def median_idx(d: Union[DataFrame, ndarray]) -> Union[int, slice]:
     """Get index of median value in a DataFrame.
 
     If median is unique return index, otherwise return all indices that are
     closest to the median. If dataframe is empty or all nan return slice(0).
 
     Args:
-        d (DataFrame): DataFrame to get median index from.
+        d (Union[DataFrame, ndarray]): DataFrame or ndarray to get median index
+            from.
 
     Returns:
         Union[int, slice]: Index of median value or slice(0) if d is empty or
             all nan."""
+    d = d if isinstance(d, DataFrame) else DataFrame(d)
     if len(d) > 0:
         is_median = d == d.median()
         if any(is_median):

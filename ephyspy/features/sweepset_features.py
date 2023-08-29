@@ -19,6 +19,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 from sklearn import linear_model
+import matplotlib.pyplot as plt
 
 from ephyspy.features.sweep_features import *
 
@@ -29,7 +30,7 @@ ransac = linear_model.LinearRegression()
 
 
 from ephyspy.features.base import AbstractEphysFeature, SweepsetFeature
-from ephyspy.features.utils import SweepsetFt
+from ephyspy.features.utils import SweepsetFt, median_idx
 
 
 def available_sweepset_features(compute_at_init=False, store_diagnostics=False):
@@ -148,16 +149,6 @@ class Sweepset_AP(SweepsetFeature):
             {"aggregation": "not an aggregate features, only single index is selected."}
         )
         return fts.item()
-
-    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
-        idxs = unpack(self.diagnostics, "selected_idx")
-        idxs = idxs if isinstance(idxs, Iterable) else [idxs]
-
-        for idx in idxs:
-            data = self.data[idx]
-            ax = data.features[self.name].plot(ax=ax, **kwargs)
-            data.plot(ax=ax, **kwargs)
-        return ax
 
 
 class Sweepset_rebound(SweepsetFeature):
@@ -333,13 +324,19 @@ class Sweepset_median_first5(SweepsetFeature):
 
         na_fts = np.isnan(fts)
         if not np.all(na_fts):
-            return fts[~na_fts][:5]
+            first5 = fts[~na_fts][:5]
+            # self._update_diagnostics({"selected_idx": first5})
+            return first5
+
+        # self._update_diagnostics({"selected_idx": np.array([])})
         return np.array([])
 
     def _aggregate(self, fts):
         self._update_diagnostics({"aggregation": "select median feature."})
         if np.isnan(fts).all() or len(fts) == 0:
+            self._update_diagnostics({"selected_idx": np.array([])})
             return float("nan")
+        self._update_diagnostics({"selected_idx": median_idx(fts)})
         return np.nanmedian(fts).item()
 
 
@@ -358,7 +355,9 @@ class Hyperpol_median(SweepsetFeature):
         return fts[is_hyperpol]
 
     def _aggregate(self, fts):
-        self._update_diagnostics({"aggregation": "select median feature."})
+        self._update_diagnostics(
+            {"aggregation": "select median feature.", "selected_idx": median_idx(fts)}
+        )
         return np.nanmedian(fts).item()
 
 
@@ -441,6 +440,30 @@ class dfdI(SweepsetFeature):
                 )
         return dfdi
 
+    def plot(self, *args, ax: Optional[Axes] = None, **kwargs) -> Axes:
+        ax = plt.gca() if ax is None else ax
+        if np.isnan(self.value):
+            return ax
+
+        if self.diagnostics is None:
+            self.get_diagnostics(recompute=True)
+
+        i_fit, f_fit, f_intercept = unpack(
+            self.diagnostics, ["i_fit", "f_fit", "f_intercept"]
+        )
+        ax.plot(i_fit, f_fit, "o", label="f(I)", **kwargs)
+        ax.plot(
+            i_fit,
+            self.value * i_fit + f_intercept,
+            label="dfdi fit",
+            **kwargs,
+        )
+        ax.set_xlabel("I (pA)")
+        ax.set_ylabel("f (Hz)")
+        ax.legend()
+
+        return ax
+
 
 class Rheobase(SweepsetFeature):
     """Obtain sweepset level rheobase feature."""
@@ -499,6 +522,50 @@ class Rheobase(SweepsetFeature):
             )
         return rheobase
 
+    def plot(self, *args, ax: Optional[Axes] = None, **kwargs) -> Axes:
+        ax = plt.gca() if ax is None else ax
+        if np.isnan(self.value):
+            return ax
+
+        if self.diagnostics is None:
+            self.get_diagnostics(recompute=True)
+
+        dfdi_ft = self.lookup_sweepset_feature("dfdi", return_value=False)
+
+        i_sub, i_sup, f_sup, dc_offset = unpack(
+            self.diagnostics, ["i_sub", "i_sup", "f_sup", "dc_offset"]
+        )
+        i_intercept = self.value
+        dfdi = dfdi_ft.value
+
+        if not np.isnan(dfdi):
+            i, f, f_intercept = unpack(dfdi_ft.diagnostics, ["i", "f", "f_intercept"])
+            has_spikes = ~np.isnan(f)
+            n_no_spikes = np.sum(~has_spikes)
+
+            ax.plot(i[has_spikes][:5], f[has_spikes][:5], "o", label="f(I)", **kwargs)
+            ax.plot(
+                i[: n_no_spikes + 5],
+                dfdi * i[: n_no_spikes + 5] + f_intercept,
+                label="f(I) fit",
+                **kwargs,
+            )
+            ax.set_xlim(i[0] - 5, i[n_no_spikes + 5] + 5)
+        else:
+            ax.set_xlim(i_sub - 5, i_sup + 5)
+
+        ax.plot(i_sup, f_sup, "o", label="i_sup", **kwargs)
+        ax.axvline(
+            i_intercept + dc_offset, ls="--", label="rheobase\n(w.o. dc)", **kwargs
+        )
+        ax.axvline(i_intercept, label="rheobase\n(incl. dc)", **kwargs)
+        ax.plot(i_sub, 0, "o", label="i_sub", **kwargs)
+
+        ax.set_xlabel("I (pA)")
+        ax.set_ylabel("f (Hz)")
+        ax.legend()
+        return ax
+
 
 class Sweepset_r_input(SweepsetFeature):
     """Obtain sweepset level r_input feature."""
@@ -539,6 +606,26 @@ class Sweepset_r_input(SweepsetFeature):
                     }
                 )
         return r_input
+
+    def plot(self, *args, ax: Optional[Axes] = None, **kwargs) -> Axes:
+        ax = plt.gca() if ax is None else ax
+        if np.isnan(self.value):
+            return ax
+
+        if self.diagnostics is None:
+            self.get_diagnostics(recompute=True)
+
+        if not np.isnan(self.value):
+            i, v, slope, intercept = unpack(
+                self.diagnostics, ["i_amp", "v_deflect", "raw_slope", "v_intercept"]
+            )
+            ax.plot(i, v, "o", label="V(I)", **kwargs)
+            ax.plot(i, slope * i + intercept, label="r_input fit", **kwargs)
+            ax.set_xlim(np.min(i) - 5, np.max(i) + 5)
+            ax.set_xlabel("I (pA)")
+            ax.set_ylabel("V (mV)")
+            ax.legend()
+        return ax
 
 
 class Slow_hyperpolarization(SweepsetFeature):

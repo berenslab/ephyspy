@@ -17,7 +17,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, Optional, Union
+from typing import Any, Callable, Dict, Optional, Union, Iterable
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -31,6 +31,7 @@ from ephyspy.utils import (
     is_sweepset_feature,
     parse_deps,
     parse_func_doc_attrs,
+    unpack,
 )
 
 
@@ -790,7 +791,12 @@ class SweepsetFeature(EphysFeature):
         """List all computed features."""
         return {k: ft for k, ft in self.data.features.items()}
 
-    def _plot(self, *args, ax: Optional[Axes] = None, **kwargs) -> Axes:
-        raise NotImplementedError(f"This method does not exist for {self.name}.")
-        # implements a plotting method
+    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
+        idxs = unpack(self.diagnostics, "selected_idx")
+        idxs = idxs if isinstance(idxs, Iterable) else [idxs]
+
+        for idx in idxs:
+            data = self.data[idx]
+            data.plot(ax=ax, **kwargs)
+            ax = data.features[self.name].plot(ax=ax, **kwargs)
         return ax
