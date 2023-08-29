@@ -44,7 +44,7 @@ def available_sweepset_features(compute_at_init=False, store_diagnostics=False):
         "sag_area": SweepsetFt(Sweepset_sag, Sag_area),
         "sag_time": SweepsetFt(Sweepset_sag, Sag_time),
         "rebound": SweepsetFt(Sweepset_rebound, Rebound),
-        "rebound_APs": SweepsetFt(Sweepset_rebound, Rebound_APs),
+        "rebound_aps": SweepsetFt(Sweepset_rebound, Rebound_APs),
         "rebound_area": SweepsetFt(Sweepset_rebound, Rebound_area),
         "rebound_latency": SweepsetFt(Sweepset_rebound, Rebound_latency),
         "rebound_avg": SweepsetFt(Sweepset_rebound, Rebound_avg),
@@ -334,7 +334,7 @@ class Sweepset_median_first5(SweepsetFeature):
     def _aggregate(self, fts):
         self._update_diagnostics({"aggregation": "select median feature."})
         if np.isnan(fts).all() or len(fts) == 0:
-            self._update_diagnostics({"selected_idx": np.array([])})
+            self._update_diagnostics({"selected_idx": slice(0)})
             return float("nan")
         self._update_diagnostics({"selected_idx": median_idx(fts)})
         return np.nanmedian(fts).item()

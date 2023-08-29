@@ -357,7 +357,10 @@ def plot_sweepset_diagnostics(
     Returns:
         Fig, Axes: figure and axes with plot.
     """
-    from ephyspy.features.sweepset_features import AbstractSweepsetFeature
+    from ephyspy.features.sweepset_features import (
+        AbstractSweepsetFeature,
+        available_sweepset_features,
+    )
 
     mosaic = [
         ["set_fts", "set_fts", "set_fts", "r_input"],
@@ -366,55 +369,71 @@ def plot_sweepset_diagnostics(
         ["sag_fts", "set_hyperpol_fts", "set_hyperpol_fts", "rebound_fts"],
     ]
 
-    ft_data = AbstractSweepsetFeature(sweepset)
+    fts = AbstractSweepsetFeature(sweepset)
 
-    def plot_sweepset_ft(ft_data, ft, ax):
-        FT = ft_data.lookup_sweepset_feature(ft, return_value=False)
+    def plot_sweepset_ft(fts, ft, ax):
+        FT = fts.lookup_sweepset_feature(ft, return_value=False)
         return FT.plot(ax=ax)
 
-    def sweep_idx(ft_data, ft):
-        FT = ft_data.lookup_sweepset_feature(ft, return_value=False)
-        return FT.diagnostics["selected_idx"]
+    def sweep_idx(fts, ft):
+        try:
+            FT = fts.lookup_sweepset_feature(ft, return_value=False)
+            return FT.diagnostics["selected_idx"]
+        except KeyError:
+            return slice(0)
 
-    def spike_idx(ft_data, ft):
-        sw_idx = sweep_idx(ft_data, ft)
-        FT = ft_data.lookup_sweep_feature(ft, return_value=False)
+    def spike_idx(fts, ft):
+        sw_idx = sweep_idx(fts, ft)
+        FT = fts.lookup_sweep_feature(ft, return_value=False)
         return FT[sw_idx].diagnostics["aggregate_idx"]
 
     fig, axes = plt.subplot_mosaic(mosaic, figsize=(14, 14), constrained_layout=True)
-    onset = ft_data.lookup_sweep_feature("stim_onset")[0]
-    end = ft_data.lookup_sweep_feature("stim_end")[0]
+    onset = fts.lookup_sweep_feature("stim_onset")[0]
+    end = fts.lookup_sweep_feature("stim_end")[0]
     t0, tfin = sweepset.sweeps()[0].t[[0, -1]]
     for ax in axes.values():
         ax.set_xlim(t0, tfin)
 
     # set
-    sweepset.plot(axes["set_fts"], color="grey", alpha=0.5)
-    plot_sweepset_ft(ft_data, "slow_hyperpolarization", axes["set_fts"])
+    selected_sweeps = {}
+    for ft in available_sweepset_features():
+        sweep = sweepset[sweep_idx(fts, ft)]
+        selected_sweeps[ft] = sweep if not sweep == [] else None
+    selected_sweeps = set(selected_sweeps.values())
 
-    ap_sweep_idx = sweep_idx(ft_data, "ap_thresh")
-    ap_idx = spike_idx(ft_data, "ap_amp")
+    for sweep in selected_sweeps:
+        try:
+            sweep.plot(axes["set_fts"])
+        except AttributeError:
+            pass
+
+    sweepset.plot(axes["set_fts"], color="grey", alpha=0.2)
+    plot_sweepset_ft(fts, "slow_hyperpolarization", axes["set_fts"])
+    axes["set_fts"].legend(title="representative sweeps", loc="upper right")
+
+    ap_sweep_idx = sweep_idx(fts, "ap_thresh")
+    ap_idx = spike_idx(fts, "ap_amp")
 
     # fp
-    plot_sweepset_ft(ft_data, "num_ap", axes["fp_trace"])
-    plot_sweepset_ft(ft_data, "ap_freq_adapt", axes["fp_trace"])
-    plot_sweepset_ft(ft_data, "ap_amp_adapt", axes["fp_trace"])
-    plot_sweepset_ft(ft_data, "ap_amp_slope", axes["fp_trace"])
-    # plot_sweepset_ft(ft_data, "isi_ff", axes["fp_trace"])
-    # plot_sweepset_ft(ft_data, "isi_cv", axes["fp_trace"])
-    # plot_sweepset_ft(ft_data, "ap_ff", axes["fp_trace"])
-    # plot_sweepset_ft(ft_data, "ap_cv", axes["fp_trace"])
-    # plot_sweepset_ft(ft_data, "isi", axes["fp_trace"])
+    plot_sweepset_ft(fts, "num_ap", axes["fp_trace"])
+    plot_sweepset_ft(fts, "ap_freq_adapt", axes["fp_trace"])
+    plot_sweepset_ft(fts, "ap_amp_adapt", axes["fp_trace"])
+    plot_sweepset_ft(fts, "ap_amp_slope", axes["fp_trace"])
+    # plot_sweepset_ft(fts, "isi_ff", axes["fp_trace"])
+    # plot_sweepset_ft(fts, "isi_cv", axes["fp_trace"])
+    # plot_sweepset_ft(fts, "ap_ff", axes["fp_trace"])
+    # plot_sweepset_ft(fts, "ap_cv", axes["fp_trace"])
+    # plot_sweepset_ft(fts, "isi", axes["fp_trace"])
 
     # ap
-    plot_sweepset_ft(ft_data, "ap_thresh", axes["ap_trace"])
-    plot_sweepset_ft(ft_data, "ap_peak", axes["ap_trace"])
-    plot_sweepset_ft(ft_data, "ap_trough", axes["ap_trace"])
-    plot_sweepset_ft(ft_data, "ap_width", axes["ap_trace"])
-    plot_sweepset_ft(ft_data, "ap_amp", axes["ap_trace"])
-    plot_sweepset_ft(ft_data, "ap_ahp", axes["ap_trace"])
-    plot_sweepset_ft(ft_data, "ap_adp", axes["ap_trace"])
-    plot_sweepset_ft(ft_data, "ap_udr", axes["ap_trace"])
+    plot_sweepset_ft(fts, "ap_thresh", axes["ap_trace"])
+    plot_sweepset_ft(fts, "ap_peak", axes["ap_trace"])
+    plot_sweepset_ft(fts, "ap_trough", axes["ap_trace"])
+    plot_sweepset_ft(fts, "ap_width", axes["ap_trace"])
+    plot_sweepset_ft(fts, "ap_amp", axes["ap_trace"])
+    plot_sweepset_ft(fts, "ap_ahp", axes["ap_trace"])
+    plot_sweepset_ft(fts, "ap_adp", axes["ap_trace"])
+    plot_sweepset_ft(fts, "ap_udr", axes["ap_trace"])
 
     ap_sweep = sweepset[ap_sweep_idx]
     for ft in plottable_spike_features:
@@ -430,29 +449,29 @@ def plot_sweepset_diagnostics(
     ap_sweep.plot(axes["ap_window"])
 
     # hyperpol
-    plot_sweepset_ft(ft_data, "tau", axes["set_hyperpol_fts"])
-    plot_sweepset_ft(ft_data, "v_baseline", axes["set_hyperpol_fts"])
+    plot_sweepset_ft(fts, "tau", axes["set_hyperpol_fts"])
+    plot_sweepset_ft(fts, "v_baseline", axes["set_hyperpol_fts"])
 
     # sag
-    plot_sweepset_ft(ft_data, "sag", axes["sag_fts"])
-    plot_sweepset_ft(ft_data, "sag_area", axes["sag_fts"])
-    plot_sweepset_ft(ft_data, "sag_time", axes["sag_fts"])
-    plot_sweepset_ft(ft_data, "sag_ratio", axes["sag_fts"])
-    plot_sweepset_ft(ft_data, "sag_fraction", axes["sag_fts"])
+    plot_sweepset_ft(fts, "sag", axes["sag_fts"])
+    plot_sweepset_ft(fts, "sag_area", axes["sag_fts"])
+    plot_sweepset_ft(fts, "sag_time", axes["sag_fts"])
+    plot_sweepset_ft(fts, "sag_ratio", axes["sag_fts"])
+    plot_sweepset_ft(fts, "sag_fraction", axes["sag_fts"])
     axes["sag_fts"].set_xlim(onset - 0.05, end + 0.05)
 
     # rebound
-    plot_sweepset_ft(ft_data, "rebound", axes["rebound_fts"])
-    plot_sweepset_ft(ft_data, "rebound_latency", axes["rebound_fts"])
-    plot_sweepset_ft(ft_data, "rebound_area", axes["rebound_fts"])
-    plot_sweepset_ft(ft_data, "rebound_avg", axes["rebound_fts"])
+    plot_sweepset_ft(fts, "rebound", axes["rebound_fts"])
+    plot_sweepset_ft(fts, "rebound_latency", axes["rebound_fts"])
+    plot_sweepset_ft(fts, "rebound_area", axes["rebound_fts"])
+    plot_sweepset_ft(fts, "rebound_avg", axes["rebound_fts"])
     axes["rebound_fts"].set_xlim(end - 0.05, None)
 
     fig.text(-0.02, 0.5, "U (mV)", va="center", rotation="vertical", fontsize=16)
     fig.text(0.5, -0.02, "t (s)", ha="center", fontsize=16)
 
-    plot_sweepset_ft(ft_data, "rheobase", axes["rheobase"])
-    plot_sweepset_ft(ft_data, "r_input", axes["r_input"])
+    plot_sweepset_ft(fts, "rheobase", axes["rheobase"])
+    plot_sweepset_ft(fts, "r_input", axes["r_input"])
 
     axes["set_fts"].set_title("All sweeps")
     axes["fp_trace"].set_title("Representative spiking sweep")
