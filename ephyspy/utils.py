@@ -244,3 +244,20 @@ def parse_deps(deps_string: str) -> List[str]:
         return []
     else:
         return [d.strip() for d in deps_string.split(",")]
+
+
+def get_feature(name, data, **kwargs):
+    # imports are done here to avoid circular imports
+    from ephyspy.sweeps import EphysSweep, EphysSweepSet
+    from ephyspy.features.utils import FeatureError
+    from ephyspy.features.sweep_features import available_sweep_features
+    from ephyspy.features.sweepset_features import available_sweepset_features
+
+    if isinstance(data, EphysSweep):
+        return available_sweep_features()[name](data, **kwargs)
+    elif isinstance(data, EphysSweepSet):
+        return available_sweepset_features()[name](data, **kwargs)
+    else:
+        raise FeatureError(
+            f"Feature {name} is not available for data of type {type(data)}."
+        )
