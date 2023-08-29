@@ -46,6 +46,9 @@ def register_custom_feature(Feature: Union[Callable, SweepsetFeature, EphysFeatu
         Feature: Feature class to be added to EphysPy ecosystem. Feature
             must inherit from either `EphysFeature` or `SweesetFeature`.
     """
+    # TODO: assert more rigorously that Feature can be computed
+    # i.e. by calling it on a dummy sweep and checking if it raises an error
+    # only if it behaves as expected add it to the list of available features
     if isinstance(Feature, Callable):
         CUSTOM_SPIKE_FEATURES.append(Feature)
     elif issubclass(Feature, EphysSweep):
