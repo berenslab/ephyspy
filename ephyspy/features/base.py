@@ -680,7 +680,9 @@ class SweepsetFeature(EphysFeature):
                 ]
             )
         else:
-            raise FeatureError(f"{feature_name} is not a known feature")
+            raise FeatureError(
+                f"{feature_name} is not a known feature. If it is a custom feature, make sure it was registered with `register_custom_feature`."
+            )
 
     def lookup_sweepset_feature(
         self, feature_name: str, recompute: bool = False, return_value: bool = True
