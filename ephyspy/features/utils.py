@@ -28,34 +28,34 @@ from pandas import DataFrame
 from ephyspy.sweeps import EphysSweep, EphysSweepSet
 
 if TYPE_CHECKING:
-    from ephyspy.features.base import EphysFeature, SweepsetFeature
+    from ephyspy.features.base import SweepFeature, SweepSetFeature
 
 CUSTOM_SWEEP_FEATURES = []
 CUSTOM_SWEEPSET_FEATURES = []
 CUSTOM_SPIKE_FEATURES = []
 
 
-def register_custom_feature(Feature: Union[Callable, SweepsetFeature, EphysFeature]):
-    """Add a custom feature class that inherits from `EphysFeature`
-    or from `SweepsetFeature`. This makes the feature available to all the
+def register_custom_feature(Feature: Union[Callable, SweepSetFeature, SweepFeature]):
+    """Add a custom feature class that inherits from `SweepFeature`
+    or from `SweepSetFeature`. This makes the feature available to all the
     the EphysPy functionalities such as recursive computation of all dependend
     features that are called with `lookup_X_feature`, where X can be spike,
     sweep or sweepset.
 
     Args:
         Feature: Feature class to be added to EphysPy ecosystem. Feature
-            must inherit from either `EphysFeature` or `SweesetFeature`.
+            must inherit from either `SweepFeature` or `SweesetFeature`.
     """
     # TODO: assert more rigorously that Feature can be computed
     # i.e. by calling it on a dummy sweep and checking if it raises an error
     # only if it behaves as expected add it to the list of available features
-    from ephyspy.features.base import EphysFeature, SweepsetFeature
+    from ephyspy.features.base import SweepFeature, SweepSetFeature
 
-    if issubclass(Feature, EphysFeature):
+    if issubclass(Feature, SweepFeature):
         CUSTOM_SWEEP_FEATURES.append(Feature)
-    elif issubclass(Feature, SweepsetFeature):
+    elif issubclass(Feature, SweepSetFeature):
         CUSTOM_SWEEPSET_FEATURES.append(Feature)
-    elif isinstance(Feature, Callable):  # last, since EphysFeatures also are callable
+    elif isinstance(Feature, Callable):  # last, since SweepFeatures also are callable
         CUSTOM_SPIKE_FEATURES.append(Feature)
 
 
@@ -78,7 +78,7 @@ def fetch_available_fts() -> List[str]:
 
     for custom_fts, base_class in zip(
         [CUSTOM_SWEEP_FEATURES, CUSTOM_SWEEPSET_FEATURES],
-        ["EphysFeature", "SweepsetFeature"],
+        ["SweepFeature", "SweepSetFeature"],
     ):
         base_feature_classes = [
             ft for ft in feature_classes if ft.__base__.__name__ == base_class
@@ -96,21 +96,21 @@ def fetch_available_fts() -> List[str]:
     return feature_classes + CUSTOM_SWEEP_FEATURES + CUSTOM_SWEEPSET_FEATURES
 
 
-def SweepsetFt(SweepsetFt: SweepsetFeature, Ft: EphysFeature):
-    """Wraps SweepsetFeature and EphysFeature to act like EphysFeature.
+def SweepsetFt(SweepsetFt: SweepSetFeature, Ft: SweepFeature):
+    """Wraps SweepSetFeature and SweepFeature to act like SweepFeature.
 
-    This is a workaround to make SweepsetFeature classes act like EphysFeature
+    This is a workaround to make SweepSetFeature classes act like SweepFeature
     which means the first input argument is `data` and that it has to be
-    instantiated first. Otherwise SweepsetFeature(EphysFeature) would have to be
-    instantiated with EphysFeature first and then the `__call__` method would
+    instantiated first. Otherwise SweepSetFeature(SweepFeature) would have to be
+    instantiated with SweepFeature first and then the `__call__` method would
     have to be used to init `SwepsetFeature` with `data`.
 
     Args:
-        SweepsetFt (SweepsetFeature): SweepsetFeature class to be created.
-        Ft (EphysFeature): EphysFeature class to be used as base class.
+        SweepsetFt (SweepSetFeature): SweepSetFeature class to be created.
+        Ft (SweepFeature): SweepFeature class to be used as base class.
 
     Returns:
-        SweepsetFt: SweepsetFeature class that inherits from Ft."""
+        SweepsetFt: SweepSetFeature class that inherits from Ft."""
 
     def _SweepsetFt(*args, **kwargs):
         return SweepsetFt(Ft, *args, **kwargs)
@@ -268,7 +268,7 @@ def has_rebound(feature: Any, T_rebound: float = 0.3) -> bool:
     description: rebound if voltage exceeds baseline after stimulus offset.
 
     Args:
-        feature (EphysFeature): Feature to check for rebound.
+        feature (SweepFeature): Feature to check for rebound.
         T_rebound (float, optional): Time window after stimulus offset in which
             rebound can occur. Defaults to 0.3.
 

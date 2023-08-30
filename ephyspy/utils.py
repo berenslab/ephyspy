@@ -25,7 +25,7 @@ from matplotlib.axes import Axes
 from numpy import ndarray
 
 if TYPE_CHECKING:
-    from ephyspy.sweeps import EphysSweep
+    from ephyspy.sweeps import EphysSweep, EphysSweepSet
 
 
 where_between = lambda t, t0, tend: np.logical_and(t > t0, t < tend)
@@ -81,11 +81,11 @@ def is_spike_feature(ft: Any) -> bool:
 
 
 def is_sweep_feature(ft: Any) -> bool:
-    return "EphysFeature" in ft.__base__.__name__
+    return "SweepFeature" in ft.__base__.__name__
 
 
 def is_sweepset_feature(ft: Any) -> bool:
-    return "SweepsetFeature" in ft.__base__.__name__
+    return "SweepSetFeature" in ft.__base__.__name__
 
 
 def has_spike_feature(sweep: EphysSweep, ft: str) -> bool:
@@ -138,7 +138,7 @@ def spikefeatureplot(func: Callable) -> Callable:
         If no axis is provided one is created.
 
         Args:
-            self (EphysFeature): Feature to plot. Needs to have a `plot` method.
+            self (SweepFeature): Feature to plot. Needs to have a `plot` method.
             *args: Additional arguments to pass to `self.plot`.
             ax (Optional[Axes], optional): Axes to plot on.
             show_sweep (bool, optional): Whether to plot the sweep. Defaults to False.
@@ -246,7 +246,24 @@ def parse_deps(deps_string: str) -> List[str]:
         return [d.strip() for d in deps_string.split(",")]
 
 
-def get_feature(name, data, **kwargs):
+def get_feature(name: str, data: Union[EphysSweep, EphysSweepSet], **kwargs):
+    """Get feature by name.
+
+    This is a convenience function to compute features without having to import
+    the feature classes or think about wether a feature is computed on a sweep or
+    sweepset.
+
+    Args:
+        name (str): Name of feature.
+        data (EphysSweep or EphysSweepSet): Data to compute feature on. This can be
+            either a single sweep or a sweepset.
+
+    Raises:
+        FeatureError: If feature is not available for data type.
+
+    Returns:
+        Feature: Feature object.
+    """
     # imports are done here to avoid circular imports
     from ephyspy.sweeps import EphysSweep, EphysSweepSet
     from ephyspy.features.utils import FeatureError

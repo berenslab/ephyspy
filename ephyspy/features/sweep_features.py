@@ -26,7 +26,7 @@ from scipy.integrate import cumulative_trapezoid
 from scipy.optimize import curve_fit
 
 import ephyspy.allen_sdk.ephys_features as ft
-from ephyspy.features.base import EphysFeature
+from ephyspy.features.base import SweepFeature
 from ephyspy.features.utils import (
     FeatureError,
     get_sweep_burst_metrics,
@@ -110,7 +110,7 @@ def available_sweep_features(compute_at_init=False, store_diagnostics=False):
         return features
 
 
-class Stim_amp(EphysFeature):
+class Stim_amp(SweepFeature):
     """Extract sweep level stimulus ampltiude feature.
     depends on: /.
     description: maximum amplitude of stimulus.
@@ -139,7 +139,7 @@ class Stim_amp(EphysFeature):
         return ax
 
 
-class Stim_onset(EphysFeature):
+class Stim_onset(SweepFeature):
     """Extract sweep level stimulus onset feature.
 
     depends on: /.
@@ -173,7 +173,7 @@ class Stim_onset(EphysFeature):
         return ax
 
 
-class Stim_end(EphysFeature):
+class Stim_end(SweepFeature):
     """Extract sweep level stimulus end feature.
 
     depends on: /.
@@ -203,7 +203,7 @@ class Stim_end(EphysFeature):
         return ax
 
 
-class Num_AP(EphysFeature):
+class Num_AP(SweepFeature):
     """Extract sweep level spike count feature.
 
     depends on: stim_onset, stim_end.
@@ -243,7 +243,7 @@ class Num_AP(EphysFeature):
         return ax
 
 
-class AP_freq(EphysFeature):
+class AP_freq(SweepFeature):
     """Extract sweep level spike rate feature.
 
     depends on: numap.
@@ -272,7 +272,7 @@ class AP_freq(EphysFeature):
         return ax
 
 
-class AP_latency(EphysFeature):
+class AP_latency(SweepFeature):
     """Extract sweep level ap_latency feature.
 
     depends on: stim_onset.
@@ -318,7 +318,7 @@ class AP_latency(EphysFeature):
         return ax
 
 
-class V_baseline(EphysFeature):
+class V_baseline(SweepFeature):
     """Extract sweep level baseline voltage feature.
 
     depends on: stim_onset.
@@ -362,7 +362,7 @@ class V_baseline(EphysFeature):
         return ax
 
 
-class V_deflect(EphysFeature):
+class V_deflect(SweepFeature):
     """Extract sweep level voltage deflection feature.
 
     depends on: stim_end.
@@ -402,7 +402,7 @@ class V_deflect(EphysFeature):
         return ax
 
 
-class Tau(EphysFeature):
+class Tau(SweepFeature):
     """Extract sweep level time constant feature.
 
     depends on: v_baseline, stim_onset.
@@ -478,7 +478,7 @@ class Tau(EphysFeature):
         return ax
 
 
-class AP_freq_adapt(EphysFeature):
+class AP_freq_adapt(SweepFeature):
     """Extract sweep level spike frequency adaptation feature.
 
     depends on: stim_onset, stim_end, num_ap.
@@ -535,7 +535,7 @@ class AP_freq_adapt(EphysFeature):
         return ax
 
 
-class AP_amp_slope(EphysFeature):
+class AP_amp_slope(SweepFeature):
     """Extract sweep level spike count feature.
 
     depends on: stim_onset, stim_end.
@@ -584,7 +584,7 @@ class AP_amp_slope(EphysFeature):
         return ax
 
 
-class ISI_FF(EphysFeature):
+class ISI_FF(SweepFeature):
     """Extract sweep level inter-spike-interval (ISI) Fano factor feature.
 
     depends on: ISIs.
@@ -616,7 +616,7 @@ class ISI_FF(EphysFeature):
         return ax
 
 
-class ISI_CV(EphysFeature):
+class ISI_CV(SweepFeature):
     """Extract sweep level inter-spike-interval (ISI) coefficient of variation (CV) feature.
 
     depends on: ISIs.
@@ -648,7 +648,7 @@ class ISI_CV(EphysFeature):
         return ax
 
 
-class AP_FF(EphysFeature):
+class AP_FF(SweepFeature):
     """Extract sweep level AP amplitude Fano factor feature.
 
     depends on: ap_amp.
@@ -680,7 +680,7 @@ class AP_FF(EphysFeature):
         return ax
 
 
-class AP_CV(EphysFeature):
+class AP_CV(SweepFeature):
     """Extract sweep level AP amplitude coefficient of variation (CV) feature.
 
     depends on: ap_amp.
@@ -712,7 +712,7 @@ class AP_CV(EphysFeature):
         return ax
 
 
-class R_input(EphysFeature):
+class R_input(SweepFeature):
     """Extract sweep level input resistance feature.
 
     depends on: stim_amp, v_deflect, v_baseline.
@@ -746,7 +746,7 @@ class R_input(EphysFeature):
         return ax
 
 
-class V_sag(EphysFeature):
+class V_sag(SweepFeature):
     """Extract sweep level sag voltage feature.
 
     depends on: v_deflect, v_baseline.
@@ -804,7 +804,7 @@ class V_sag(EphysFeature):
         return ax
 
 
-class Sag(EphysFeature):
+class Sag(SweepFeature):
     """Extract sweep level sag feature.
 
     depends on: v_sag.
@@ -847,7 +847,7 @@ class Sag(EphysFeature):
         return ax
 
 
-class V_steady(EphysFeature):
+class V_steady(SweepFeature):
     """Extract sweep level hyperpol steady state feature.
 
     depends on: stim_end.
@@ -880,7 +880,7 @@ class V_steady(EphysFeature):
         return ax
 
 
-class Sag_fraction(EphysFeature):
+class Sag_fraction(SweepFeature):
     """Extract sweep level sag fraction feature.
 
     depends on: /.
@@ -927,7 +927,7 @@ class Sag_fraction(EphysFeature):
         return ax
 
 
-class Sag_ratio(EphysFeature):
+class Sag_ratio(SweepFeature):
     """Extract sweep level sag ratio feature.
 
     depends on: /.
@@ -973,7 +973,7 @@ class Sag_ratio(EphysFeature):
         return ax
 
 
-class Sag_area(EphysFeature):
+class Sag_area(SweepFeature):
     """Extract sweep level sag area feature.
 
     depends on: v_deflect, stim_onset, stim_end.
@@ -1015,7 +1015,7 @@ class Sag_area(EphysFeature):
         return ax
 
 
-class Sag_time(EphysFeature):
+class Sag_time(SweepFeature):
     """Extract sweep level sag duration feature.
 
     depends on: v_deflect, stim_onset, stim_end.
@@ -1051,7 +1051,7 @@ class Sag_time(EphysFeature):
         return ax
 
 
-class V_plateau(EphysFeature):
+class V_plateau(SweepFeature):
     """Extract sweep level plataeu voltage feature.
 
     depends on: stim_end.
@@ -1090,7 +1090,7 @@ class V_plateau(EphysFeature):
         return ax
 
 
-class Rebound(EphysFeature):
+class Rebound(SweepFeature):
     """Extract sweep level rebound feature.
 
     depends on: v_baseline, stim_end.
@@ -1142,7 +1142,7 @@ class Rebound(EphysFeature):
         return ax
 
 
-class Rebound_APs(EphysFeature):
+class Rebound_APs(SweepFeature):
     """Extract sweep level number of rebounding spikes feature.
 
     depends on: stim_end.
@@ -1184,7 +1184,7 @@ class Rebound_APs(EphysFeature):
         return ax
 
 
-class Rebound_area(EphysFeature):
+class Rebound_area(SweepFeature):
     """Extract sweep level rebound area feature.
 
     depends on: v_baseline, stim_end.
@@ -1233,7 +1233,7 @@ class Rebound_area(EphysFeature):
         return ax
 
 
-class Rebound_latency(EphysFeature):
+class Rebound_latency(SweepFeature):
     """Extract sweep level rebound latency feature.
 
     depends on: v_baseline, stim_end.
@@ -1285,7 +1285,7 @@ class Rebound_latency(EphysFeature):
         return ax
 
 
-class Rebound_avg(EphysFeature):
+class Rebound_avg(SweepFeature):
     """Extract sweep level average rebound feature.
 
     depends on: v_baseline, stim_end.
@@ -1336,7 +1336,7 @@ class Rebound_avg(EphysFeature):
         return ax
 
 
-class V_rest(EphysFeature):
+class V_rest(SweepFeature):
     """Extract sweep level resting potential feature.
 
     depends on: v_baseline, r_input, dc_offset.
@@ -1376,7 +1376,7 @@ class V_rest(EphysFeature):
         return ax
 
 
-class Num_bursts(EphysFeature):
+class Num_bursts(SweepFeature):
     """Extract sweep level number of bursts feature.
 
     depends on: num_ap.
@@ -1426,7 +1426,7 @@ class Num_bursts(EphysFeature):
         return ax
 
 
-class Burstiness(EphysFeature):
+class Burstiness(SweepFeature):
     """Extract sweep level burstiness feature.
 
     depends on: num_ap.
@@ -1471,7 +1471,7 @@ class Burstiness(EphysFeature):
         return ax
 
 
-class ISI_adapt(EphysFeature):
+class ISI_adapt(SweepFeature):
     """Extract sweep level inter-spike-interval (ISI) adaptation index feature.
 
     depends on: ISIs.
@@ -1498,7 +1498,7 @@ class ISI_adapt(EphysFeature):
         return ax
 
 
-class ISI_adapt_avg(EphysFeature):
+class ISI_adapt_avg(SweepFeature):
     """Extract sweep level average inter-spike-interval (ISI) adaptation index feature.
 
     depends on: ISIs.
@@ -1526,7 +1526,7 @@ class ISI_adapt_avg(EphysFeature):
         return ax
 
 
-class AP_amp_adapt(EphysFeature):
+class AP_amp_adapt(SweepFeature):
     """Extract sweep level AP amplitude adaptation index feature.
 
     depends on: ap_amp.
@@ -1554,7 +1554,7 @@ class AP_amp_adapt(EphysFeature):
         return ax
 
 
-class AP_amp_adapt_avg(EphysFeature):
+class AP_amp_adapt_avg(SweepFeature):
     """Extract sweep level average AP amplitude adaptation index feature.
 
     depends on: ap_amp.
@@ -1583,7 +1583,7 @@ class AP_amp_adapt_avg(EphysFeature):
         return ax
 
 
-class Wildness(EphysFeature):
+class Wildness(SweepFeature):
     """Extract sweep level wildness feature.
 
     depends on: /.
@@ -1624,7 +1624,7 @@ class Wildness(EphysFeature):
         return ax
 
 
-class APEphysFeature(EphysFeature):
+class APSweepFeature(SweepFeature):
     """Extract sweep level AP feature.
 
     description: Action potential feature to represent a sweep."""
@@ -1715,7 +1715,7 @@ class APEphysFeature(EphysFeature):
         return ax
 
 
-class AP_AHP(APEphysFeature):
+class AP_AHP(APSweepFeature):
     """Extract sweep level Afterhyperpolarization feature.
 
     depends on: /.
@@ -1733,7 +1733,7 @@ class AP_AHP(APEphysFeature):
         super().__init__(data, compute_at_init, "ap_ahp", ap_selector, ft_aggregator)
 
 
-class AP_ADP(APEphysFeature):
+class AP_ADP(APSweepFeature):
     """Extract sweep level Afterdepolarization feature.
 
     depends on: /.
@@ -1750,7 +1750,7 @@ class AP_ADP(APEphysFeature):
         super().__init__(data, compute_at_init, "ap_adp", ap_selector, ft_aggregator)
 
 
-class AP_thresh(APEphysFeature):
+class AP_thresh(APSweepFeature):
     """Extract sweep level AP threshold feature.
 
     depends on: /.
@@ -1767,7 +1767,7 @@ class AP_thresh(APEphysFeature):
         super().__init__(data, compute_at_init, "ap_thresh", ap_selector, ft_aggregator)
 
 
-class AP_amp(APEphysFeature):
+class AP_amp(APSweepFeature):
     """Extract sweep level AP amplitude feature.
 
     depends on: /.
@@ -1784,7 +1784,7 @@ class AP_amp(APEphysFeature):
         super().__init__(data, compute_at_init, "ap_amp", ap_selector, ft_aggregator)
 
 
-class AP_width(APEphysFeature):
+class AP_width(APSweepFeature):
     """Extract sweep level AP width feature.
 
     depends on: /.
@@ -1801,7 +1801,7 @@ class AP_width(APEphysFeature):
         super().__init__(data, compute_at_init, "ap_width", ap_selector, ft_aggregator)
 
 
-class AP_peak(APEphysFeature):
+class AP_peak(APSweepFeature):
     """Extract sweep level AP peak feature.
 
     depends on: /.
@@ -1818,7 +1818,7 @@ class AP_peak(APEphysFeature):
         super().__init__(data, compute_at_init, "ap_peak", ap_selector, ft_aggregator)
 
 
-class AP_trough(APEphysFeature):
+class AP_trough(APSweepFeature):
     """Extract sweep level AP trough feature.
 
     depends on: /.
@@ -1835,7 +1835,7 @@ class AP_trough(APEphysFeature):
         super().__init__(data, compute_at_init, "ap_trough", ap_selector, ft_aggregator)
 
 
-class AP_UDR(APEphysFeature):
+class AP_UDR(APSweepFeature):
     """Extract sweep level Upstroke-to-downstroke ratio feature.
 
     depends on: /.
@@ -1852,7 +1852,7 @@ class AP_UDR(APEphysFeature):
         super().__init__(data, compute_at_init, "ap_udr", ap_selector, ft_aggregator)
 
 
-class ISI(APEphysFeature):
+class ISI(APSweepFeature):
     """Extract sweep level ISI ratio feature.
 
     depends on: /.

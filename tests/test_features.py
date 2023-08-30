@@ -22,7 +22,7 @@ from tests.helpers import (
     "Ft", available_sweep_features().values(), ids=available_sweep_features().keys()
 )
 def test_ephys_feature(Ft):
-    assert issubclass(Ft, EphysFeature)
+    assert issubclass(Ft, SweepFeature)
     assert Ft().units is not None, "No unit defined for feature."
     assert Ft().description is not None, "No description found for feature."
     assert Ft().depends_on is not None, "No dependencies found for feature."

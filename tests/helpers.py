@@ -6,7 +6,7 @@ from ephyspy.features import available_spike_features
 from ephyspy.sweeps import EphysSweep, EphysSweepSet
 from functools import wraps
 
-from ephyspy.features.base import EphysFeature, SweepsetFeature
+from ephyspy.features.base import SweepFeature, SweepSetFeature
 
 # load test data
 test_data = np.load("tests/test_sweepset.npz", allow_pickle=True)
@@ -51,7 +51,7 @@ def close_fig_b4_raising(test_func):
     return wrapped_test
 
 
-class SweepTestDependency(EphysFeature):
+class SweepTestDependency(SweepFeature):
     """Extract sweep level V(t_thresh0) feature.
 
     depends on: /.
@@ -72,7 +72,7 @@ class SweepTestDependency(EphysFeature):
         return test_value
 
 
-class SweepTestFeature(EphysFeature):
+class SweepTestFeature(SweepFeature):
     """Extract sweep level V(t_thresh0) feature.
 
     depends on: /.
@@ -88,7 +88,7 @@ class SweepTestFeature(EphysFeature):
         return v_thresh0
 
 
-class SweepSetTestFeature(SweepsetFeature):
+class SweepSetTestFeature(SweepSetFeature):
     def __init__(self, data=None, compute_at_init=True):
         super().__init__(SweepTestFeature, data=data, compute_at_init=compute_at_init)
 

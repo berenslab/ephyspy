@@ -35,7 +35,7 @@ from ephyspy.utils import (
 )
 
 
-class EphysFeature(ABC):
+class SweepFeature(ABC):
     r"""Base class for all sweep level electrophysiological features.
 
     This class defines the interface for all electrophysiological features.
@@ -69,7 +69,7 @@ class EphysFeature(ABC):
     without having to compute any dependencies first. Any dependencies already
     computed will be reused, unless `recompute=True` is passed.
 
-    `EphysFeature`s can also implement a _plot method, that displays the diagnostic
+    `SweepFeature`s can also implement a _plot method, that displays the diagnostic
     information or the feature itself. If the feature cannot be displayed in a V(t)
     or I(t) plot, instead the `plot` method should be overwritten directly. This
     is because `plot` wraps `_plot` adds additional functionality ot it.
@@ -149,7 +149,7 @@ class EphysFeature(ABC):
 
     def lookup_sweep_feature(
         self, feature_name: str, recompute: bool = False, return_value: bool = True
-    ) -> Union[float, EphysFeature]:
+    ) -> Union[float, SweepFeature]:
         """Look up a sweep level feature and return its value.
 
         This method will first check if the feature is already computed,
@@ -228,7 +228,7 @@ class EphysFeature(ABC):
         """Compute the feature.
 
         All computation that is neccesary to yield the value of the feature should
-        be defined here. This is the core method of EphysFeature and all other
+        be defined here. This is the core method of SweepFeature and all other
         functionality interacts with this method.
 
         Alongside computing the value of the corresponding feature, this method
@@ -324,7 +324,7 @@ class EphysFeature(ABC):
         compute: bool = False,
         store_diagnostics: bool = True,
         return_value: bool = False,
-    ) -> Union[float, EphysFeature]:
+    ) -> Union[float, SweepFeature]:
         """Compute the feature for a given dataset.
 
         Essentially chains together `_data_init` and `get_value`.
@@ -361,9 +361,9 @@ class EphysFeature(ABC):
         sweep_kwargs: Optional[Dict[str, Any]] = {"color": "grey", "alpha": 0.5},
         **kwargs,
     ) -> Axes:
-        """Adds additional kwargs and functionality to `EphysFeature`._plot`.
+        """Adds additional kwargs and functionality to `SweepFeature`._plot`.
 
-        Before calling `EphysFeature._plot`, this function checks if the feature
+        Before calling `SweepFeature._plot`, this function checks if the feature
         is a stimulus feature and if so, ensures the feature is plotteed onto
         the stimulus axis. Additionally along with every feature, the sweep
         can be plotted. Same goes for the stimulus.
@@ -373,7 +373,7 @@ class EphysFeature(ABC):
         be plotted on top of the unterlying sweep.
 
         Args:
-            self (EphysFeature): Feature to plot. Needs to have a `plot` method.
+            self (SweepFeature): Feature to plot. Needs to have a `plot` method.
             *args: Additional arguments to pass to `self.plot`.
             ax (Optional[Axes], optional): Axes to plot on.
             show_sweep (bool, optional): Whether to plot the sweep. Defaults to False.
@@ -428,16 +428,32 @@ class EphysFeature(ABC):
         return axes
 
     def _plot(self, *args, ax: Optional[Axes] = None, **kwargs) -> Axes:
+        """Plot the feature.
+
+        Similar to _compute, this method implements a core functionality of
+        SweepFeature. It is not an abstract feature though. It is called by
+        `plot` and can be used to visualize the feature in any shape of form.
+        If the feature cannot be plotted on top of the underlying sweep, `plot`
+        should be overwritten directly.
+
+        Args:
+            *args: Additional arguments to pass.
+            ax (Optional[Axes], optional): Axes to plot on.
+            kwargs: Additional kwargs to pass to `self.plot`.
+
+        Returns:
+            Axes: Axes of plot.
+        """
         raise NotImplementedError(f"This method does not exist for {self.name}.")
         # implements a plotting method
         return ax
 
 
-class AbstractEphysFeature(EphysFeature):
+class AbstractSweepFeature(SweepFeature):
     """Abstract sweep level feature.
 
     Dummy feature that can be used as a placeholder to compute sweepset level
-    features using `SweepsetFeature` if no sweep level feature for it is available.
+    features using `SweepSetFeature` if no sweep level feature for it is available.
 
     depends on: /.
     description: Only the corresponding sweepset level feature exsits.
@@ -450,13 +466,13 @@ class AbstractEphysFeature(EphysFeature):
         return
 
 
-class SweepsetFeature(EphysFeature):
+class SweepSetFeature(SweepFeature):
     """Base class for sweepset level features that are computed from a
-    `EphysSweepSet`. Wraps around any `EphysFeature` derived
+    `EphysSweepSet`. Wraps around any `SweepFeature` derived
     feature and extends it to the sweepset level.
 
-    This class mostly acts like an `EphysFeature` and implements the same basic
-    functionalities. See Documentation of `EphysFeature` for defails. Most
+    This class mostly acts like an `SweepFeature` and implements the same basic
+    functionalities. See Documentation of `SweepFeature` for defails. Most
     importantly it also allows to recursively look up dependend features and
     compute them if necessary. This can be done on the spike, sweep and sweepset
     level. On the sweep level, instead of returning just a float however,
@@ -476,11 +492,11 @@ class SweepsetFeature(EphysFeature):
 
     In cases where the feature cannot directly be computed as an aggregate of the
     corresponding sweep feature, the `_compute` method can be overwritten. In
-    this case the inheriting class should instantiate the `SweepsetFeature` super
-    with `AbstractEphysFeature`. Similar to `EphysFeature`, the `_compute` method
+    this case the inheriting class should instantiate the `SweepSetFeature` super
+    with `AbstractSweepFeature`. Similar to `SweepFeature`, the `_compute` method
     should then return the value of the feature.
 
-    Other SweepsetFeatures can also be used in the computation of other features
+    Other SweepSetFeatures can also be used in the computation of other features
     by using the `lookup_sweepset_feature` method.
 
     The description of the sweepset feature should contain a short description of
@@ -505,12 +521,12 @@ class SweepsetFeature(EphysFeature):
 
     def __init__(
         self,
-        feature: EphysFeature,
+        feature: SweepFeature,
         data: Optional[EphysSweepSet] = None,
         compute_at_init: bool = True,
         name: Optional[str] = None,
     ):
-        """Initialize the SweepsetFeature.
+        """Initialize the SweepSetFeature.
 
         parses the description, dependencies and units from the docstring of the
         feature and stores them as attributes. Also stores the name of the
@@ -583,7 +599,7 @@ class SweepsetFeature(EphysFeature):
         compute: bool = False,
         store_diagnostics: bool = True,
         return_value: bool = False,
-    ) -> Union[SweepsetFeature, float]:
+    ) -> Union[SweepSetFeature, float]:
         """Compute the feature for a given dataset.
 
         Essentially chains together `_data_init` and `get_value`.
@@ -686,7 +702,7 @@ class SweepsetFeature(EphysFeature):
 
     def lookup_sweepset_feature(
         self, feature_name: str, recompute: bool = False, return_value: bool = True
-    ) -> Union[float, SweepsetFeature]:
+    ) -> Union[float, SweepSetFeature]:
         """Lookup feature for the sweepset and return the result.
 
         Analogous to `lookup_sweep_feature`, on the sweep level, but for sweepset
@@ -793,7 +809,23 @@ class SweepsetFeature(EphysFeature):
         """List all computed features."""
         return {k: ft for k, ft in self.data.features.items()}
 
-    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
+    def _plot(self, *args, ax: Optional[Axes] = None, **kwargs) -> Axes:
+        """Plot the feature.
+
+        Similar to _compute, _aggregate or _select, this method implements
+        a core functionality of SweepSetFeature. It is not an abstract feature
+        though. It is called by `plot` and can be used to visualize the feature
+        in any shape of form. If the feature cannot be plotted on top of the
+        underlying sweep, `plot` should be overwritten directly.
+
+        Args:
+            *args: Additional arguments to pass.
+            ax (Optional[Axes], optional): Axes to plot on.
+            kwargs: Additional kwargs to pass to `self.plot`.
+
+        Returns:
+            Axes: Axes of plot.
+        """
         idxs = unpack(self.diagnostics, "selected_idx")
         idxs = idxs if isinstance(idxs, Iterable) else [idxs]
 

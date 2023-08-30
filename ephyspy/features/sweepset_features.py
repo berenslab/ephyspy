@@ -29,7 +29,7 @@ from typing import Optional, Iterable
 ransac = linear_model.LinearRegression()
 
 
-from ephyspy.features.base import AbstractEphysFeature, SweepsetFeature
+from ephyspy.features.base import AbstractSweepFeature, SweepSetFeature
 from ephyspy.features.utils import SweepsetFt, median_idx
 
 
@@ -92,7 +92,7 @@ def available_sweepset_features(compute_at_init=False, store_diagnostics=False):
         return features
 
 
-class Sweepset_AP(SweepsetFeature):
+class Sweepset_AP(SweepSetFeature):
     """Obtain sweepset level single AP feature.
 
     This includes the following features:
@@ -151,7 +151,7 @@ class Sweepset_AP(SweepsetFeature):
         return fts.item()
 
 
-class Sweepset_rebound(SweepsetFeature):
+class Sweepset_rebound(SweepSetFeature):
     """Obtain sweepset level rebound related feature.
 
     This includes the following features:
@@ -190,7 +190,7 @@ class Sweepset_rebound(SweepsetFeature):
         return fts.item()
 
 
-class Sweepset_sag(SweepsetFeature):
+class Sweepset_sag(SweepSetFeature):
     """Obtain sweepset level sag related feature.
 
     This includes the following features:
@@ -229,7 +229,7 @@ class Sweepset_sag(SweepsetFeature):
         return fts.item()
 
 
-class Sweepset_spiking(SweepsetFeature):
+class Sweepset_spiking(SweepSetFeature):
     """Obtain sweepset level spiking related feature.
 
     This includes the following features:
@@ -271,7 +271,7 @@ class Sweepset_spiking(SweepsetFeature):
         return fts.item()
 
 
-class Sweepset_max(SweepsetFeature):
+class Sweepset_max(SweepSetFeature):
     """Obtain sweepset level maximum feature.
 
     This includes the following features:
@@ -302,7 +302,7 @@ class Sweepset_max(SweepsetFeature):
         return fts.item()
 
 
-class Sweepset_median_first5(SweepsetFeature):
+class Sweepset_median_first5(SweepSetFeature):
     """Obtain sweepset level median feature.
 
     This includes the following features:
@@ -340,7 +340,7 @@ class Sweepset_median_first5(SweepsetFeature):
         return np.nanmedian(fts).item()
 
 
-class Hyperpol_median(SweepsetFeature):
+class Hyperpol_median(SweepSetFeature):
     """Obtain sweepset level hyperpolarization feature."""
 
     def __init__(self, feature, data=None, compute_at_init=True):
@@ -361,7 +361,7 @@ class Hyperpol_median(SweepsetFeature):
         return np.nanmedian(fts).item()
 
 
-class Sweepset_AP_latency(SweepsetFeature):
+class Sweepset_AP_latency(SweepSetFeature):
     """Obtain sweepset level AP latency feature."""
 
     def __init__(self, data=None, compute_at_init=True):
@@ -390,13 +390,13 @@ class Sweepset_AP_latency(SweepsetFeature):
         return fts.item()
 
 
-class dfdI(SweepsetFeature):
+class dfdI(SweepSetFeature):
     """Obtain sweepset level dfdI feature."""
 
     # TODO: Keep `feature` around as input for API consistency?
     def __init__(self, data=None, compute_at_init=True):
         super().__init__(
-            AbstractEphysFeature,
+            AbstractSweepFeature,
             data=data,
             compute_at_init=compute_at_init,
             name="dfdI",
@@ -465,13 +465,13 @@ class dfdI(SweepsetFeature):
         return ax
 
 
-class Rheobase(SweepsetFeature):
+class Rheobase(SweepSetFeature):
     """Obtain sweepset level rheobase feature."""
 
     def __init__(self, data=None, compute_at_init=True, dc_offset=0):
         self.dc_offset = dc_offset
         super().__init__(
-            AbstractEphysFeature,
+            AbstractSweepFeature,
             data=data,
             compute_at_init=compute_at_init,
             name="rheobase",
@@ -567,12 +567,12 @@ class Rheobase(SweepsetFeature):
         return ax
 
 
-class Sweepset_r_input(SweepsetFeature):
+class Sweepset_r_input(SweepSetFeature):
     """Obtain sweepset level r_input feature."""
 
     def __init__(self, data=None, compute_at_init=True):
         super().__init__(
-            AbstractEphysFeature,
+            AbstractSweepFeature,
             data=data,
             compute_at_init=compute_at_init,
             name="r_input",
@@ -628,12 +628,12 @@ class Sweepset_r_input(SweepsetFeature):
         return ax
 
 
-class Slow_hyperpolarization(SweepsetFeature):
+class Slow_hyperpolarization(SweepSetFeature):
     """Obtain sweepset level slow_hyperpolarization feature."""
 
     def __init__(self, data=None, compute_at_init=True):
         super().__init__(
-            AbstractEphysFeature,
+            AbstractSweepFeature,
             data=data,
             compute_at_init=compute_at_init,
             name="slow_hyperpolarization",
@@ -668,10 +668,10 @@ class Slow_hyperpolarization(SweepsetFeature):
         return ax
 
 
-class AbstractSweepsetFeature(SweepsetFeature):
+class AbstractSweepSetFeature(SweepSetFeature):
     def __init__(self, data=None, compute_at_init=True):
         super().__init__(
-            AbstractEphysFeature,
+            AbstractSweepFeature,
             data=data,
             compute_at_init=compute_at_init,
             name="abstract_sweepset_feature",

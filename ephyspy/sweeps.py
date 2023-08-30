@@ -46,7 +46,7 @@ class EphysSweep(EphysSweepFeatureExtractor):
         metadata (dict): Metadata for the sweep.
         added_spike_features (dict): Dictionary of added spike features.
         features (dict): Dictionary of sweep features. These should be
-            `EphysFeature` instances.
+            `SweepFeature` instances.
     """
 
     def __init__(self, *args, metadata: Dict = {}, **kwargs):
@@ -343,7 +343,7 @@ class EphysSweepSet(EphysSweepSetFeatureExtractor):
 
         Sweep features are passed to each sweep in the set and added there.
         Any sweep features needed in their computation are automatically added
-        and handled by `SweepsetFeature` instances. This means they don't
+        and handled by `SweepSetFeature` instances. This means they don't
         necessarily need to be added manually.
 
         Args:
