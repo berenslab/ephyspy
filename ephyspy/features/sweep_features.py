@@ -775,27 +775,34 @@ class V_sag(SweepFeature):
                     ) - ft.find_time_index(self.data.t, 0.1)
 
                 t_deflect = self.data.t[idx_deflect]
-
-                start = t_deflect - self.peak_width / 2.0
-                end = t_deflect + self.peak_width / 2.0
-                v_sag = ft.average_voltage(
-                    self.data.v,
-                    self.data.t,
-                    start=start,
-                    end=end,
+                stim_onset = self.lookup_sweep_feature(
+                    "stim_onset", recompute=recompute
                 )
+                stim_end = self.lookup_sweep_feature("stim_end", recompute=recompute)
 
-                if store_diagnostics:
-                    self._update_diagnostics(
-                        {
-                            "where_sag": where_sag,
-                            "v_deflect": v_deflect,
-                            "idx_deflect": idx_deflect,
-                            "t_deflect": t_deflect,
-                            "start": start,
-                            "end": end,
-                        }
+                if (  # TODO: Check if stricter criterion is sensible, i.e. t_deflect < t_half_stim
+                    stim_onset < t_deflect < stim_end
+                ):  # in some rare cases this is not the case
+                    start = t_deflect - self.peak_width / 2.0
+                    end = t_deflect + self.peak_width / 2.0
+                    v_sag = ft.average_voltage(
+                        self.data.v,
+                        self.data.t,
+                        start=start,
+                        end=end,
                     )
+
+                    if store_diagnostics:
+                        self._update_diagnostics(
+                            {
+                                "where_sag": where_sag,
+                                "v_deflect": v_deflect,
+                                "idx_deflect": idx_deflect,
+                                "t_deflect": t_deflect,
+                                "start": start,
+                                "end": end,
+                            }
+                        )
         return v_sag
 
     def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
