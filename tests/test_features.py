@@ -4,7 +4,14 @@ import numpy as np
 import pytest
 
 from ephyspy.features import *
-from tests.helpers import depol_test_sweep, hyperpol_test_sweep, test_sweepset
+from tests.helpers import (
+    depol_test_sweep,
+    hyperpol_test_sweep,
+    test_sweepset,
+    SweepTestDependency,
+    SweepTestFeature,
+    SweepSetTestFeature,
+)
 
 #####################
 ### general tests ###
@@ -95,3 +102,35 @@ def test_sweepset_pipe():
     # sweepset.add_features(available_sweep_features())
     test_sweepset.add_features(available_sweepset_features())
     test_sweepset.get_features()
+
+
+#######################
+### custom features ###
+#######################
+
+
+def test_compute_custom_feature():
+    with pytest.raises(FeatureError):
+        SweepTestFeature(hyperpol_test_sweep)  # not registered yet
+
+    assert SweepTestDependency(hyperpol_test_sweep)  # stored in sweep.features
+    assert SweepTestFeature(
+        hyperpol_test_sweep
+    )  # works since dependency is stored in sweep.features
+
+
+def test_register_custom_sweep_feature():
+    register_custom_feature(SweepTestDependency)
+
+    assert SweepTestDependency in fetch_available_fts()
+    assert SweepTestFeature(depol_test_sweep)
+
+
+def test_register_custom_sweepset_feature():
+    with pytest.raises(FeatureError):
+        assert SweepSetTestFeature(test_sweepset)
+
+    register_custom_feature(SweepTestFeature)
+
+    assert SweepTestFeature in fetch_available_fts()
+    assert SweepSetTestFeature(test_sweepset)

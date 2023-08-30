@@ -6,6 +6,8 @@ from ephyspy.features import available_spike_features
 from ephyspy.sweeps import EphysSweep, EphysSweepSet
 from functools import wraps
 
+from ephyspy.features.base import EphysFeature, SweepsetFeature
+
 # load test data
 test_data = np.load("tests/test_sweepset.npz", allow_pickle=True)
 t_set, u_set, i_set = test_data["ts"], test_data["Uts"], test_data["Its"]
@@ -47,3 +49,51 @@ def close_fig_b4_raising(test_func):
             raise e
 
     return wrapped_test
+
+
+class SweepTestDependency(EphysFeature):
+    """Extract sweep level V(t_thresh0) feature.
+
+    depends on: /.
+    description: V(t=t_thresh0).
+    units: mV."""
+
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(data, compute_at_init)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        test_value = float("nan")
+        num_ap = self.lookup_sweep_feature("num_ap")  # existing feature
+
+        if num_ap > 0:
+            t_thresh = self.lookup_spike_feature("threshold_t")[0]
+            t_thresh = np.argmin(abs(self.data.t - t_thresh))
+            test_value = self.data.v[t_thresh]
+        return test_value
+
+
+class SweepTestFeature(EphysFeature):
+    """Extract sweep level V(t_thresh0) feature.
+
+    depends on: /.
+    description: V(t=t_thresh0).
+    units: mV."""
+
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(data, compute_at_init)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        num_ap = self.lookup_sweep_feature("num_ap")  # existing feature
+        v_thresh0 = self.lookup_sweep_feature("sweeptestdependency")  # custom feature
+        return v_thresh0
+
+
+class SweepSetTestFeature(SweepsetFeature):
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(SweepTestFeature, data=data, compute_at_init=compute_at_init)
+
+    def _select(self, fts):
+        return fts
+
+    def _aggregate(self, fts):
+        return np.nanmean(fts).item()
