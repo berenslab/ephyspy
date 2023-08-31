@@ -15,66 +15,69 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+from matplotlib.axes import Axes
 
 import numpy as np
 import pandas as pd
 from sklearn import linear_model
 import matplotlib.pyplot as plt
 
-from ephyspy.features.sweep_features import *
+import ephyspy.features.sweep_features as swft
 
 # ransac = linear_model.RANSACRegressor()
 from typing import Optional, Iterable
 
+from ephyspy.utils import parse_desc, unpack
+
 ransac = linear_model.LinearRegression()
 
 
-from ephyspy.features.base import AbstractSweepFeature, SweepSetFeature
-from ephyspy.features.utils import SweepsetFt, median_idx
+from ephyspy.features.base import SweepSetFeature, SweepSetFeature
+from ephyspy.features.utils import median_idx
 
 
 def available_sweepset_features(compute_at_init=False, store_diagnostics=False):
     features = {
-        "tau": SweepsetFt(Hyperpol_median, Tau),
-        "v_rest": SweepsetFt(Hyperpol_median, V_rest),
-        "v_baseline": SweepsetFt(Hyperpol_median, V_baseline),
-        "sag": SweepsetFt(Sweepset_sag, Sag),
-        "sag_ratio": SweepsetFt(Sweepset_sag, Sag_ratio),
-        "sag_fraction": SweepsetFt(Sweepset_sag, Sag_fraction),
-        "sag_area": SweepsetFt(Sweepset_sag, Sag_area),
-        "sag_time": SweepsetFt(Sweepset_sag, Sag_time),
-        "rebound": SweepsetFt(Sweepset_rebound, Rebound),
-        "rebound_aps": SweepsetFt(Sweepset_rebound, Rebound_APs),
-        "rebound_area": SweepsetFt(Sweepset_rebound, Rebound_area),
-        "rebound_latency": SweepsetFt(Sweepset_rebound, Rebound_latency),
-        "rebound_avg": SweepsetFt(Sweepset_rebound, Rebound_avg),
-        "num_ap": SweepsetFt(Sweepset_spiking, Num_AP),
-        "ap_freq": SweepsetFt(Sweepset_spiking, AP_freq),
-        "wildness": SweepsetFt(Sweepset_max, Wildness),
-        "ap_freq_adapt": SweepsetFt(Sweepset_spiking, AP_freq_adapt),
-        "ap_amp_slope": SweepsetFt(Sweepset_spiking, AP_amp_slope),
-        "isi_ff": SweepsetFt(Sweepset_spiking, ISI_FF),
-        "isi_cv": SweepsetFt(Sweepset_spiking, ISI_CV),
-        "ap_ff": SweepsetFt(Sweepset_spiking, AP_FF),
-        "ap_cv": SweepsetFt(Sweepset_spiking, AP_CV),
-        "isi": SweepsetFt(Sweepset_spiking, ISI),
-        "burstiness": SweepsetFt(Sweepset_median_first5, Burstiness),
-        "num_bursts": SweepsetFt(Sweepset_median_first5, Num_bursts),
-        "isi_adapt": SweepsetFt(Sweepset_median_first5, ISI_adapt),
-        "isi_adapt_avg": SweepsetFt(Sweepset_median_first5, ISI_adapt_avg),
-        "ap_amp_adapt": SweepsetFt(Sweepset_median_first5, AP_amp_adapt),
-        "ap_amp_adapt_avg": SweepsetFt(Sweepset_median_first5, AP_amp_adapt_avg),
-        "ap_ahp": SweepsetFt(Sweepset_AP, AP_AHP),
-        "ap_adp": SweepsetFt(Sweepset_AP, AP_ADP),
-        "ap_thresh": SweepsetFt(Sweepset_AP, AP_thresh),
-        "ap_amp": SweepsetFt(Sweepset_AP, AP_amp),
-        "ap_width": SweepsetFt(Sweepset_AP, AP_width),
-        "ap_peak": SweepsetFt(Sweepset_AP, AP_peak),
-        "ap_trough": SweepsetFt(Sweepset_AP, AP_trough),
-        "ap_udr": SweepsetFt(Sweepset_AP, AP_UDR),
-        "r_input": Sweepset_r_input,
+        "tau": SwS_Tau,
+        "v_rest": SwS_V_rest,
+        "v_baseline": SwS_V_baseline,
+        "sag": SwS_Sag,
+        "sag_ratio": SwS_Sag_ratio,
+        "sag_fraction": SwS_Sag_fraction,
+        "sag_area": SwS_Sag_area,
+        "sag_time": SwS_Sag_time,
+        "rebound": SwS_Rebound,
+        "rebound_aps": SwS_Rebound_APs,
+        "rebound_area": SwS_Rebound_area,
+        "rebound_latency": SwS_Rebound_latency,
+        "rebound_avg": SwS_Rebound_avg,
+        "num_ap": SwS_Num_AP,
+        "ap_freq": SwS_AP_freq,
+        "wildness": SwS_Wildness,
+        "ap_freq_adapt": SwS_AP_freq_adapt,
+        "ap_amp_slope": SwS_AP_amp_slope,
+        "isi_ff": SwS_ISI_FF,
+        "isi_cv": SwS_ISI_CV,
+        "ap_ff": SwS_AP_FF,
+        "ap_cv": SwS_AP_CV,
+        "isi": SwS_ISI,
+        "burstiness": SwS_Burstiness,
+        "num_bursts": SwS_Num_bursts,
+        "isi_adapt": SwS_ISI_adapt,
+        "isi_adapt_avg": SwS_ISI_adapt_avg,
+        "ap_amp_adapt": SwS_AP_amp_adapt,
+        "ap_amp_adapt_avg": SwS_AP_amp_adapt_avg,
+        "ap_ahp": SwS_AP_AHP,
+        "ap_adp": SwS_AP_ADP,
+        "ap_thresh": SwS_AP_thresh,
+        "ap_amp": SwS_AP_amp,
+        "ap_width": SwS_AP_width,
+        "ap_peak": SwS_AP_peak,
+        "ap_trough": SwS_AP_trough,
+        "ap_udr": SwS_AP_UDR,
+        "r_input": SwS_R_input,
         "slow_hyperpolarization": Slow_hyperpolarization,
-        "ap_latency": Sweepset_AP_latency,
+        "ap_latency": SwS_AP_latency,
         "dfdi": dfdI,
         "rheobase": Rheobase,
     }
@@ -92,7 +95,7 @@ def available_sweepset_features(compute_at_init=False, store_diagnostics=False):
         return features
 
 
-class Sweepset_AP(SweepSetFeature):
+class APFeature(SweepSetFeature):
     """Obtain sweepset level single AP feature.
 
     This includes the following features:
@@ -151,7 +154,7 @@ class Sweepset_AP(SweepSetFeature):
         return fts.item()
 
 
-class Sweepset_rebound(SweepSetFeature):
+class ReboundFeature(SweepSetFeature):
     """Obtain sweepset level rebound related feature.
 
     This includes the following features:
@@ -190,7 +193,7 @@ class Sweepset_rebound(SweepSetFeature):
         return fts.item()
 
 
-class Sweepset_sag(SweepSetFeature):
+class SagFeature(SweepSetFeature):
     """Obtain sweepset level sag related feature.
 
     This includes the following features:
@@ -229,7 +232,7 @@ class Sweepset_sag(SweepSetFeature):
         return fts.item()
 
 
-class Sweepset_spiking(SweepSetFeature):
+class APsFeature(SweepSetFeature):
     """Obtain sweepset level spiking related feature.
 
     This includes the following features:
@@ -271,7 +274,7 @@ class Sweepset_spiking(SweepSetFeature):
         return fts.item()
 
 
-class Sweepset_max(SweepSetFeature):
+class MaxFeature(SweepSetFeature):
     """Obtain sweepset level maximum feature.
 
     This includes the following features:
@@ -302,7 +305,7 @@ class Sweepset_max(SweepSetFeature):
         return fts.item()
 
 
-class Sweepset_median_first5(SweepSetFeature):
+class First5MedianFeature(SweepSetFeature):
     """Obtain sweepset level median feature.
 
     This includes the following features:
@@ -340,7 +343,7 @@ class Sweepset_median_first5(SweepSetFeature):
         return np.nanmedian(fts).item()
 
 
-class Hyperpol_median(SweepSetFeature):
+class HyperpolMedianFeature(SweepSetFeature):
     """Obtain sweepset level hyperpolarization feature."""
 
     def __init__(self, feature, data=None, compute_at_init=True):
@@ -361,11 +364,11 @@ class Hyperpol_median(SweepSetFeature):
         return np.nanmedian(fts).item()
 
 
-class Sweepset_AP_latency(SweepSetFeature):
+class SwS_AP_latency(SweepSetFeature):
     """Obtain sweepset level AP latency feature."""
 
     def __init__(self, data=None, compute_at_init=True):
-        super().__init__(AP_latency, data=data, compute_at_init=compute_at_init)
+        super().__init__(swft.AP_latency, data=data, compute_at_init=compute_at_init)
 
     def _select(self, fts):
         """Select representative sweep and use its sag features to represent the
@@ -396,7 +399,7 @@ class dfdI(SweepSetFeature):
     # TODO: Keep `feature` around as input for API consistency?
     def __init__(self, data=None, compute_at_init=True):
         super().__init__(
-            AbstractSweepFeature,
+            swft.AbstractSweepFeature,
             data=data,
             compute_at_init=compute_at_init,
             name="dfdI",
@@ -471,7 +474,7 @@ class Rheobase(SweepSetFeature):
     def __init__(self, data=None, compute_at_init=True, dc_offset=0):
         self.dc_offset = dc_offset
         super().__init__(
-            AbstractSweepFeature,
+            swft.AbstractSweepFeature,
             data=data,
             compute_at_init=compute_at_init,
             name="rheobase",
@@ -567,12 +570,12 @@ class Rheobase(SweepSetFeature):
         return ax
 
 
-class Sweepset_r_input(SweepSetFeature):
+class SwS_R_input(SweepSetFeature):
     """Obtain sweepset level r_input feature."""
 
     def __init__(self, data=None, compute_at_init=True):
         super().__init__(
-            AbstractSweepFeature,
+            swft.AbstractSweepFeature,
             data=data,
             compute_at_init=compute_at_init,
             name="r_input",
@@ -633,7 +636,7 @@ class Slow_hyperpolarization(SweepSetFeature):
 
     def __init__(self, data=None, compute_at_init=True):
         super().__init__(
-            AbstractSweepFeature,
+            swft.AbstractSweepFeature,
             data=data,
             compute_at_init=compute_at_init,
             name="slow_hyperpolarization",
@@ -671,7 +674,7 @@ class Slow_hyperpolarization(SweepSetFeature):
 class AbstractSweepSetFeature(SweepSetFeature):
     def __init__(self, data=None, compute_at_init=True):
         super().__init__(
-            AbstractSweepFeature,
+            swft.AbstractSweepFeature,
             data=data,
             compute_at_init=compute_at_init,
             name="abstract_sweepset_feature",
@@ -688,3 +691,192 @@ class AbstractSweepSetFeature(SweepSetFeature):
 
     def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
         return ax
+
+
+class SwS_Tau(HyperpolMedianFeature):
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(swft.Tau, data=data, compute_at_init=compute_at_init)
+
+
+class SwS_V_rest(HyperpolMedianFeature):
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(swft.V_rest, data=data, compute_at_init=compute_at_init)
+
+
+class SwS_V_baseline(HyperpolMedianFeature):
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(swft.V_baseline, data=data, compute_at_init=compute_at_init)
+
+
+class SwS_Sag(SagFeature):
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(swft.Sag, data=data, compute_at_init=compute_at_init)
+
+
+class SwS_Sag_ratio(SagFeature):
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(swft.Sag_ratio, data=data, compute_at_init=compute_at_init)
+
+
+class SwS_Sag_fraction(SagFeature):
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(swft.Sag_fraction, data=data, compute_at_init=compute_at_init)
+
+
+class SwS_Sag_area(SagFeature):
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(swft.Sag_area, data=data, compute_at_init=compute_at_init)
+
+
+class SwS_Sag_time(SagFeature):
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(swft.Sag_time, data=data, compute_at_init=compute_at_init)
+
+
+class SwS_Rebound(ReboundFeature):
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(swft.Rebound, data=data, compute_at_init=compute_at_init)
+
+
+class SwS_Rebound_APs(ReboundFeature):
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(swft.Rebound_APs, data=data, compute_at_init=compute_at_init)
+
+
+class SwS_Rebound_area(ReboundFeature):
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(swft.Rebound_area, data=data, compute_at_init=compute_at_init)
+
+
+class SwS_Rebound_latency(ReboundFeature):
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(
+            swft.Rebound_latency, data=data, compute_at_init=compute_at_init
+        )
+
+
+class SwS_Rebound_avg(ReboundFeature):
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(swft.Rebound_avg, data=data, compute_at_init=compute_at_init)
+
+
+class SwS_Num_AP(APsFeature):
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(swft.Num_AP, data=data, compute_at_init=compute_at_init)
+
+
+class SwS_AP_freq(APsFeature):
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(swft.AP_freq, data=data, compute_at_init=compute_at_init)
+
+
+class SwS_AP_freq_adapt(APsFeature):
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(swft.AP_freq_adapt, data=data, compute_at_init=compute_at_init)
+
+
+class SwS_AP_amp_slope(APsFeature):
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(swft.AP_amp_slope, data=data, compute_at_init=compute_at_init)
+
+
+class SwS_ISI_FF(APsFeature):
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(swft.ISI_FF, data=data, compute_at_init=compute_at_init)
+
+
+class SwS_AP_FF(APsFeature):
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(swft.AP_FF, data=data, compute_at_init=compute_at_init)
+
+
+class SwS_ISI_CV(APsFeature):
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(swft.ISI_CV, data=data, compute_at_init=compute_at_init)
+
+
+class SwS_AP_CV(APsFeature):
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(swft.AP_CV, data=data, compute_at_init=compute_at_init)
+
+
+class SwS_ISI(APsFeature):
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(swft.ISI, data=data, compute_at_init=compute_at_init)
+
+
+class SwS_Burstiness(First5MedianFeature):
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(swft.Burstiness, data=data, compute_at_init=compute_at_init)
+
+
+class SwS_Num_bursts(First5MedianFeature):
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(swft.Num_bursts, data=data, compute_at_init=compute_at_init)
+
+
+class SwS_ISI_adapt(First5MedianFeature):
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(swft.ISI_adapt, data=data, compute_at_init=compute_at_init)
+
+
+class SwS_ISI_adapt_avg(First5MedianFeature):
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(swft.ISI_adapt_avg, data=data, compute_at_init=compute_at_init)
+
+
+class SwS_AP_amp_adapt(First5MedianFeature):
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(swft.AP_amp_adapt, data=data, compute_at_init=compute_at_init)
+
+
+class SwS_AP_amp_adapt_avg(First5MedianFeature):
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(
+            swft.AP_amp_adapt_avg, data=data, compute_at_init=compute_at_init
+        )
+
+
+class SwS_AP_AHP(APFeature):
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(swft.AP_AHP, data=data, compute_at_init=compute_at_init)
+
+
+class SwS_AP_ADP(APFeature):
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(swft.AP_ADP, data=data, compute_at_init=compute_at_init)
+
+
+class SwS_AP_thresh(APFeature):
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(swft.AP_thresh, data=data, compute_at_init=compute_at_init)
+
+
+class SwS_AP_amp(APFeature):
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(swft.AP_amp, data=data, compute_at_init=compute_at_init)
+
+
+class SwS_AP_width(APFeature):
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(swft.AP_width, data=data, compute_at_init=compute_at_init)
+
+
+class SwS_AP_peak(APFeature):
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(swft.AP_peak, data=data, compute_at_init=compute_at_init)
+
+
+class SwS_AP_trough(APFeature):
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(swft.AP_trough, data=data, compute_at_init=compute_at_init)
+
+
+class SwS_AP_UDR(APFeature):
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(swft.AP_UDR, data=data, compute_at_init=compute_at_init)
+
+
+class SwS_Wildness(MaxFeature):
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(swft.Wildness, data=data, compute_at_init=compute_at_init)

@@ -449,23 +449,6 @@ class SweepFeature(ABC):
         return ax
 
 
-class AbstractSweepFeature(SweepFeature):
-    """Abstract sweep level feature.
-
-    Dummy feature that can be used as a placeholder to compute sweepset level
-    features using `SweepSetFeature` if no sweep level feature for it is available.
-
-    depends on: /.
-    description: Only the corresponding sweepset level feature exsits.
-    units: /."""
-
-    def __init__(self, data=None, compute_at_init=True, name=None):
-        super().__init__(data, compute_at_init, name=name)
-
-    def _compute(self, recompute=False, store_diagnostics=True):
-        return
-
-
 class SweepSetFeature(SweepFeature):
     """Base class for sweepset level features that are computed from a
     `EphysSweepSet`. Wraps around any `SweepFeature` derived
@@ -521,7 +504,7 @@ class SweepSetFeature(SweepFeature):
 
     def __init__(
         self,
-        feature: SweepFeature,
+        SwFt: SweepFeature,
         data: Optional[EphysSweepSet] = None,
         compute_at_init: bool = True,
         name: Optional[str] = None,
@@ -533,7 +516,7 @@ class SweepSetFeature(SweepFeature):
         feature in the name attribute.
 
         Args:
-            feature: The sweep level feature which is wrapped and aggregated
+            SwFt: The sweep level feature which is wrapped and aggregated
                 with this class.
             data: The data to compute the feature for, i.e. an instance of
                 SweepSetEphysExtractor.
@@ -541,8 +524,8 @@ class SweepSetFeature(SweepFeature):
             name: Custom name of the feature. If None, the name of the feature
                 class is used.
         """
-        self.feature = feature
-        ft_cls = feature().__class__
+        self.SwFt = SwFt
+        ft_cls = SwFt().__class__
 
         self.name = ft_cls.__name__.lower() if name is None else name
         self._value = None
@@ -560,7 +543,7 @@ class SweepSetFeature(SweepFeature):
     @property
     def dataset(self):
         """Proxy for self.data at the sweepset level."""
-        return np.array([self.feature(sw) for sw in self.data.sweeps()])
+        return np.array([self.SwFt(sw) for sw in self.data.sweeps()])
 
     def _data_init(self, data: EphysSweepSet):
         """Initialize the feature with a EphysSweepSet object.

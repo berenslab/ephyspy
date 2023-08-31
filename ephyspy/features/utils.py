@@ -96,30 +96,6 @@ def fetch_available_fts() -> List[str]:
     return feature_classes + CUSTOM_SWEEP_FEATURES + CUSTOM_SWEEPSET_FEATURES
 
 
-def SweepsetFt(SweepsetFt: SweepSetFeature, Ft: SweepFeature):
-    """Wraps SweepSetFeature and SweepFeature to act like SweepFeature.
-
-    This is a workaround to make SweepSetFeature classes act like SweepFeature
-    which means the first input argument is `data` and that it has to be
-    instantiated first. Otherwise SweepSetFeature(SweepFeature) would have to be
-    instantiated with SweepFeature first and then the `__call__` method would
-    have to be used to init `SwepsetFeature` with `data`.
-
-    Args:
-        SweepsetFt (SweepSetFeature): SweepSetFeature class to be created.
-        Ft (SweepFeature): SweepFeature class to be used as base class.
-
-    Returns:
-        SweepsetFt: SweepSetFeature class that inherits from Ft."""
-
-    def _SweepsetFt(*args, **kwargs):
-        return SweepsetFt(Ft, *args, **kwargs)
-
-    _SweepsetFt.__base__ = SweepsetFt.__base__
-    _SweepsetFt.__name__ = Ft.__name__
-    return _SweepsetFt
-
-
 class FeatureError(ValueError):
     """Error raised when a feature is unknown."""
 

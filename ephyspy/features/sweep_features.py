@@ -110,6 +110,23 @@ def available_sweep_features(compute_at_init=False, store_diagnostics=False):
         return features
 
 
+class AbstractSweepFeature(SweepFeature):
+    """Abstract sweep level feature.
+
+    Dummy feature that can be used as a placeholder to compute sweepset level
+    features using `SweepSetFeature` if no sweep level feature for it is available.
+
+    depends on: /.
+    description: Only the corresponding sweepset level feature exsits.
+    units: /."""
+
+    def __init__(self, data=None, compute_at_init=True, name=None):
+        super().__init__(data, compute_at_init, name=name)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        return
+
+
 class Stim_amp(SweepFeature):
     """Extract sweep level stimulus ampltiude feature.
     depends on: /.

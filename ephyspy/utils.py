@@ -77,15 +77,33 @@ def relabel_line(ax: Axes, old_label: str, new_label: str):
 
 
 def is_spike_feature(ft: Any) -> bool:
-    return not hasattr(ft, "__base__")
+    return not hasattr(ft, "__base__") and isinstance(ft, Callable)
 
 
 def is_sweep_feature(ft: Any) -> bool:
-    return "SweepFeature" in ft.__base__.__name__
+    def has_sweep_base(ft) -> bool:
+        try:
+            if "SweepFeature" in ft.__base__.__name__:
+                return True
+            else:
+                return has_sweep_base(ft.__base__)
+        except AttributeError:
+            return False
+
+    return has_sweep_base(ft)
 
 
 def is_sweepset_feature(ft: Any) -> bool:
-    return "SweepSetFeature" in ft.__base__.__name__
+    def has_sweepset_base(ft) -> bool:
+        try:
+            if "SweepSetFeature" in ft.__base__.__name__:
+                return True
+            else:
+                return has_sweepset_base(ft.__base__)
+        except AttributeError:
+            return False
+
+    return has_sweepset_base(ft)
 
 
 def has_spike_feature(sweep: EphysSweep, ft: str) -> bool:
