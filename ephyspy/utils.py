@@ -83,7 +83,9 @@ def is_spike_feature(ft: Any) -> bool:
 def is_sweep_feature(ft: Any) -> bool:
     def has_sweep_base(ft) -> bool:
         try:
-            if "SweepFeature" in ft.__base__.__name__:
+            if "SweepSetFeature" in ft.__base__.__name__:
+                return False
+            elif "SweepFeature" in ft.__base__.__name__:
                 return True
             else:
                 return has_sweep_base(ft.__base__)
