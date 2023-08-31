@@ -399,7 +399,7 @@ class dfdI(SweepSetFeature):
     # TODO: Keep `feature` around as input for API consistency?
     def __init__(self, data=None, compute_at_init=True):
         super().__init__(
-            swft.AbstractSweepFeature,
+            swft.NullSweepFeature,
             data=data,
             compute_at_init=compute_at_init,
             name="dfdI",
@@ -474,7 +474,7 @@ class Rheobase(SweepSetFeature):
     def __init__(self, data=None, compute_at_init=True, dc_offset=0):
         self.dc_offset = dc_offset
         super().__init__(
-            swft.AbstractSweepFeature,
+            swft.NullSweepFeature,
             data=data,
             compute_at_init=compute_at_init,
             name="rheobase",
@@ -575,7 +575,7 @@ class SwS_R_input(SweepSetFeature):
 
     def __init__(self, data=None, compute_at_init=True):
         super().__init__(
-            swft.AbstractSweepFeature,
+            swft.NullSweepFeature,
             data=data,
             compute_at_init=compute_at_init,
             name="r_input",
@@ -636,7 +636,7 @@ class Slow_hyperpolarization(SweepSetFeature):
 
     def __init__(self, data=None, compute_at_init=True):
         super().__init__(
-            swft.AbstractSweepFeature,
+            swft.NullSweepFeature,
             data=data,
             compute_at_init=compute_at_init,
             name="slow_hyperpolarization",
@@ -671,13 +671,13 @@ class Slow_hyperpolarization(SweepSetFeature):
         return ax
 
 
-class AbstractSweepSetFeature(SweepSetFeature):
+class NullSweepSetFeature(SweepSetFeature):
     def __init__(self, data=None, compute_at_init=True):
         super().__init__(
-            swft.AbstractSweepFeature,
+            swft.NullSweepFeature,
             data=data,
             compute_at_init=compute_at_init,
-            name="abstract_sweepset_feature",
+            name="null_sweepset_feature",
         )
 
     def _select(self, fts):
