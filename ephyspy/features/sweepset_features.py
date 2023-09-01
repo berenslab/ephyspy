@@ -179,7 +179,6 @@ class ReboundFeature(SweepSetFeature):
         if all(nan_rebounds[:3]):
             idx = 0
         else:
-            print(~nan_rebounds)
             idx = np.arange(len(rebound))[~nan_rebounds][0]
 
         self._update_diagnostics(
@@ -343,7 +342,8 @@ class First5MedianFeature(SweepSetFeature):
             return float("nan")
         first5_idx = self.diagnostics["first5_idx"]
         self._update_diagnostics({"selected_idx": first5_idx[median_idx(fts)]})
-        return np.nanmedian(fts).item()
+        med = float("nan") if len(fts) == 0 else np.nanmedian(fts).item()
+        return med
 
 
 class HyperpolMedianFeature(SweepSetFeature):
@@ -370,7 +370,8 @@ class HyperpolMedianFeature(SweepSetFeature):
                 "selected_idx": hyperpol_idx[median_idx(fts)],
             }
         )
-        return np.nanmedian(fts).item()
+        med = float("nan") if len(fts) == 0 else np.nanmedian(fts).item()
+        return med
 
 
 class SwS_AP_latency(SweepSetFeature):

@@ -434,48 +434,52 @@ class Tau(SweepFeature):
             """The following code block is copied and adapted from sweep.estimate_time_constant()."""
             v_peak, peak_index = self.data.voltage_deflection("min")
             v_baseline = self.lookup_sweep_feature("v_baseline", recompute=recompute)
-
-            stim_onset = self.lookup_sweep_feature("stim_onset", recompute=recompute)
-            onset_idx = ft.find_time_index(self.data.t, stim_onset)
-
-            frac = 0.1
-            search_result = np.flatnonzero(
-                self.data.v[onset_idx:] <= frac * (v_peak - v_baseline) + v_baseline
-            )
-            if not search_result.size:
-                raise FeatureError("could not find interval for time constant estimate")
-
-            fit_start = self.data.t[search_result[0] + onset_idx]
-            fit_end = self.data.t[peak_index]
-
-            if self.data.v[peak_index] < -200:
-                warnings.warn(
-                    "A DOWNWARD PEAK WAS OBSERVED GOING TO LESS THAN 200 MV!!!"
+            if 5 < v_baseline - v_peak:
+                stim_onset = self.lookup_sweep_feature(
+                    "stim_onset", recompute=recompute
                 )
-                # Look for another local minimum closer to stimulus onset
-                # We look for a couple of milliseconds after stimulus onset to 50 ms before the downward peak
-                end_index = (onset_idx + 50) + np.argmin(
-                    self.data.v[onset_idx + 50 : peak_index - 1250]
-                )
-                fit_end = self.data.t[end_index]
-                fit_start = self.data.t[onset_idx + 50]
+                onset_idx = ft.find_time_index(self.data.t, stim_onset)
 
-            a, inv_tau, y0 = ft.fit_membrane_time_constant(
-                self.data.v, self.data.t, fit_start, fit_end
-            )
-
-            tau = 1.0 / inv_tau * 1000
-            if store_diagnostics:
-                self._update_diagnostics(
-                    {
-                        "a": a,
-                        "inv_tau": inv_tau,
-                        "y0": y0,
-                        "fit_start": fit_start,
-                        "fit_end": fit_end,
-                        "equation": "y0 + a * exp(-inv_tau * x)",
-                    }
+                frac = 0.1
+                search_result = np.flatnonzero(
+                    self.data.v[onset_idx:] <= frac * (v_peak - v_baseline) + v_baseline
                 )
+                if not search_result.size:
+                    raise FeatureError(
+                        "could not find interval for time constant estimate"
+                    )
+
+                fit_start = self.data.t[search_result[0] + onset_idx]
+                fit_end = self.data.t[peak_index]
+
+                if self.data.v[peak_index] < -200:
+                    warnings.warn(
+                        "A DOWNWARD PEAK WAS OBSERVED GOING TO LESS THAN 200 MV!!!"
+                    )
+                    # Look for another local minimum closer to stimulus onset
+                    # We look for a couple of milliseconds after stimulus onset to 50 ms before the downward peak
+                    end_index = (onset_idx + 50) + np.argmin(
+                        self.data.v[onset_idx + 50 : peak_index - 1250]
+                    )
+                    fit_end = self.data.t[end_index]
+                    fit_start = self.data.t[onset_idx + 50]
+
+                a, inv_tau, y0 = ft.fit_membrane_time_constant(
+                    self.data.v, self.data.t, fit_start, fit_end
+                )
+
+                tau = 1.0 / inv_tau * 1000
+                if store_diagnostics:
+                    self._update_diagnostics(
+                        {
+                            "a": a,
+                            "inv_tau": inv_tau,
+                            "y0": y0,
+                            "fit_start": fit_start,
+                            "fit_end": fit_end,
+                            "equation": "y0 + a * exp(-inv_tau * x)",
+                        }
+                    )
         return tau
 
     def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
