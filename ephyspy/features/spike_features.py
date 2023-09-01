@@ -177,7 +177,7 @@ def ap_udr(sweep: EphysSweep) -> float:
     """
     upstroke = sweep.spike_feature("upstroke", include_clipped=True)
     downstroke = sweep.spike_feature("downstroke", include_clipped=True)
-    return upstroke / downstroke
+    return upstroke / -downstroke
 
 
 def isi(sweep: EphysSweep) -> float:
