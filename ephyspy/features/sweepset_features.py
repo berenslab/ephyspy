@@ -179,6 +179,7 @@ class ReboundFeature(SweepSetFeature):
         if all(nan_rebounds[:3]):
             idx = 0
         else:
+            print(~nan_rebounds)
             idx = np.arange(len(rebound))[~nan_rebounds][0]
 
         self._update_diagnostics(
@@ -746,9 +747,35 @@ class SwS_Rebound(ReboundFeature):
         super().__init__(swft.Rebound, data=data, compute_at_init=compute_at_init)
 
 
-class SwS_Rebound_APs(ReboundFeature):
+class SwS_Rebound_APs(SweepSetFeature):
+    """Obtain sweepset level rebound APs feature."""
+
     def __init__(self, data=None, compute_at_init=True):
         super().__init__(swft.Rebound_APs, data=data, compute_at_init=compute_at_init)
+
+    def _select(self, fts):
+        """Select representative sweep and use its rebound features to represent the
+        entire sweepset.
+
+        description: Max rebound of the 3 lowest sweeps hyperpolarization sweeps.
+        """
+        num_rebound = self.lookup_sweep_feature("rebound_aps")
+        nan_rebounds = np.isnan(num_rebound)
+        if all(nan_rebounds[:3]):
+            idx = 0
+        else:
+            idx = np.nanargmax(num_rebound[:3])
+
+        self._update_diagnostics(
+            {"selected_idx": idx, "selection": parse_desc(self._select)}
+        )
+        return fts[idx]
+
+    def _aggregate(self, fts):
+        self._update_diagnostics(
+            {"aggregation": "not an aggregate features, only single index is selected."}
+        )
+        return fts.item()
 
 
 class SwS_Rebound_area(ReboundFeature):

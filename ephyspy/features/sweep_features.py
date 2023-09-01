@@ -1203,7 +1203,8 @@ class Rebound_APs(SweepFeature):
         return num_rebound_aps
 
     def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
-        warnings.warn(f" {self.name} plotting not implemented.")
+        t_rebound, v_rebound = unpack(self.diagnostics, ["t_rebound", "v_rebound"])
+        ax.plot(t_rebound, v_rebound, "x", label=self.name, **kwargs)
         return ax
 
 
