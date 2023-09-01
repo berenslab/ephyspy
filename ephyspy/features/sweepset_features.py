@@ -328,10 +328,11 @@ class First5MedianFeature(SweepSetFeature):
         na_fts = np.isnan(fts)
         if not np.all(na_fts):
             first5 = fts[~na_fts][:5]
-            # self._update_diagnostics({"selected_idx": first5})
+            where_value = np.where(~na_fts)[0][:5]
+            self._update_diagnostics({"first5_idx": where_value})
             return first5
 
-        # self._update_diagnostics({"selected_idx": np.array([])})
+        self._update_diagnostics({"first5_idx": np.array([])})
         return np.array([])
 
     def _aggregate(self, fts):
@@ -339,7 +340,8 @@ class First5MedianFeature(SweepSetFeature):
         if np.isnan(fts).all() or len(fts) == 0:
             self._update_diagnostics({"selected_idx": slice(0)})
             return float("nan")
-        self._update_diagnostics({"selected_idx": median_idx(fts)})
+        first5_idx = self.diagnostics["first5_idx"]
+        self._update_diagnostics({"selected_idx": first5_idx[median_idx(fts)]})
         return np.nanmedian(fts).item()
 
 
@@ -355,11 +357,17 @@ class HyperpolMedianFeature(SweepSetFeature):
 
         description: select all features."""
         is_hyperpol = self.lookup_sweep_feature("stim_amp") < 0
+        where_value = np.where(is_hyperpol)[0]
+        self._update_diagnostics({"hyperpol_idx": where_value})
         return fts[is_hyperpol]
 
     def _aggregate(self, fts):
+        hyperpol_idx = self.diagnostics["hyperpol_idx"]
         self._update_diagnostics(
-            {"aggregation": "select median feature.", "selected_idx": median_idx(fts)}
+            {
+                "aggregation": "select median feature.",
+                "selected_idx": hyperpol_idx[median_idx(fts)],
+            }
         )
         return np.nanmedian(fts).item()
 
