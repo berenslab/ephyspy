@@ -147,7 +147,7 @@ def get_sweep_sag_idxs(
     sweep = sag_instance.data
     v_deflect = sweep.voltage_deflection("min")[0]
     v_steady = sag_instance.lookup_sweep_feature("v_deflect", recompute=recompute)
-    if v_steady - v_deflect < 4:  # The sag should have a minimum depth of 4 mV
+    if v_steady - v_deflect > 4:  # The sag should have a minimum depth of 4 mV
         start = sag_instance.lookup_sweep_feature("stim_onset", recompute=recompute)
         end = sag_instance.lookup_sweep_feature("stim_end", recompute=recompute)
         where_stimulus = np.logical_and(
