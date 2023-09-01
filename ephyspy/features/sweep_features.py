@@ -40,7 +40,6 @@ from ephyspy.features.utils import (
 )
 from ephyspy.plot import plot_ap_amp, plot_isi, plot_spike_feature
 from ephyspy.utils import (
-    has_spike_feature,
     parse_desc,
     relabel_line,
     unpack,
@@ -1017,7 +1016,7 @@ class Sag_area(SweepFeature):
                 v_sagline = v_sag[0]
                 # Take running average of v?
                 if len(v_sag) > 10:  # at least 10 points to integrate
-                    sag_area = -cumulative_trapezoid(v_sag - v_sagline, t_sag)[-1]
+                    sag_area = cumulative_trapezoid(v_sagline - v_sag, t_sag)[-1]
                     if store_diagnostics:
                         self._update_diagnostics(
                             {
