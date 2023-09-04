@@ -358,7 +358,7 @@ def plot_sweepset_diagnostics(
         Fig, Axes: figure and axes with plot.
     """
     from ephyspy.features.sweepset_features import (
-        AbstractSweepSetFeature,
+        NullSweepSetFeature,
         available_sweepset_features,
     )
 
@@ -369,7 +369,7 @@ def plot_sweepset_diagnostics(
         ["sag_fts", "set_hyperpol_fts", "set_hyperpol_fts", "rebound_fts"],
     ]
 
-    fts = AbstractSweepSetFeature(sweepset)
+    fts = NullSweepSetFeature(sweepset)
 
     def plot_sweepset_ft(fts, ft, ax):
         FT = fts.lookup_sweepset_feature(ft, return_value=False)

@@ -854,3 +854,25 @@ class SwS_AP_UDR(APFeature):
 class SwS_Wildness(MaxFeature):
     def __init__(self, data=None, compute_at_init=True):
         super().__init__(swft.Wildness, data=data, compute_at_init=compute_at_init)
+
+
+class NullSweepSetFeature(SweepSetFeature):
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(
+            swft.NullSweepFeature,
+            data=data,
+            compute_at_init=compute_at_init,
+            name="null_sweepset_feature",
+        )
+
+    def _select(self, fts):
+        return fts
+
+    def _aggregate(self, fts):
+        return fts.item()
+
+    def _compute(self, recompute=False, store_diagnostics=False):
+        return None
+
+    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
+        return ax
