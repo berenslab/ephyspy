@@ -37,6 +37,7 @@ from ephyspy.features.utils import (
     is_hyperpol,
     median_idx,
     where_stimulus,
+    fetch_available_fts,
 )
 from ephyspy.plot import plot_ap_amp, plot_isi, plot_spike_feature
 from ephyspy.utils import (
@@ -44,57 +45,14 @@ from ephyspy.utils import (
     relabel_line,
     unpack,
     where_between,
+    is_sweep_feature,
 )
 
 
 def available_sweep_features(compute_at_init=False, store_diagnostics=False):
-    features = {
-        "stim_amp": Stim_amp,
-        "stim_onset": Stim_onset,
-        "stim_end": Stim_end,
-        "num_ap": Num_AP,
-        "ap_freq": AP_freq,
-        "ap_latency": AP_latency,
-        "v_baseline": V_baseline,
-        "v_deflect": V_deflect,
-        "tau": Tau,
-        "ap_freq_adapt": AP_freq_adapt,
-        "ap_amp_slope": AP_amp_slope,
-        "isi_ff": ISI_FF,
-        "isi_cv": ISI_CV,
-        "ap_ff": AP_FF,
-        "ap_cv": AP_CV,
-        "isi_adapt": ISI_adapt,
-        "isi_adapt_avg": ISI_adapt_avg,
-        "ap_amp_adapt": AP_amp_adapt,
-        "ap_amp_adapt_avg": AP_amp_adapt_avg,
-        "r_input": R_input,
-        "sag": Sag,
-        "v_sag": V_sag,
-        "v_steady": V_steady,
-        "sag_ratio": Sag_ratio,
-        "sag_fraction": Sag_fraction,
-        "sag_area": Sag_area,
-        "sag_time": Sag_time,
-        "v_plateau": V_plateau,
-        "rebound": Rebound,
-        "rebound_aps": Rebound_APs,
-        "rebound_area": Rebound_area,
-        "rebound_latency": Rebound_latency,
-        "rebound_avg": Rebound_avg,
-        "v_rest": V_rest,
-        "num_bursts": Num_bursts,
-        "burstiness": Burstiness,
-        "wildness": Wildness,
-        "ap_adp": AP_ADP,
-        "ap_ahp": AP_AHP,
-        "ap_thresh": AP_thresh,
-        "ap_amp": AP_amp,
-        "ap_width": AP_width,
-        "ap_peak": AP_peak,
-        "ap_trough": AP_trough,
-        "ap_udr": AP_UDR,
-    }
+    all_features = fetch_available_fts()
+    features = {ft.__name__.lower(): ft for ft in all_features if is_sweep_feature(ft)}
+
     if any((compute_at_init, store_diagnostics)):
         return {
             k: lambda *args, **kwargs: v(

@@ -33,54 +33,16 @@ ransac = linear_model.LinearRegression()
 
 
 from ephyspy.features.base import SweepSetFeature, SweepSetFeature
-from ephyspy.features.utils import median_idx
+from ephyspy.features.utils import median_idx, fetch_available_fts
+from ephyspy.utils import is_sweepset_feature
 
 
 def available_sweepset_features(compute_at_init=False, store_diagnostics=False):
+    all_features = fetch_available_fts()
     features = {
-        "tau": SwS_Tau,
-        "v_rest": SwS_V_rest,
-        "v_baseline": SwS_V_baseline,
-        "sag": SwS_Sag,
-        "sag_ratio": SwS_Sag_ratio,
-        "sag_fraction": SwS_Sag_fraction,
-        "sag_area": SwS_Sag_area,
-        "sag_time": SwS_Sag_time,
-        "rebound": SwS_Rebound,
-        "rebound_aps": SwS_Rebound_APs,
-        "rebound_area": SwS_Rebound_area,
-        "rebound_latency": SwS_Rebound_latency,
-        "rebound_avg": SwS_Rebound_avg,
-        "num_ap": SwS_Num_AP,
-        "ap_freq": SwS_AP_freq,
-        "wildness": SwS_Wildness,
-        "ap_freq_adapt": SwS_AP_freq_adapt,
-        "ap_amp_slope": SwS_AP_amp_slope,
-        "isi_ff": SwS_ISI_FF,
-        "isi_cv": SwS_ISI_CV,
-        "ap_ff": SwS_AP_FF,
-        "ap_cv": SwS_AP_CV,
-        "isi": SwS_ISI,
-        "burstiness": SwS_Burstiness,
-        "num_bursts": SwS_Num_bursts,
-        "isi_adapt": SwS_ISI_adapt,
-        "isi_adapt_avg": SwS_ISI_adapt_avg,
-        "ap_amp_adapt": SwS_AP_amp_adapt,
-        "ap_amp_adapt_avg": SwS_AP_amp_adapt_avg,
-        "ap_ahp": SwS_AP_AHP,
-        "ap_adp": SwS_AP_ADP,
-        "ap_thresh": SwS_AP_thresh,
-        "ap_amp": SwS_AP_amp,
-        "ap_width": SwS_AP_width,
-        "ap_peak": SwS_AP_peak,
-        "ap_trough": SwS_AP_trough,
-        "ap_udr": SwS_AP_UDR,
-        "r_input": SwS_R_input,
-        "slow_hyperpolarization": Slow_hyperpolarization,
-        "ap_latency": SwS_AP_latency,
-        "dfdi": dfdI,
-        "rheobase": Rheobase,
+        ft.__name__.lower(): ft for ft in all_features if is_sweepset_feature(ft)
     }
+    features = {k.replace("sws_", ""): v for k, v in features.items()}
     if any((compute_at_init, store_diagnostics)):
         return {
             k: lambda *args, **kwargs: v(
