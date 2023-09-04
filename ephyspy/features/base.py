@@ -17,7 +17,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, Optional, Union, Iterable
+from typing import Any, Callable, Dict, Iterable, Optional, Union
 
 import matplotlib.pyplot as plt
 import numpy as np

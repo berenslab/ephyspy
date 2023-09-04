@@ -15,25 +15,24 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-from matplotlib.axes import Axes
-
-import numpy as np
-import pandas as pd
-from sklearn import linear_model
-import matplotlib.pyplot as plt
-
-import ephyspy.features.sweep_features as swft
 
 # ransac = linear_model.RANSACRegressor()
-from typing import Optional, Iterable
+from typing import Iterable, Optional
 
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from matplotlib.axes import Axes
+from sklearn import linear_model
+
+import ephyspy.features.sweep_features as swft
 from ephyspy.utils import parse_desc, unpack
 
 ransac = linear_model.LinearRegression()
 
 
-from ephyspy.features.base import SweepSetFeature, SweepSetFeature
-from ephyspy.features.utils import median_idx, fetch_available_fts
+from ephyspy.features.base import SweepSetFeature
+from ephyspy.features.utils import fetch_available_fts, median_idx
 from ephyspy.utils import is_sweepset_feature
 
 

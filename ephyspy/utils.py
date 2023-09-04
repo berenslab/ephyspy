@@ -285,10 +285,10 @@ def get_feature(name: str, data: Union[EphysSweep, EphysSweepSet], **kwargs):
         Feature: Feature object.
     """
     # imports are done here to avoid circular imports
-    from ephyspy.sweeps import EphysSweep, EphysSweepSet
-    from ephyspy.features.utils import FeatureError
     from ephyspy.features.sweep_features import available_sweep_features
     from ephyspy.features.sweepset_features import available_sweepset_features
+    from ephyspy.features.utils import FeatureError
+    from ephyspy.sweeps import EphysSweep, EphysSweepSet
 
     if isinstance(data, EphysSweep):
         return available_sweep_features()[name](data, **kwargs)

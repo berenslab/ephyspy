@@ -4,10 +4,10 @@ import pytest
 from ephyspy.features import *
 from ephyspy.plot import plot_spike_feature, plottable_spike_features
 from tests.helpers import (
+    close_fig_b4_raising,
     depol_test_sweep,
     hyperpol_test_sweep,
     test_sweepset,
-    close_fig_b4_raising,
 )
 
 #####################

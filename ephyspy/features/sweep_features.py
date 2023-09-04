@@ -29,6 +29,7 @@ import ephyspy.allen_sdk.ephys_features as ft
 from ephyspy.features.base import SweepFeature
 from ephyspy.features.utils import (
     FeatureError,
+    fetch_available_fts,
     get_sweep_burst_metrics,
     get_sweep_sag_idxs,
     has_rebound,
@@ -37,15 +38,14 @@ from ephyspy.features.utils import (
     is_hyperpol,
     median_idx,
     where_stimulus,
-    fetch_available_fts,
 )
 from ephyspy.plot import plot_ap_amp, plot_isi, plot_spike_feature
 from ephyspy.utils import (
+    is_sweep_feature,
     parse_desc,
     relabel_line,
     unpack,
     where_between,
-    is_sweep_feature,
 )
 
 

@@ -1,12 +1,12 @@
-import numpy as np
-import pytest
-import matplotlib.pyplot as plt
-
-from ephyspy.features import available_spike_features
-from ephyspy.sweeps import EphysSweep, EphysSweepSet
 from functools import wraps
 
+import matplotlib.pyplot as plt
+import numpy as np
+import pytest
+
+from ephyspy.features import available_spike_features
 from ephyspy.features.base import SweepFeature, SweepSetFeature
+from ephyspy.sweeps import EphysSweep, EphysSweepSet
 
 # load test data
 test_data = np.load("tests/test_sweepset.npz", allow_pickle=True)

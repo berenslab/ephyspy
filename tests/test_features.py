@@ -5,12 +5,12 @@ import pytest
 
 from ephyspy.features import *
 from tests.helpers import (
+    SweepSetTestFeature,
+    SweepTestDependency,
+    SweepTestFeature,
     depol_test_sweep,
     hyperpol_test_sweep,
     test_sweepset,
-    SweepTestDependency,
-    SweepTestFeature,
-    SweepSetTestFeature,
 )
 
 #####################
