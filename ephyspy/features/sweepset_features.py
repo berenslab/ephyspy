@@ -585,10 +585,9 @@ class SwS_R_input(SweepSetFeature):
 
     def __init__(self, data=None, compute_at_init=True):
         super().__init__(
-            swft.NullSweepFeature,
+            swft.R_input,
             data=data,
             compute_at_init=compute_at_init,
-            name="r_input",
         )
 
     def _select(self, fts):

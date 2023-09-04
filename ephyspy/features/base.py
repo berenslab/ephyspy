@@ -565,7 +565,7 @@ class SweepSetFeature(SweepFeature):
             self.ensure_correct_hyperparams()
             for sw in self.data:
                 if not self.name in sw.features:
-                    ft = self.SwFt(sw)
+                    ft = self.SwFt(sw, compute_at_init=False)
                 else:
                     ft = sw.features[self.name]
                 if not "features" in ft.data.__dict__:
