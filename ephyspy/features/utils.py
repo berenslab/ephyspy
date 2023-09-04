@@ -74,7 +74,9 @@ def fetch_available_fts() -> List[str]:
         EphysPy, a warning is raised."""
     classes = inspect.getmembers(sys.modules["ephyspy"], inspect.isclass)
     classes = [c[1] for c in classes if "ephyspy.features" in c[1].__module__]
-    feature_classes = [c for c in classes if "Feature" not in c.__name__]
+    feature_classes = [
+        c for c in classes if "Feature" not in c.__name__
+    ]  # gets rid of base classes and NullFeatures
 
     for custom_fts, base_class in zip(
         [CUSTOM_SWEEP_FEATURES, CUSTOM_SWEEPSET_FEATURES],
