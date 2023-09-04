@@ -543,7 +543,7 @@ class SweepSetFeature(SweepFeature):
     @property
     def dataset(self):
         """Proxy for self.data at the sweepset level."""
-        return np.array([self.SwFt(sw) for sw in self.data.sweeps()])
+        return np.array([ft for ft in self])
 
     def _data_init(self, data: EphysSweepSet):
         """Initialize the feature with a EphysSweepSet object.
@@ -563,7 +563,11 @@ class SweepSetFeature(SweepFeature):
             ), "data must be a EphysSweepSet object"
             self.type = type(data).__name__
             self.ensure_correct_hyperparams()
-            for ft in self.dataset:
+            for sw in self.data:
+                if not self.name in sw.features:
+                    ft = self.SwFt(sw)
+                else:
+                    ft = sw.features[self.name]
                 if not "features" in ft.data.__dict__:
                     ft.data.features = {}
                 ft.data.features.update({self.name: ft})
@@ -620,7 +624,7 @@ class SweepSetFeature(SweepFeature):
             return f"{self.name} = ? {self.units}"
 
     def __getitem__(self, idx):
-        return self.dataset[idx]
+        return self.data[idx].features[self.name]
 
     def __getattr__(self, name: str):
         """Hands off all functionality to the sweep level feature objects and
