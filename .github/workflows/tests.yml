@@ -28,16 +28,16 @@ jobs:
     
     - name: Check formatting with black
       run: |
-        black --check py_ephys tests
+        black --check ephyspy tests
     
     - name: Check imports with isort
       run: |
-        isort -c py_ephys tests
+        isort -c ephyspy tests
 
 # add pyright at some point!
 #    - name: Check types with pyright
 #      run: |
-#        pyright py_ephys
+#        pyright ephyspy
 
     - name: Test with pytest
       run: |

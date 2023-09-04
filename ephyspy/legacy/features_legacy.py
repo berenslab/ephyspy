@@ -24,10 +24,10 @@ from scipy import integrate
 from scipy.optimize import curve_fit
 from sklearn import linear_model
 
-import py_ephys.allen_sdk.ephys_features as ft
-from py_ephys.allen_sdk.ephys_features import FeatureError
-from py_ephys.allen_sdk.ephys_extractor import EphysSweepFeatureExtractor
-from py_ephys.utils import *
+import ephyspy.allen_sdk.ephys_features as ft
+from ephyspy.allen_sdk.ephys_extractor import EphysSweepFeatureExtractor
+from ephyspy.allen_sdk.ephys_features import FeatureError
+from ephyspy.utils import *
 
 # ransac = linear_model.RANSACRegressor()
 ransac = linear_model.LinearRegression()

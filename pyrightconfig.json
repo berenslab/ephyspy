@@ -1,6 +1,6 @@
 {
     "include": [
-        "py_ephys"
+        "ephyspy"
     ],
     "exclude": [
         "**/__pycache__",

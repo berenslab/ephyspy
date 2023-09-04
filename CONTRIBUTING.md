@@ -1,10 +1,10 @@
 ## Issues
 
-Bug reports and requests for features should be made via the [issues](https://github.com/mackelab/py_ephys/issues).
+Bug reports and requests for features should be made via the [issues](https://github.com/mackelab/ephyspy/issues).
 
 ## Code contributions
 
-If you want to contribute to this package yourself, please fork, create a feature branch and then make a PR from your feature branch to the upstream `py_ephys` ([see here for details](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork)).
+If you want to contribute to this package yourself, please fork, create a feature branch and then make a PR from your feature branch to the upstream `ephyspy` ([see here for details](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork)).
 
 ### Development environment
 
@@ -14,7 +14,7 @@ You can install via `setup.py` using `pip install -e ".[dev]"` (the dev flag ins
 
 For docstrings and comments, please adhere to [Google Style](http://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings).
 
-Code needs to pass through the following tools, which are installed alongside `py_ephys`:
+Code needs to pass through the following tools, which are installed alongside `ephyspy`:
 
 **[black](https://github.com/psf/black)**: Automatic code formatting for Python. You can
 run black manually from the console using `black .` in the top directory of the

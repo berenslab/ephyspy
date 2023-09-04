@@ -3,13 +3,14 @@ import warnings
 import numpy as np
 import pytest
 
-from py_ephys.features import *
-from py_ephys.utils import parse_feature_doc, strip_info
-from tests.test_utils import (
+from ephyspy.features import *
+from tests.helpers import (
     depol_test_sweep,
     hyperpol_test_sweep,
-    prepare_test_sweep,
-    prepare_test_sweepset,
+    test_sweepset,
+    SweepTestDependency,
+    SweepTestFeature,
+    SweepSetTestFeature,
 )
 
 #####################
@@ -18,67 +19,19 @@ from tests.test_utils import (
 
 
 @pytest.mark.parametrize(
-    "ft_func",
-    list(get_available_sweepset_features().values())
-    + list(get_available_sweep_features().values()),
-    ids=list(get_available_sweepset_features().keys())
-    + list(get_available_sweep_features().keys()),
+    "Ft", available_sweep_features().values(), ids=available_sweep_features().keys()
 )
-def test_feature_is_wrapped(ft_func):
-    """Test if sweep level and sweepset level feature was wrapped with @epyhs_feature."""
-    assert hasattr(ft_func, "__wrapped__") or ft_func.__name__ not in globals()
+def test_ephys_feature(Ft):
+    assert issubclass(Ft, SweepFeature)
+    assert Ft().units is not None, "No unit defined for feature."
+    assert Ft().description is not None, "No description found for feature."
+    assert Ft().depends_on is not None, "No dependencies found for feature."
+    assert Ft().name, "No name found for feature."
 
 
-@pytest.mark.parametrize(
-    "ft_func",
-    list(get_available_spike_features().values())
-    + list(get_available_sweepset_features().values())
-    + list(get_available_sweep_features().values()),
-    ids=list(get_available_spike_features().keys())
-    + list(get_available_sweepset_features().keys())
-    + list(get_available_sweep_features().keys()),
-)
-def test_feature_naming_scheme(ft_func):
-    """Test if all features follow the naming scheme.
-
-    available features should be named in the following way:
-    get_[spike/sweep/sweepset]_[feature_name].
-    """
-    ft_attrs = parse_feature_doc(ft_func)
-    ft_func_name = ft_func.__name__
-    ftname = ft_attrs["ftname"]
-    ftype = ft_attrs["fttype"]
-
-    assert ft_func_name.startswith("get_")
-    assert ftype in ["spike", "sweep", "sweepset"]
-    if ftype == "spike":
-        assert ftname in get_available_spike_features()
-        dct_ft_func = get_available_spike_features()[ftname]
-        assert dct_ft_func.__name__ == ft_func.__name__
-    elif ftype == "sweep":
-        assert ftname in get_available_sweep_features().keys()
-        dct_ft_func = get_available_sweep_features()[ftname]
-        assert dct_ft_func.__name__ == ft_func.__name__
-    elif ftype == "sweepset":
-        assert ftname in get_available_sweepset_features().keys()
-        dct_ft_func = get_available_sweepset_features()[ftname]
-        assert dct_ft_func.__name__ == ft_func.__name__
-
-
-@pytest.mark.parametrize(
-    "ft_func",
-    list(get_available_sweepset_features().values())
-    + list(get_available_sweep_features().values()),
-    ids=list(get_available_sweepset_features().keys())
-    + list(get_available_sweep_features().keys()),
-)
-def test_feature_can_be_parsed(ft_func):
-    """Test if sweep level and sweepset level feature can be parsed by description
-    and dependency parsers."""
-    ft_attrs = parse_feature_doc(ft_func)
-    assert "depends on" in ft_attrs.keys()
-    assert "description" in ft_attrs.keys()
-    assert "units" in ft_attrs.keys()
+# test if all SweepSet features inherit from SweepSetFeature
+# test if all Features have a unit, a description and dependencies
+# test addition of custom feature
 
 
 ############################
@@ -86,102 +39,98 @@ def test_feature_can_be_parsed(ft_func):
 ############################
 
 
-@pytest.mark.parametrize("ft_func", get_available_spike_features().values())
-def test_spike_feature(ft_func):
+@pytest.mark.parametrize("ft", available_spike_features().values())
+@pytest.mark.parametrize(
+    "sweep, is_depol",
+    [[depol_test_sweep, True], [hyperpol_test_sweep, False]],
+    ids=["depol", "hyperpol"],
+)
+def test_spike_feature(ft, sweep, is_depol):
     """Test spike feature function for hyperpolarizing and depolarizing sweeps."""
-    assert isinstance(ft_func(depol_test_sweep), np.ndarray)
-    assert isinstance(ft_func(hyperpol_test_sweep), np.ndarray)
+    if not hasattr(sweep, "_spikes_df"):
+        sweep.process_spikes()
 
-    assert len(ft_func(hyperpol_test_sweep)) == 0
-    assert len(ft_func(depol_test_sweep)) > 0
+    assert isinstance(ft(sweep), np.ndarray), "No array returned."
+
+    if is_depol:
+        assert len(ft(sweep)) > 0, "BAD: No APs found in depol trace."
+    else:
+        assert len(ft(sweep)) == 0, "BAD: APs found in hyperpol trace."
 
 
 ############################
 ### sweep level features ###
 ############################
 
+# test value, diagnostics etc.
 
-@pytest.mark.parametrize(
-    ("ft", "ft_func"),
-    get_available_sweep_features().items(),
-    ids=get_available_sweep_features().keys(),
-)
-@pytest.mark.parametrize("return_ft_info", [True, False])
-@pytest.mark.parametrize(
-    "test_sweep", [depol_test_sweep, hyperpol_test_sweep], ids=["depol", "hyperpol"]
-)
-def test_sweep_feature(ft, ft_func, test_sweep, return_ft_info):
-    """Test sweep feature functions."""
-    test_sweep.process_spikes()
-    for spike_ft, spike_ft_func in get_available_spike_features().items():
-        test_sweep.process_new_spike_feature(spike_ft, spike_ft_func)
-    if return_ft_info:
-        ft_out = ft_func(test_sweep, return_ft_info=True)
-        assert isinstance(ft_out, dict)
-        if "description" not in ft_out.keys():
-            warnings.warn(f"{ft} does not have a description!")
-        test_sweep._sweep_features[ft] = strip_info(ft_out)
-    else:
-        ft_val = ft_func(test_sweep, return_ft_info=False)
-        assert isinstance(ft_val, float) or isinstance(ft_val, int)
-        test_sweep._sweep_features[ft] = ft_val
-
-
-depol_test_sweep = prepare_test_sweep(depol_test_sweep)
-hyperpol_test_sweep = prepare_test_sweep(hyperpol_test_sweep)
+depol_test_sweep.add_features(available_spike_features())
+hyperpol_test_sweep.add_features(available_spike_features())
 
 
 @pytest.mark.parametrize(
-    ("ft", "ft_func"),
-    get_available_sweep_features().items(),
-    ids=get_available_sweep_features().keys(),
+    "Ft", available_sweep_features().values(), ids=available_sweep_features().keys()
 )
 @pytest.mark.parametrize(
-    "test_sweep", [depol_test_sweep, hyperpol_test_sweep], ids=["depol", "hyperpol"]
+    "sweep", [depol_test_sweep, hyperpol_test_sweep], ids=["depol", "hyperpol"]
 )
-def test_strip_ft_info(ft, ft_func, test_sweep):
-    ft_out_info_incl = ft_func(test_sweep, return_ft_info=True)
-    ft_out = ft_func(test_sweep, return_ft_info=False)
-    same_or_both_nan = lambda a, b: a == b or np.isnan(a) and np.isnan(b)
-    assert same_or_both_nan(ft_out, strip_info(ft_out_info_incl))
+def test_sweep_feature(Ft, sweep):
+    ft = Ft(sweep)
+    assert isinstance(ft.value, (float, int)), "Feature is not a number."
 
 
 ################################
 ### sweep set level features ###
 ################################
 
-
-@pytest.mark.parametrize("return_ft_info", [True, False])
-def test_ephyssweepsetfeatureextractor(return_ft_info):
-    """Test feature extraction with EphysSweepSetFeatureExtractor."""
-    test_sweepset = prepare_test_sweepset(return_ft_info)
-    n_sweeps, num_sweep_fts = test_sweepset.get_sweep_features().shape
-    num_sweepset_fts = len(test_sweepset.get_sweepset_features())
-    assert n_sweeps == len(test_sweepset.sweeps())
-
-    all_features = set(test_sweepset.get_sweep_features().columns)
-    added_features = set(test_sweepset.sweep_feature_funcs.keys())
-    allensdk_fts = all_features.difference(added_features).difference({"dc_offset"})
-    assert len(allensdk_fts) == 14  # + 14 for AllenSDK features
-    assert num_sweepset_fts == len(test_sweepset.sweepset_feature_funcs)
+# test value, diagnostics etc.
 
 
-test_sweepset = prepare_test_sweepset(True, add_sweepset_fts=False)
-
-
-@pytest.mark.parametrize("return_ft_info", [True, False])
 @pytest.mark.parametrize(
-    "ft_func",
-    get_available_sweepset_features().values(),
-    ids=get_available_sweepset_features().keys(),
+    "Ft",
+    available_sweepset_features().values(),
+    ids=available_sweepset_features().keys(),
 )
-def test_sweepset_feature(ft_func, return_ft_info):
-    """Test sweepset feature functions."""
-    if return_ft_info:
-        ft_out = ft_func(test_sweepset, return_ft_info=True)
-        assert isinstance(ft_out, dict)
-        if "description" not in ft_out.keys():
-            warnings.warn(f"{ft} does not have a description!")
-    else:
-        ft_out = ft_func(test_sweepset, return_ft_info=False)
-        assert isinstance(ft_out, float) or isinstance(ft_out, int)
+def test_sweepset_feature(Ft):
+    ft = Ft(test_sweepset)
+    assert isinstance(ft.value, (float, int)), "Feature is not a number."
+
+
+def test_sweepset_pipe():
+    # TODO: rm clear features from sweepset and sweeps?
+    test_sweepset.add_features(available_spike_features())
+    # sweepset.add_features(available_sweep_features())
+    test_sweepset.add_features(available_sweepset_features())
+    test_sweepset.get_features()
+
+
+#######################
+### custom features ###
+#######################
+
+
+def test_compute_custom_feature():
+    with pytest.raises(FeatureError):
+        SweepTestFeature(hyperpol_test_sweep)  # not registered yet
+
+    assert SweepTestDependency(hyperpol_test_sweep)  # stored in sweep.features
+    assert SweepTestFeature(
+        hyperpol_test_sweep
+    )  # works since dependency is stored in sweep.features
+
+
+def test_register_custom_sweep_feature():
+    register_custom_feature(SweepTestDependency)
+
+    assert SweepTestDependency in fetch_available_fts()
+    assert SweepTestFeature(depol_test_sweep)
+
+
+def test_register_custom_sweepset_feature():
+    with pytest.raises(FeatureError):
+        assert SweepSetTestFeature(test_sweepset)
+
+    register_custom_feature(SweepTestFeature)
+
+    assert SweepTestFeature in fetch_available_fts()
+    assert SweepSetTestFeature(test_sweepset)

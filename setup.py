@@ -1,25 +1,25 @@
 from setuptools import setup, find_packages
 import os
 
-NAME = "py_ephys"
+NAME = "ephyspy"
 
 EXTRAS = {
     "dev": [
-    "black", 
-    "isort", 
-    "pyright", 
-    "flake8", 
-    "autoflake",
-    "pre-commit",
+        "black",
+        "isort",
+        "pyright",
+        "flake8",
+        "autoflake",
+        "pre-commit",
     ]
 }
 
 REQUIRES = [
-"pandas>=1.5.3",
-"numpy>=1.23.5",
-"matplotlib>=3.4.2",
-"scipy>=1.9.1",
-"scikit-learn>=1.1.1", # might get rid of this in the future.
+    "pandas>=1.5.3",
+    "numpy>=1.23.5",
+    "matplotlib>=3.4.2",
+    "scipy>=1.9.1",
+    "scikit-learn>=1.1.1",  # might get rid of this in the future.
 ]
 
 here = os.path.abspath(os.path.dirname(__file__))
@@ -30,14 +30,17 @@ with open(os.path.join(here, project_slug, "__version__.py")) as f:
     exec(f.read(), about)
 
 setup(
-    name = NAME,
+    name=NAME,
     version=about["__version__"],
-    packages = find_packages(include=["py_ephys", "py_ephys.*"], exclude=["tests", "*.tests", "*.tests.*", "tests.*"]),
-    description = "Package to extract summary statistics from electrophysiological data.",
-    author = "Jonas Beck",
-    python_requires = ">=3.8",
-    install_requires = REQUIRES,
-    extras_require = EXTRAS,
-    tests_require = ["pytest"],
+    packages=find_packages(
+        include=["ephyspy", "ephyspy.*"],
+        exclude=["tests", "*.tests", "*.tests.*", "tests.*"],
+    ),
+    description="Package to extract summary statistics from electrophysiological data.",
+    author="Jonas Beck",
+    python_requires=">=3.8",
+    install_requires=REQUIRES,
+    extras_require=EXTRAS,
+    tests_require=["pytest"],
     include_package_data=True,
 )

@@ -14,6 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from py_ephys.diagnostics import *
-from py_ephys.features import *
-from py_ephys.utils import *
+from ephyspy.features.base import *
+from ephyspy.features.spike_features import *
+from ephyspy.features.sweep_features import *
+from ephyspy.features.sweepset_features import *
+from ephyspy.features.utils import *
