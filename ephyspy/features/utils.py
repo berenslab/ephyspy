@@ -79,8 +79,8 @@ def fetch_available_fts() -> List[str]:
     ]  # gets rid of base classes and NullFeatures
 
     for custom_fts, base_class in zip(
-        [CUSTOM_SWEEP_FEATURES, CUSTOM_SWEEPSET_FEATURES],
-        ["SweepFeature", "SweepSetFeature"],
+        [CUSTOM_SPIKE_FEATURES, CUSTOM_SWEEP_FEATURES, CUSTOM_SWEEPSET_FEATURES],
+        ["SpikeFeature", "SweepFeature", "SweepSetFeature"],
     ):
         base_feature_classes = [
             ft for ft in feature_classes if ft.__base__.__name__ == base_class
