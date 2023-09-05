@@ -1,8 +1,8 @@
 import matplotlib.pyplot as plt
 import pytest
 
-from ephyspy.features import *
 from ephyspy.analysis import plot_spike_feature
+from ephyspy.features import *
 from tests.helpers import (
     close_fig_b4_raising,
     depol_test_sweep,
