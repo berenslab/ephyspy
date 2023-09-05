@@ -88,10 +88,10 @@ class EphysSweep(EphysSweepFeatureExtractor):
             features = list(features.values())
 
         for ft in features:
+            feature = ft(self, compute_at_init=False)
             if is_spike_feature(ft):
-                self.add_spike_feature(ft.__name__, ft)
+                self.add_spike_feature(feature.name, feature)
             elif is_sweep_feature(ft):
-                feature = ft(self, compute_at_init=False)
                 self.features.update({feature.name: feature})
             else:
                 raise TypeError("Feature is not of a known type.")
@@ -355,9 +355,7 @@ class EphysSweepSet(EphysSweepSetFeatureExtractor):
             features = list(features.values())
 
         for ft in features:
-            if is_spike_feature(ft):
-                self.add_spike_feature(ft.__name__, ft)
-            elif is_sweep_feature(ft):
+            if is_spike_feature(ft) or is_sweep_feature(ft):
                 for sweep in self:
                     sweep.add_features([ft])
             elif is_sweepset_feature(ft):

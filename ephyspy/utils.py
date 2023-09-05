@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+import inspect
 
 import re
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Tuple, Union
@@ -76,36 +77,23 @@ def relabel_line(ax: Axes, old_label: str, new_label: str):
             child.set_label(new_label)
 
 
+def has_baseclass(obj, base_name):
+    base_names = [base.__name__ for base in inspect.getmro(obj)]
+    return base_name in base_names
+
+
 def is_spike_feature(ft: Any) -> bool:
-    return not hasattr(ft, "__base__") and isinstance(ft, Callable)
+    return has_baseclass(ft, "SpikeFeature")
 
 
 def is_sweep_feature(ft: Any) -> bool:
-    def has_sweep_base(ft) -> bool:
-        try:
-            if "SweepSetFeature" in ft.__base__.__name__:
-                return False
-            elif "SweepFeature" in ft.__base__.__name__:
-                return True
-            else:
-                return has_sweep_base(ft.__base__)
-        except AttributeError:
-            return False
-
-    return has_sweep_base(ft)
+    return has_baseclass(ft, "SweepFeature") and not has_baseclass(
+        ft, "SweepSetFeature"
+    )
 
 
 def is_sweepset_feature(ft: Any) -> bool:
-    def has_sweepset_base(ft) -> bool:
-        try:
-            if "SweepSetFeature" in ft.__base__.__name__:
-                return True
-            else:
-                return has_sweepset_base(ft.__base__)
-        except AttributeError:
-            return False
-
-    return has_sweepset_base(ft)
+    return has_baseclass(ft, "SweepSetFeature")
 
 
 def has_spike_feature(sweep: EphysSweep, ft: str) -> bool:
