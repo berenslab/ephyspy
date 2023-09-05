@@ -17,21 +17,23 @@ from tests.helpers import (
 ### general tests ###
 #####################
 
-
-@pytest.mark.parametrize(
-    "Ft", available_sweep_features().values(), ids=available_sweep_features().keys()
+all_features = np.array(
+    (
+        list(available_spike_features().items())
+        + list(available_sweep_features().items())
+        + list(available_sweepset_features().items())
+    )
 )
-def test_ephys_feature(Ft):
-    assert issubclass(Ft, SweepFeature)
+ft_keys, ft_funcs = all_features.T
+
+
+@pytest.mark.parametrize("Ft", ft_funcs, ids=ft_keys)
+def test_feature(Ft):
+    assert issubclass(Ft, BaseFeature)
     assert Ft().units is not None, "No unit defined for feature."
     assert Ft().description is not None, "No description found for feature."
     assert Ft().depends_on is not None, "No dependencies found for feature."
     assert Ft().name, "No name found for feature."
-
-
-# test if all SweepSet features inherit from SweepSetFeature
-# test if all Features have a unit, a description and dependencies
-# test addition of custom feature
 
 
 ############################
@@ -50,12 +52,14 @@ def test_spike_feature(ft, sweep, is_depol):
     if not hasattr(sweep, "_spikes_df"):
         sweep.process_spikes()
 
-    assert isinstance(ft(sweep), np.ndarray), "No array returned."
+    assert isinstance(ft()(sweep), np.ndarray), "No array returned for __call__."
+    ft = ft(sweep)
+    assert isinstance(ft.value, np.ndarray), "No array returned for value."
 
     if is_depol:
-        assert len(ft(sweep)) > 0, "BAD: No APs found in depol trace."
+        assert len(ft.value) > 0, "BAD: No APs found in depol trace."
     else:
-        assert len(ft(sweep)) == 0, "BAD: APs found in hyperpol trace."
+        assert len(ft.value) == 0, "BAD: APs found in hyperpol trace."
 
 
 ############################
