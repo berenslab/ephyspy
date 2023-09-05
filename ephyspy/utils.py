@@ -15,8 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import inspect
 
+import inspect
 import re
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Tuple, Union
 
@@ -121,58 +121,27 @@ def has_spike_feature(sweep: EphysSweep, ft: str) -> bool:
     return False
 
 
-def spikefeatureplot(func: Callable) -> Callable:
-    """Decorator for plotting spike features.
+def scatter_spike_ft(
+    ft, sweep: EphysSweep, ax: Axes = None, selected_idxs=None, **kwargs
+) -> Axes:
+    f"""Plot action potential {ft} feature for all or selected aps.
+
+    Inherits additional kwargs / functionality from `spikefeatureplot`.
 
     Args:
-        func (Callable): Function to decorate.
+        sweep (EphysSweep): Sweep to plot the feature for.
+        ax (Axes, optional): Matplotlib axes. Defaults to None.
+        selected_idxs (slice, optional): Slice object to select aps. Defaults to None.
+        **kwargs: Additional kwargs are passed to the plotting function.
 
     Returns:
-        Callable: Decorated function."""
-
-    def _spikefeatureplot(
-        sweep: EphysSweep,
-        *args,
-        ax: Axes = None,
-        show_sweep: bool = False,
-        show_stimulus: bool = False,
-        **kwargs,
-    ):
-        """Adds additional kwargs and functionality to functions that plot spike features.
-
-        Checks if the sweep has spikes. Additionally along with every feature,
-        the sweep and stimulus can be plotted.
-
-        If no axis is provided one is created.
-
-        Args:
-            self (SweepFeature): Feature to plot. Needs to have a `plot` method.
-            *args: Additional arguments to pass to `self.plot`.
-            ax (Optional[Axes], optional): Axes to plot on.
-            show_sweep (bool, optional): Whether to plot the sweep. Defaults to False.
-            show_stimulus (bool, optional): Whether to plot the stimulus. Defaults to False.
-            kwargs: Additional kwargs to pass to `self.plot`.
-
-        Returns:
-            Axes: Axes of plot.
-        """
-        if show_sweep:
-            axes = sweep.plot(color="k", show_stimulus=show_stimulus, **kwargs)
-        else:
-            axes = plt.gca() if ax is None else ax
-
-        ax = axes[0] if isinstance(axes, np.ndarray) else axes
-        if has_spike_feature(sweep, "threshold_v"):  # has thresh_v -> presence of APs
-            ax = func(sweep, *args, ax=ax, **kwargs)
-
-            if not ax.get_xlabel():
-                ax.set_xlabel("Time (s)")
-            if not ax.get_ylabel():
-                ax.set_ylabel("Voltage (mV)")
-            ax.legend()
-        return axes
-
-    return _spikefeatureplot
+        Axes: Matplotlib axes."""
+    if has_spike_feature(sweep, ft + "_v"):
+        idxs = slice(None) if selected_idxs is None else selected_idxs
+        t = sweep.spike_feature(ft + "_t", include_clipped=True)[idxs]
+        v = sweep.spike_feature(ft + "_v", include_clipped=True)[idxs]
+        ax.scatter(t, v, s=10, label=ft, **kwargs)
+    return ax
 
 
 def parse_func_doc_attrs(func: Callable) -> Dict:

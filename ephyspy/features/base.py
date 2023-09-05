@@ -222,7 +222,7 @@ class BaseFeature(ABC):
         sweep_kwargs: Optional[Dict[str, Any]] = {"color": "grey", "alpha": 0.5},
         **kwargs,
     ) -> Axes:
-        """Adds additional kwargs and functionality to `SweepFeature`._plot`.
+        """Adds additional kwargs and functionality to `BaseFeature`._plot`.
 
         Before calling `SweepFeature._plot`, this function checks if the feature
         is a stimulus feature and if so, ensures the feature is plotteed onto
@@ -234,7 +234,7 @@ class BaseFeature(ABC):
         be plotted on top of the unterlying sweep.
 
         Args:
-            self (SweepFeature): Feature to plot. Needs to have a `plot` method.
+            self (BaseFeature): Feature to plot. Needs to have a `plot` method.
             *args: Additional arguments to pass to `self.plot`.
             ax (Optional[Axes], optional): Axes to plot on.
             show_sweep (bool, optional): Whether to plot the sweep. Defaults to False.
@@ -274,7 +274,7 @@ class BaseFeature(ABC):
             axes = plt.gca() if ax is None else ax
             ax = axes
 
-        if np.isnan(self.value):
+        if np.all(np.isnan(self.value)):
             return axes
 
         if self.diagnostics is None:
@@ -396,6 +396,10 @@ class SpikeFeature(BaseFeature):
         # do some computation
         # save diagnostics using _update_diagnostics
         return
+
+    def get_diagnostics(self, recompute=False):
+        # No diagnostics for spike features for now!
+        return None
 
     def __call__(
         self,

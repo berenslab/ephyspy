@@ -16,28 +16,120 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
+import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.axes import Axes
 
 from ephyspy.features.base import SpikeFeature
+from ephyspy.features.utils import fetch_available_fts
+from ephyspy.utils import fwhm, has_spike_feature, is_spike_feature, scatter_spike_ft
 
 if TYPE_CHECKING:
     from ephyspy.sweeps import EphysSweep
 
 
-def available_spike_features():
-    return {
-        "ap_peak": Spike_AP_peak,
-        "ap_width": Spike_AP_width,
-        "ap_trough": Spike_AP_trough,
-        "ap_thresh": Spike_AP_thresh,
-        "ap_amp": Spike_AP_amp,
-        "ap_udr": Spike_AP_UDR,
-        "ap_ahp": Spike_AP_AHP,
-        "ap_adp": Spike_AP_ADP,
-        "isi": Spike_ISI,
-    }
+def available_spike_features(compute_at_init=False, store_diagnostics=False):
+    all_features = fetch_available_fts()
+    features = {ft.__name__.lower(): ft for ft in all_features if is_spike_feature(ft)}
+    features = {k.replace("spike_", ""): v for k, v in features.items()}
+    if any((compute_at_init, store_diagnostics)):
+        return {
+            k: lambda *args, **kwargs: v(
+                *args,
+                compute_at_init=compute_at_init,
+                store_diagnostics=store_diagnostics,
+                **kwargs,
+            )
+            for k, v in features.items()
+        }
+    else:
+        return features
+
+
+class Spike_AP_upstroke(SpikeFeature):
+    """Extract spike level upstroke feature.
+
+    depends on: /.
+    description: upstroke of AP.
+    units: mV.
+    """
+
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(data, compute_at_init)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        upstroke = self.lookup_spike_feature("upstroke_v", recompute=recompute)
+        return upstroke
+
+    def _plot(self, ax: Optional[Axes] = None, selected_idxs=None, **kwargs) -> Axes:
+        return scatter_spike_ft(
+            "upstroke", self.data, ax=ax, selected_idxs=selected_idxs, **kwargs
+        )
+
+
+class Spike_AP_downstroke(SpikeFeature):
+    """Extract spike level downstroke feature.
+
+    depends on: /.
+    description: downstroke of AP.
+    units: mV.
+    """
+
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(data, compute_at_init)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        upstroke = self.lookup_spike_feature("downstroke_v", recompute=recompute)
+        return upstroke
+
+    def _plot(self, ax: Optional[Axes] = None, selected_idxs=None, **kwargs) -> Axes:
+        return scatter_spike_ft(
+            "downstroke", self.data, ax=ax, selected_idxs=selected_idxs, **kwargs
+        )
+
+
+class Spike_AP_fast_trough(SpikeFeature):
+    """Extract spike level fast trough feature.
+
+    depends on: /.
+    description: fast trough of AP.
+    units: mV.
+    """
+
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(data, compute_at_init)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        upstroke = self.lookup_spike_feature("fast_trough_v", recompute=recompute)
+        return upstroke
+
+    def _plot(self, ax: Optional[Axes] = None, selected_idxs=None, **kwargs) -> Axes:
+        return scatter_spike_ft(
+            "fast_trough", self.data, ax=ax, selected_idxs=selected_idxs, **kwargs
+        )
+
+
+class Spike_AP_slow_trough(SpikeFeature):
+    """Extract spike level slow trough feature.
+
+    depends on: /.
+    description: slow trough of AP.
+    units: mV.
+    """
+
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(data, compute_at_init)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        upstroke = self.lookup_spike_feature("slow_trough_v", recompute=recompute)
+        return upstroke
+
+    def _plot(self, ax: Optional[Axes] = None, selected_idxs=None, **kwargs) -> Axes:
+        return scatter_spike_ft(
+            "slow_trough", self.data, ax=ax, selected_idxs=selected_idxs, **kwargs
+        )
 
 
 class Spike_AP_amp(SpikeFeature):
@@ -57,6 +149,17 @@ class Spike_AP_amp(SpikeFeature):
         peak_height = v_peak - threshold_v
         return peak_height if len(v_peak) > 0 else np.array([])
 
+    def _plot(self, ax: Optional[Axes] = None, selected_idxs=None, **kwargs) -> Axes:
+        if has_spike_feature(self.data, "threshold_v"):
+            idxs = slice(None) if selected_idxs is None else selected_idxs
+            thresh_v = self.lookup_spike_feature("threshold_v")[idxs]
+            peak_t = self.lookup_spike_feature("peak_t")[idxs]
+            peak_v = self.lookup_spike_feature("peak_v")[idxs]
+
+            ax.plot(peak_t, peak_v, "x", **kwargs)
+            ax.vlines(peak_t, thresh_v, peak_v, ls="--", label="ap_amp", **kwargs)
+        return ax
+
 
 class Spike_AP_AHP(SpikeFeature):
     """Extract spike level after hyperpolarization feature.
@@ -73,6 +176,24 @@ class Spike_AP_AHP(SpikeFeature):
         v_fast_trough = self.lookup_spike_feature("fast_trough_v", recompute=recompute)
         threshold_v = self.lookup_spike_feature("threshold_v", recompute=recompute)
         return v_fast_trough - threshold_v
+
+    def _plot(self, ax: Optional[Axes] = None, selected_idxs=None, **kwargs) -> Axes:
+        if has_spike_feature(self.data, "ahp_v"):
+            idxs = slice(None) if selected_idxs is None else selected_idxs
+            trough_t = self.lookup_spike_feature("fast_trough_t")[idxs]
+            trough_v = self.lookup_spike_feature("fast_trough_v")[idxs]
+            threshold_t = self.lookup_spike_feature("threshold_t")[idxs]
+            threshold_v = self.lookup_spike_feature("threshold_v")[idxs]
+            ax.vlines(
+                0.5 * (trough_t + threshold_t),
+                trough_v,
+                threshold_v,
+                ls="--",
+                lw=1,
+                label="ahp",
+                **kwargs,
+            )
+        return ax
 
 
 class Spike_AP_ADP(SpikeFeature):
@@ -91,6 +212,24 @@ class Spike_AP_ADP(SpikeFeature):
         v_fast_trough = self.lookup_spike_feature("fast_trough_v", recompute=recompute)
         return v_adp - v_fast_trough
 
+    def _plot(self, ax: Optional[Axes] = None, selected_idxs=None, **kwargs) -> Axes:
+        if has_spike_feature(self.data, "adp_v"):
+            idxs = slice(None) if selected_idxs is None else selected_idxs
+            adp_t = self.lookup_spike_feature("adp_t")[idxs]
+            adp_v = self.lookup_spike_feature("adp_v")[idxs]
+            trough_t = self.lookup_spike_feature("fast_trough_t")[idxs]
+            trough_v = self.lookup_spike_feature("fast_trough_v")[idxs]
+            ax.vlines(
+                0.5 * (adp_t + trough_t),
+                adp_v,
+                trough_v,
+                ls="--",
+                lw=1,
+                label="adp",
+                **kwargs,
+            )
+        return ax
+
 
 class Spike_AP_peak(SpikeFeature):
     """Extract spike level peak feature.
@@ -106,6 +245,11 @@ class Spike_AP_peak(SpikeFeature):
     def _compute(self, recompute=False, store_diagnostics=True):
         v_peak = self.lookup_spike_feature("peak_v", recompute=recompute)
         return v_peak
+
+    def _plot(self, ax: Optional[Axes] = None, selected_idxs=None, **kwargs) -> Axes:
+        return scatter_spike_ft(
+            "peak", self.data, ax=ax, selected_idxs=selected_idxs, **kwargs
+        )
 
 
 class Spike_AP_thresh(SpikeFeature):
@@ -123,6 +267,11 @@ class Spike_AP_thresh(SpikeFeature):
         v_thresh = self.lookup_spike_feature("threshold_v", recompute=recompute)
         return v_thresh
 
+    def _plot(self, ax: Optional[Axes] = None, selected_idxs=None, **kwargs) -> Axes:
+        return scatter_spike_ft(
+            "threshold", self.data, ax=ax, selected_idxs=selected_idxs, **kwargs
+        )
+
 
 class Spike_AP_trough(SpikeFeature):
     """Extract spike level ap trough feature.
@@ -139,6 +288,11 @@ class Spike_AP_trough(SpikeFeature):
         v_thresh = self.lookup_spike_feature("trough_v", recompute=recompute)
         return v_thresh
 
+    def _plot(self, ax: Optional[Axes] = None, selected_idxs=None, **kwargs) -> Axes:
+        return scatter_spike_ft(
+            "trough", self.data, ax=ax, selected_idxs=selected_idxs, **kwargs
+        )
+
 
 class Spike_AP_width(SpikeFeature):
     """Extract spike level ap width feature.
@@ -154,6 +308,25 @@ class Spike_AP_width(SpikeFeature):
     def _compute(self, recompute=False, store_diagnostics=True):
         width = self.lookup_spike_feature("width", recompute=recompute)
         return width
+
+    def _plot(self, ax: Optional[Axes] = None, selected_idxs=None, **kwargs) -> Axes:
+        if has_spike_feature(self.data, "threshold_t"):
+            idxs = slice(None) if selected_idxs is None else selected_idxs
+            t_threshold = self.lookup_spike_feature("threshold_t")[idxs]
+            t_peak = self.lookup_spike_feature("peak_t")[idxs]
+            t_next = t_peak + 1.0 * (
+                t_peak - t_threshold
+            )  # T interval w.r.t. threshold
+
+            fwhm_v = np.zeros_like(t_threshold)
+            hm_up_t = np.zeros_like(t_threshold)
+            hm_down_t = np.zeros_like(t_threshold)
+            for i, (t_th, t_n) in enumerate(zip(t_threshold, t_next)):
+                fwhm_i = fwhm(self.data.t, self.data.v, t_th, t_n)
+                fwhm_v[i], hm_up_t[i], hm_down_t[i] = fwhm_i
+
+            ax.hlines(fwhm_v, hm_up_t, hm_down_t, label="width", ls="--", **kwargs)
+        return ax
 
 
 class Spike_AP_UDR(SpikeFeature):
@@ -172,6 +345,18 @@ class Spike_AP_UDR(SpikeFeature):
         upstroke = self.lookup_spike_feature("upstroke", recompute=recompute)
         downstroke = self.lookup_spike_feature("downstroke", recompute=recompute)
         return upstroke / -downstroke
+
+    def _plot(self, ax: Optional[Axes] = None, selected_idxs=None, **kwargs) -> Axes:
+        if has_spike_feature(self.data, "isi"):
+            idxs = slice(None) if selected_idxs is None else selected_idxs
+            upstroke_t = self.lookup_spike_feature("upstroke_t")[idxs]
+            upstroke_v = self.lookup_spike_feature("upstroke_v")[idxs]
+            downstroke_t = self.lookup_spike_feature("downstroke_t")[idxs]
+            downstroke_v = self.lookup_spike_feature("downstroke_v")[idxs]
+
+            ax.plot(upstroke_t, upstroke_v, "x", **kwargs)
+            ax.plot(downstroke_t, downstroke_v, "x", **kwargs)
+        return ax
 
 
 class Spike_ISI(SpikeFeature):
@@ -196,3 +381,16 @@ class Spike_ISI(SpikeFeature):
             return np.array([float("nan")])
         else:
             return np.array([])
+
+    def _plot(self, ax: Optional[Axes] = None, selected_idxs=None, **kwargs) -> Axes:
+        if has_spike_feature(self.data, "isi"):
+            idxs = slice(None) if selected_idxs is None else selected_idxs
+            thresh_t = self.lookup_spike_feature("threshold_t")[idxs]
+            thresh_v = self.lookup_spike_feature("threshold_v")[idxs]
+            isi = self.lookup_spike_feature("isi")[idxs]
+
+            ax.hlines(
+                thresh_v, thresh_t - isi, thresh_t, ls="--", label="isi", **kwargs
+            )
+            ax.plot(thresh_t, thresh_v, "x", **kwargs)
+        return ax

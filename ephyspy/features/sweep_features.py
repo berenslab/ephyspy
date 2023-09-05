@@ -39,7 +39,6 @@ from ephyspy.features.utils import (
     median_idx,
     where_stimulus,
 )
-from ephyspy.plot import plot_ap_amp, plot_isi, plot_spike_feature
 from ephyspy.utils import (
     is_sweep_feature,
     parse_desc,
@@ -52,7 +51,7 @@ from ephyspy.utils import (
 def available_sweep_features(compute_at_init=False, store_diagnostics=False):
     all_features = fetch_available_fts()
     features = {ft.__name__.lower(): ft for ft in all_features if is_sweep_feature(ft)}
-
+    features = {k.replace("sweep_", ""): v for k, v in features.items()}
     if any((compute_at_init, store_diagnostics)):
         return {
             k: lambda *args, **kwargs: v(
@@ -1479,7 +1478,8 @@ class Sweep_ISI_adapt(SweepFeature):
         return isi_adapt
 
     def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
-        ax = plot_isi(self.data, ax=ax, selected_idxs=[1, 2], **kwargs)
+        plot_isi = self.data.added_spike_features["isi"].plot
+        ax = plot_isi(ax=ax, selected_idxs=[1, 2], **kwargs)
         relabel_line(ax, "isi", self.name)
         return ax
 
@@ -1507,7 +1507,8 @@ class Sweep_ISI_adapt_avg(SweepFeature):
         return isi_adapt_avg
 
     def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
-        ax = plot_isi(self.data, ax=ax, **kwargs)
+        plot_isi = self.data.added_spike_features["isi"].plot
+        ax = plot_isi(ax=ax, **kwargs)
         relabel_line(ax, "isi", self.name)
         return ax
 
@@ -1535,7 +1536,8 @@ class Sweep_AP_amp_adapt(SweepFeature):
         return ap_amp_adapt
 
     def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
-        ax = plot_ap_amp(self.data, ax=ax, selected_idxs=[0, 1], **kwargs)
+        plot_ap_amp = self.data.added_spike_features["ap_amp"].plot
+        ax = plot_ap_amp(ax=ax, selected_idxs=[0, 1], **kwargs)
         relabel_line(ax, "ap_amp", self.name)
         return ax
 
@@ -1564,7 +1566,8 @@ class Sweep_AP_amp_adapt_avg(SweepFeature):
         return ap_amp_adapt_avg
 
     def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
-        ax = plot_ap_amp(self.data, ax=ax, **kwargs)
+        plot_ap_amp = self.data.added_spike_features["ap_amp"].plot
+        ax = plot_ap_amp(ax=ax, **kwargs)
         relabel_line(ax, "ap_amp", self.name)
         return ax
 
@@ -1695,9 +1698,9 @@ class APSweepFeature(SweepFeature):
 
     def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
         idxs = unpack(self.diagnostics, "selected_idx")
-        ax = plot_spike_feature(
-            self.data, self.name, ax=ax, selected_idxs=idxs, **kwargs
-        )
+        # ax = plot_spike_feature(
+        #     self.data, self.name, ax=ax, selected_idxs=idxs, **kwargs
+        # )
         return ax
 
 

@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import pytest
 
 from ephyspy.features import *
-from ephyspy.plot import plot_spike_feature, plottable_spike_features
+from ephyspy.analysis import plot_spike_feature
 from tests.helpers import (
     close_fig_b4_raising,
     depol_test_sweep,
@@ -37,7 +37,7 @@ def test_plot_data(sweep_or_sweepset, show_stim):
 ############################
 
 
-@pytest.mark.parametrize("ft", plottable_spike_features)
+@pytest.mark.parametrize("ft", available_spike_features())
 @pytest.mark.parametrize("show_sw", [True, False])
 @pytest.mark.parametrize("show_stim", [True, False])
 @pytest.mark.parametrize(

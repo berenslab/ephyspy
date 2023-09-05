@@ -28,11 +28,6 @@ from ephyspy.allen_sdk.ephys_extractor import (
     EphysSweepFeatureExtractor,
     EphysSweepSetFeatureExtractor,
 )
-from ephyspy.plot import (
-    plot_spike_feature,
-    plot_spike_features,
-    plottable_spike_features,
-)
 from ephyspy.utils import is_spike_feature, is_sweep_feature, is_sweepset_feature
 
 
@@ -192,8 +187,8 @@ class EphysSweep(EphysSweepFeatureExtractor):
 
         # spike feature
         if not self._spikes_df.empty:
-            if ft in plottable_spike_features:
-                plot_spike_feature(self, ft, ax=ax, **kwargs)
+            if ft in self.added_spike_features:
+                self.added_spike_features[ft].plot(ax=ax, **kwargs)
         else:
             raise ValueError(f"Feature {ft} not found.")
         ax.legend()

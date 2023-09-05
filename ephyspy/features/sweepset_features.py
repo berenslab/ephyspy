@@ -41,7 +41,7 @@ def available_sweepset_features(compute_at_init=False, store_diagnostics=False):
     features = {
         ft.__name__.lower(): ft for ft in all_features if is_sweepset_feature(ft)
     }
-    features = {k.replace("sws_", ""): v for k, v in features.items()}
+    features = {k.replace("sweepset_", ""): v for k, v in features.items()}
     if any((compute_at_init, store_diagnostics)):
         return {
             k: lambda *args, **kwargs: v(
