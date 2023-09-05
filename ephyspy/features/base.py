@@ -35,65 +35,19 @@ from ephyspy.utils import (
 )
 
 
-class SweepFeature(ABC):
-    r"""Base class for all sweep level electrophysiological features.
-
-    This class defines the interface for all electrophysiological features.
-    All features should inherit from this class, and must implement the
-    `_compute` method. The `_compute` method should return the feature value
-    and optionally save diagnostic information for later debugging to
-    `self._diagnostics`.
-
-    The description of the feature should contain a short description of the
-    feature, and a list of dependencies. The dependencies should be listed
-    as a comma separated list of feature names. It is parsed and can be displayed
-    but has no functional use for now. Furthermore, the units of the feature
-    should be specified. If the feature is unitless, the units should be set to "/".
-
-    The docstring should have the following format:
-
-    '''<Some Text>
-
-    description: <Short description of the feature>.
-    depends on: <Comma separated list of dependencies>.
-    units: <Units of the feature>.
-
-    <Some more text>'''
-
-    All computed features are added to the underlying `EphysSweep`
-    object, and can be accessed via `lookup_sweep_feature` or `lookup_spike_feature`.
-    The methods will first check if the feature is already computed, and if not,
-    instantiate and compute it. This works recursively, so that features can depend
-    on other features as long as they are looked up with `lookup_sweep_feature`
-    or `lookup_spike_feature`. Hence any feature can be computed at any point,
-    without having to compute any dependencies first. Any dependencies already
-    computed will be reused, unless `recompute=True` is passed.
-
-    `SweepFeature`s can also implement a _plot method, that displays the diagnostic
-    information or the feature itself. If the feature cannot be displayed in a V(t)
-    or I(t) plot, instead the `plot` method should be overwritten directly. This
-    is because `plot` wraps `_plot` adds additional functionality ot it.
-    """
-
+class BaseFeature(ABC):
     def __init__(
         self,
         data: Optional[EphysSweep] = None,
         compute_at_init: bool = True,
         name: Optional[str] = None,
     ):
-        r"""
-        Args:
-            data: EphysSweep object.
-                Can also be passed later with `__call__`.
-            compute_at_init: If True, compute the feature at initialization.
-                Otherwise the feature is only copmuted when `__call__` or
-                `get_value` is called. This can be useful when instantiating
-                many features at once, and waiting with the computation until
-                the features are actually needed.
-            name: Custom name of the feature. If None, the name of the feature
-                class is used.
-        """
         self.name = self.__class__.__name__.lower() if name is None else name
+        self.name = (
+            self.name.replace("sweep_", "")
+            .replace("spike_", "")
+            .replace("sweepset_", "")
+        )
         self._value = None
         self._diagnostics = None
         self._data_init(data)
@@ -109,108 +63,15 @@ class SweepFeature(ABC):
             self.units = None if not "units" in attrs else attrs["units"]
             self.units = "" if self.units == "/" else self.units
 
+    @abstractmethod
     def _data_init(self, data: EphysSweep):
-        """Initialize the feature with a EphysSweep object.
-
-        This method is called at initialization and when the feature is
-        called with a new EphysSweep object. It should
-        be used to set the `self.data` attribute, and add the feature
-        to the `self.data.features` dictionary.
-
-        Args:
-            data: EphysSweep object.
-        """
         self.data = data
-        if data is not None:
-            assert isinstance(data, EphysSweep), "data must be EphysSweep"
-            self.type = type(data).__name__
-            self.ensure_correct_hyperparams()
-            if not "features" in self.data.__dict__:
-                self.data.features = {}
-            if not self.name in self.data.features:
-                self.data.features.update({self.name: self})
-            else:
-                features = self.data.features
-                self._value = features[self.name]._value
-                self._diagnostics = features[self.name]._diagnostics
 
     def ensure_correct_hyperparams(self):
-        """Ensure that the feature hyperparameters match those supplied via metadata.
-
-        This method is called in `_data_init` and should be used to ensure that
-        the feature hyperparameters match those supplied via metadata i.e. it
-        checks if any hyperparameters in the dictionary match those in self.__dict__
-        and replaces them. This is useful when the hyperparameters stored in
-        metadata are different from the default parameters of the feature."""
         metadata = self.data.metadata
         new_defaults = {kw: v for kw, v in metadata.items() if kw in self.__dict__}
         if len(new_defaults) > 0:
             self.__dict__.update(new_defaults)
-
-    def lookup_sweep_feature(
-        self, feature_name: str, recompute: bool = False, return_value: bool = True
-    ) -> Union[float, SweepFeature]:
-        """Look up a sweep level feature and return its value.
-
-        This method will first check if the feature is already computed,
-        and if not, instantiate and compute it. This works as long as the feature
-        can be found via `fetch_available_fts`. Works recursively,
-        so that features can depend on other features as long as they are
-        looked up with `lookup_sweep_feature` or `lookup_spike_feature`.
-
-        Args:
-            feature_name: Name of the feature to look up.
-            recompute: If True, recompute the feature even if it is already
-                computed.
-            return_value: If True, return the value of the feature. Otherwise
-                return the feature object.
-
-        Returns:
-            The feature or the value of the feature depending on `return_value`.
-
-        Raises:
-            FeatureError: If the feature is not found via `fetch_available_fts`.
-        """
-        if feature_name not in self.data.features:
-            available_fts = fetch_available_fts()
-            available_fts = [ft for ft in available_fts if is_sweep_feature(ft)]
-            available_fts = {ft.__name__.lower(): ft for ft in available_fts}
-            if feature_name in available_fts:
-                ft = available_fts[feature_name](self.data)
-                if return_value:
-                    return ft.value
-                return ft
-            else:
-                raise FeatureError(f"{feature_name} is not a known feature.")
-        ft = self.data.features[feature_name]
-        if return_value:
-            return ft.get_value(recompute=recompute)
-        return ft
-
-    def lookup_spike_feature(self, feature_name: str, recompute: bool = False) -> float:
-        """Look up a spike level feature and return its value.
-
-        This method will first check if the feature is already computed,
-        and if not, compute all spike level features using `process_spikes` from
-        the underlying `EphysSweep` object, and then
-        instantiate and compute the feature.
-
-        Args:
-            feature_name: Name of the feature to look up.
-            recompute: If True, recompute the feature even if it is already
-                computed.
-
-        Returns:
-            The value of the feature.
-        """
-        if not hasattr(self.data, "_spikes_df") or recompute:
-            self.data.process_spikes()
-        elif (
-            feature_name in self.data.added_spike_features
-            and feature_name not in self.data._spikes_df.columns
-        ):
-            self.data.process_spikes()
-        return self.data.spike_feature(feature_name, include_clipped=True)
 
     def __repr__(self):
         return f"{self.name} for {self.data}"
@@ -349,7 +210,7 @@ class SweepFeature(ABC):
                 store_diagnostics=store_diagnostics,
             )
         if return_value:
-            return self._value
+            return self.value
         return self
 
     def plot(
@@ -449,6 +310,324 @@ class SweepFeature(ABC):
         return ax
 
 
+class SpikeFeature(BaseFeature):
+    def __init__(
+        self,
+        data: Optional[EphysSweep] = None,
+        compute_at_init: bool = True,
+        name: Optional[str] = None,
+    ):
+        super().__init__(data, compute_at_init, name)
+
+    def _data_init(self, data: EphysSweep):
+        self.data = data
+        if data is not None:
+            assert isinstance(data, EphysSweep), "data must be EphysSweep"
+            self.type = type(data).__name__
+            self.ensure_correct_hyperparams()
+            if hasattr(self.data, "_spikes_df"):
+                spike_features = self.data._spikes_df
+
+    def lookup_spike_feature(
+        self, feature_name: str, recompute: bool = False
+    ) -> ndarray:
+        """Look up a spike level feature and return its value.
+
+        This method will first check if the feature is already computed,
+        and if not, compute all spike level features using `process_spikes` from
+        the underlying `EphysSweep` object, and then
+        instantiate and compute the feature.
+
+        Args:
+            feature_name: Name of the feature to look up.
+            recompute: If True, recompute the feature even if it is already
+                computed.
+
+        Returns:
+            The value of the feature for each detected spike.
+        """
+        if not hasattr(self.data, "_spikes_df") or recompute:
+            self.data.process_spikes()
+        elif (
+            feature_name in self.data.added_spike_features
+            and feature_name not in self.data._spikes_df.columns
+        ):
+            self.data.process_spikes()
+        return self.data.spike_feature(feature_name, include_clipped=True)
+
+    def __str__(self):
+        name = f"{self.name}\n"
+        vals = "\n".join(
+            [f"{i}: {v:.3f} {self.units}" for i, v in enumerate(self._value)]
+        )
+        if self._value is not None:
+            return name + vals
+        else:
+            return f"{self.name}\n0: ? {self.units}"
+
+    @abstractmethod
+    def _compute(
+        self, recompute: bool = False, store_diagnostics: bool = True
+    ) -> float:
+        """Compute the feature.
+
+        All computation that is neccesary to yield the value of the feature should
+        be defined here. This is the core method of SweepFeature and all other
+        functionality interacts with this method.
+
+        Alongside computing the value of the corresponding feature, this method
+        can also be used to updat the `_diagnostics` attribute, which is a
+        dictionary that can be used to store any additional information about
+        the feature computation. This can be useful for debugging or better
+        understanding how a feature was computed. Diagnostic information can
+        be accessed with `get_diagnostics` or via the `diagnostics` property and
+        updated with `_update_diagnostics`.
+
+        Args:
+            recompute: If True, recompute the feature even if it is already
+                computed.
+            store_diagnostics: If True, store any additional information about
+                the feature computation in the `_diagnostics` attribute.
+
+        Returns:
+            The value of the feature.
+        """
+        # load dependencies using lookup_sweep_feature or lookup_spike_feature
+        # do some computation
+        # save diagnostics using _update_diagnostics
+        return
+
+    def __call__(
+        self,
+        data: EphysSweep = None,
+        compute: bool = False,
+        store_diagnostics: bool = True,
+        return_value: bool = True,
+    ) -> Union[float, SweepFeature]:
+        """Compute the feature for a given dataset.
+
+        Essentially chains together `_data_init` and `get_value`.
+
+        Args:
+            data: The dataset to compute the feature for, i.e. an instance of
+                `EphysSweep`.
+            compute: If True, compute the feature even if it is already
+                computed.
+            store_diagnostics: If True, store any additional information about
+                the feature computation in the `_diagnostics` attribute.
+            return_value: If True, return the value of the feature, otherwise
+                return the feature object.
+
+        Returns:
+            The value of the feature.
+        """
+        self._data_init(data)
+        if compute:
+            self.get_value(
+                recompute=True,
+                store_diagnostics=store_diagnostics,
+            )
+        if return_value:
+            return self.value
+        return self
+
+
+class SweepFeature(BaseFeature):
+    r"""Base class for all sweep level electrophysiological features.
+
+    This class defines the interface for all electrophysiological features.
+    All features should inherit from this class, and must implement the
+    `_compute` method. The `_compute` method should return the feature value
+    and optionally save diagnostic information for later debugging to
+    `self._diagnostics`.
+
+    The description of the feature should contain a short description of the
+    feature, and a list of dependencies. The dependencies should be listed
+    as a comma separated list of feature names. It is parsed and can be displayed
+    but has no functional use for now. Furthermore, the units of the feature
+    should be specified. If the feature is unitless, the units should be set to "/".
+
+    The docstring should have the following format:
+
+    '''<Some Text>
+
+    description: <Short description of the feature>.
+    depends on: <Comma separated list of dependencies>.
+    units: <Units of the feature>.
+
+    <Some more text>'''
+
+    All computed features are added to the underlying `EphysSweep`
+    object, and can be accessed via `lookup_sweep_feature` or `lookup_spike_feature`.
+    The methods will first check if the feature is already computed, and if not,
+    instantiate and compute it. This works recursively, so that features can depend
+    on other features as long as they are looked up with `lookup_sweep_feature`
+    or `lookup_spike_feature`. Hence any feature can be computed at any point,
+    without having to compute any dependencies first. Any dependencies already
+    computed will be reused, unless `recompute=True` is passed.
+
+    `SweepFeature`s can also implement a _plot method, that displays the diagnostic
+    information or the feature itself. If the feature cannot be displayed in a V(t)
+    or I(t) plot, instead the `plot` method should be overwritten directly. This
+    is because `plot` wraps `_plot` adds additional functionality ot it.
+    """
+
+    def __init__(
+        self,
+        data: Optional[EphysSweep] = None,
+        compute_at_init: bool = True,
+        name: Optional[str] = None,
+    ):
+        r"""
+        Args:
+            data: EphysSweep object.
+                Can also be passed later with `__call__`.
+            compute_at_init: If True, compute the feature at initialization.
+                Otherwise the feature is only copmuted when `__call__` or
+                `get_value` is called. This can be useful when instantiating
+                many features at once, and waiting with the computation until
+                the features are actually needed.
+            name: Custom name of the feature. If None, the name of the feature
+                class is used.
+        """
+        super().__init__(data, compute_at_init, name)
+
+    def _data_init(self, data: EphysSweep):
+        """Initialize the feature with a EphysSweep object.
+
+        This method is called at initialization and when the feature is
+        called with a new EphysSweep object. It should
+        be used to set the `self.data` attribute, and add the feature
+        to the `self.data.features` dictionary.
+
+        Args:
+            data: EphysSweep object.
+        """
+        self.data = data
+        if data is not None:
+            assert isinstance(data, EphysSweep), "data must be EphysSweep"
+            self.type = type(data).__name__
+            self.ensure_correct_hyperparams()
+            if not "features" in self.data.__dict__:
+                self.data.features = {}
+            if not self.name in self.data.features:
+                self.data.features.update({self.name: self})
+            else:
+                features = self.data.features
+                self._value = features[self.name]._value
+                self._diagnostics = features[self.name]._diagnostics
+
+    def lookup_sweep_feature(
+        self, feature_name: str, recompute: bool = False, return_value: bool = True
+    ) -> Union[float, SweepFeature]:
+        """Look up a sweep level feature and return its value.
+
+        This method will first check if the feature is already computed,
+        and if not, instantiate and compute it. This works as long as the feature
+        can be found via `fetch_available_fts`. Works recursively,
+        so that features can depend on other features as long as they are
+        looked up with `lookup_sweep_feature` or `lookup_spike_feature`.
+
+        Args:
+            feature_name: Name of the feature to look up.
+            recompute: If True, recompute the feature even if it is already
+                computed.
+            return_value: If True, return the value of the feature. Otherwise
+                return the feature object.
+
+        Returns:
+            The feature or the value of the feature depending on `return_value`.
+
+        Raises:
+            FeatureError: If the feature is not found via `fetch_available_fts`.
+        """
+        if feature_name not in self.data.features:
+            available_fts = fetch_available_fts()
+            available_fts = [ft for ft in available_fts if is_sweep_feature(ft)]
+            available_fts = {
+                ft.__name__.lower().replace("sweep_", ""): ft for ft in available_fts
+            }
+            if feature_name in available_fts:
+                ft = available_fts[feature_name](self.data)
+                if return_value:
+                    return ft.value
+                return ft
+            else:
+                raise FeatureError(f"{feature_name} is not a known feature.")
+        ft = self.data.features[feature_name]
+        if return_value:
+            return ft.get_value(recompute=recompute)
+        return ft
+
+    def lookup_spike_feature(
+        self, feature_name: str, recompute: bool = False
+    ) -> ndarray:
+        """Look up a spike level feature and return its value.
+
+        This method will first check if the feature is already computed,
+        and if not, compute all spike level features using `process_spikes` from
+        the underlying `EphysSweep` object, and then
+        instantiate and compute the feature.
+
+        Args:
+            feature_name: Name of the feature to look up.
+            recompute: If True, recompute the feature even if it is already
+                computed.
+
+        Returns:
+            The value of the feature for each detected spike.
+        """
+        if not hasattr(self.data, "_spikes_df") or recompute:
+            self.data.process_spikes()
+        elif (
+            feature_name in self.data.added_spike_features
+            and feature_name not in self.data._spikes_df.columns
+        ):
+            self.data.process_spikes()
+        return self.data.spike_feature(feature_name, include_clipped=True)
+
+    def __repr__(self):
+        return f"{self.name} for {self.data}"
+
+    def __str__(self):
+        if self._value is not None:
+            return f"{self.name} = {self._value:.3f} {self.units}"
+        else:
+            return f"{self.name} = ? {self.units}"
+
+    @abstractmethod
+    def _compute(
+        self, recompute: bool = False, store_diagnostics: bool = True
+    ) -> float:
+        """Compute the feature.
+
+        All computation that is neccesary to yield the value of the feature should
+        be defined here. This is the core method of SweepFeature and all other
+        functionality interacts with this method.
+
+        Alongside computing the value of the corresponding feature, this method
+        can also be used to updat the `_diagnostics` attribute, which is a
+        dictionary that can be used to store any additional information about
+        the feature computation. This can be useful for debugging or better
+        understanding how a feature was computed. Diagnostic information can
+        be accessed with `get_diagnostics` or via the `diagnostics` property and
+        updated with `_update_diagnostics`.
+
+        Args:
+            recompute: If True, recompute the feature even if it is already
+                computed.
+            store_diagnostics: If True, store any additional information about
+                the feature computation in the `_diagnostics` attribute.
+
+        Returns:
+            The value of the feature.
+        """
+        # load dependencies using lookup_sweep_feature or lookup_spike_feature
+        # do some computation
+        # save diagnostics using _update_diagnostics
+        return
+
+
 class SweepSetFeature(SweepFeature):
     """Base class for sweepset level features that are computed from a
     `EphysSweepSet`. Wraps around any `SweepFeature` derived
@@ -527,7 +706,7 @@ class SweepSetFeature(SweepFeature):
         self.SwFt = SwFt
         ft_cls = SwFt().__class__
 
-        self.name = ft_cls.__name__.lower() if name is None else name
+        self.name = SwFt().name if name is None else name
         self._value = None
         self._diagnostics = None
         self._data_init(data)
@@ -611,7 +790,7 @@ class SweepSetFeature(SweepFeature):
                 store_diagnostics=store_diagnostics,
             )
         if return_value:
-            return self._value
+            return self.value
         return self
 
     def __repr__(self):
@@ -670,7 +849,9 @@ class SweepSetFeature(SweepFeature):
         """
         available_fts = fetch_available_fts()
         available_fts = [ft for ft in available_fts if is_sweep_feature(ft)]
-        available_fts = {ft.__name__.lower(): ft for ft in available_fts}
+        available_fts = {
+            ft.__name__.lower().replace("sweep_", ""): ft for ft in available_fts
+        }
         if feature_name in available_fts:
             return np.array(
                 [
@@ -707,7 +888,9 @@ class SweepSetFeature(SweepFeature):
         if feature_name not in self.data.features:
             available_fts = fetch_available_fts()
             available_fts = [ft for ft in available_fts if is_sweepset_feature(ft)]
-            available_fts = {ft.__name__.lower(): ft for ft in available_fts}
+            available_fts = {
+                ft.__name__.lower().replace("sweepset_", ""): ft for ft in available_fts
+            }
             if feature_name in available_fts:
                 ft = available_fts[feature_name](self.data)
                 if return_value:
