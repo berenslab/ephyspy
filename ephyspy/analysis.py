@@ -166,6 +166,7 @@ def plot_sweepset_diagnostics(
     unique_sweeps = {v: k for k, v in unique_sweeps.items()}
     keys = list(unique_sweeps.keys())
 
+    # combine features for shorter labels
     for combined_ft, tag in [
         ("ap features", "ap_"),
         ("sag features", "sag"),
@@ -176,7 +177,6 @@ def plot_sweepset_diagnostics(
             keys[i] = ", ".join(
                 np.unique([combined_ft if tag in k else k for k in keys[i].split(", ")])
             )
-
     unique_sweeps = {k: s for k, s in zip(keys, unique_sweeps.values())}
 
     for label, sweep in unique_sweeps.items():

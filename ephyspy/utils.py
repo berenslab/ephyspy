@@ -20,7 +20,6 @@ import inspect
 import re
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Tuple, Union
 
-import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
 from numpy import ndarray

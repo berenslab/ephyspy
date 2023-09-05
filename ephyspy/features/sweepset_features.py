@@ -17,7 +17,7 @@
 from __future__ import annotations
 
 # ransac = linear_model.RANSACRegressor()
-from typing import Iterable, Optional
+from typing import Optional
 
 import matplotlib.pyplot as plt
 import numpy as np

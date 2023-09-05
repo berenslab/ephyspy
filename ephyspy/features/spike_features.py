@@ -18,16 +18,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional
 
-import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
 
 from ephyspy.features.base import SpikeFeature
 from ephyspy.features.utils import fetch_available_fts
 from ephyspy.utils import fwhm, has_spike_feature, is_spike_feature, scatter_spike_ft
-
-if TYPE_CHECKING:
-    from ephyspy.sweeps import EphysSweep
 
 
 def available_spike_features(compute_at_init=False, store_diagnostics=False):
