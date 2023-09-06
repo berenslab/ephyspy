@@ -101,6 +101,7 @@ def plot_spike_features(
 
 def plot_sweepset_diagnostics(
     sweepset: EphysSweepSet,
+    figsize=(15, 14),
 ) -> Tuple[Figure, Axes]:
     """Plot diagnostics overview for the whole sweepset.
 
@@ -145,7 +146,7 @@ def plot_sweepset_diagnostics(
         FT = fts.lookup_sweep_feature(ft, return_value=False)
         return FT[sw_idx].diagnostics["aggregate_idx"]
 
-    fig, axes = plt.subplot_mosaic(mosaic, figsize=(14, 14), constrained_layout=True)
+    fig, axes = plt.subplot_mosaic(mosaic, figsize=figsize, constrained_layout=True)
     onset = fts.lookup_sweep_feature("stim_onset")[0]
     end = fts.lookup_sweep_feature("stim_end")[0]
     t0, tfin = sweepset.sweeps()[0].t[[0, -1]]
@@ -237,6 +238,7 @@ def plot_sweepset_diagnostics(
     axes["ap_trace"].axvline(ap_start, color="grey")
     axes["ap_trace"].axvline(ap_end, color="grey", label="selected ap")
     ap_sweep.plot(axes["ap_window"])
+    axes["ap_window"].legend(loc="center left", bbox_to_anchor=(1.0, 0.5))
 
     # hyperpol
     plot_sweepset_ft(fts, "tau", axes["set_hyperpol_fts"])
@@ -270,6 +272,7 @@ def plot_sweepset_diagnostics(
     stim = sweepset[sweep_idx(fts, "rebound")].i
     stim_amp = int(np.max(stim) + np.min(stim))
     axes["rebound_fts"].legend(title=f"@{stim_amp }pA")
+    axes["rebound_fts"].legend(loc="center left", bbox_to_anchor=(1.0, 0.5))
 
     fig.text(-0.02, 0.5, "U (mV)", va="center", rotation="vertical", fontsize=16)
     fig.text(0.5, -0.02, "t (s)", ha="center", fontsize=16)
