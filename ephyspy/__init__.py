@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-
+from ephyspy.__version__ import __version__
 from ephyspy.analysis import *
 from ephyspy.features.base import *
 from ephyspy.features.spike_features import *
