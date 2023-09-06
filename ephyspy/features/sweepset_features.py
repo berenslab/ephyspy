@@ -656,7 +656,7 @@ class SweepSet_Slow_hyperpolarization(SweepSetFeature):
 
     def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
         v_max, v_min = unpack(self.diagnostics, ["v_baseline_max", "v_baseline_min"])
-        ax.vlines(0.05, v_min, v_max, linestyle="--", label=self.name)
+        ax.vlines(0.05, v_min, v_max, lw=5, label=self.name)
         return ax
 
 

@@ -1011,7 +1011,7 @@ class Sweep_Sag_area(SweepFeature):
         t_sag, v_sag, v_sagline = unpack(
             self.diagnostics, ["t_sag", "v_sag", "v_sagline"]
         )
-        ax.plot(t_sag, v_sag, **kwargs)
+        ax.plot(t_sag, v_sag, label="sag interval", **kwargs)
         ax.fill_between(t_sag, v_sag, v_sagline, alpha=0.5, label=self.name)
         return ax
 
@@ -1715,9 +1715,8 @@ class APSweepFeature(SweepFeature):
 
     def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
         idxs = unpack(self.diagnostics, "selected_idx")
-        # ax = plot_spike_feature(
-        #     self.data, self.name, ax=ax, selected_idxs=idxs, **kwargs
-        # )
+        plot_spike_feature = self.data.added_spike_features[self.name].plot
+        ax = plot_spike_feature(ax=ax, selected_idxs=idxs, **kwargs)
         return ax
 
 

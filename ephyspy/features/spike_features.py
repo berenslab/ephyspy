@@ -360,15 +360,15 @@ class Spike_AP_UDR(SpikeFeature):
         return upstroke / -downstroke
 
     def _plot(self, ax: Optional[Axes] = None, selected_idxs=None, **kwargs) -> Axes:
-        if has_spike_feature(self.data, "isi"):
+        if has_spike_feature(self.data, "threshold_t"):
             idxs = slice(None) if selected_idxs is None else selected_idxs
             upstroke_t = self.lookup_spike_feature("upstroke_t")[idxs]
             upstroke_v = self.lookup_spike_feature("upstroke_v")[idxs]
             downstroke_t = self.lookup_spike_feature("downstroke_t")[idxs]
             downstroke_v = self.lookup_spike_feature("downstroke_v")[idxs]
 
-            ax.plot(upstroke_t, upstroke_v, "x", **kwargs)
-            ax.plot(downstroke_t, downstroke_v, "x", **kwargs)
+            ax.plot(upstroke_t, upstroke_v, "x", label="upstroke", **kwargs)
+            ax.plot(downstroke_t, downstroke_v, "x", label="upstroke", **kwargs)
         return ax
 
 

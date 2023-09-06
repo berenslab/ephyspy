@@ -361,7 +361,11 @@ class BaseFeature(ABC):
             ax.set_xlabel("Time (s)")
         if not ax.get_ylabel():
             ax.set_ylabel("Voltage (mV)")
-        ax.legend()
+
+        # if ax has artists with legend handles
+        # add legend
+        if len(ax.get_legend_handles_labels()[0]) > 0:
+            ax.legend()
         return axes
 
     def _plot(self, *args, ax: Optional[Axes] = None, **kwargs) -> Axes:
