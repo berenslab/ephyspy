@@ -16,7 +16,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import Dict, Optional
 
 import numpy as np
 from matplotlib.axes import Axes
@@ -26,7 +26,24 @@ from ephyspy.features.utils import fetch_available_fts
 from ephyspy.utils import fwhm, has_spike_feature, is_spike_feature, scatter_spike_ft
 
 
-def available_spike_features(compute_at_init=False, store_diagnostics=False):
+def available_spike_features(
+    compute_at_init: bool = False, store_diagnostics: bool = False
+) -> Dict[str, SpikeFeature]:
+    """Return a dictionary of all implemented spike features.
+
+    Looks for all classes that inherit from SpikeFeature and returns a dictionary
+    of all available features. If compute_at_init is True, the features are
+    computed at initialization.
+
+    Args:
+        compute_at_init (bool, optional): If True, the features are computed at
+            initialization. Defaults to False.
+        store_diagnostics (bool, optional): If True, the features are computed
+            with diagnostics. Defaults to False.
+
+    Returns:
+        dict[str, SpikeFeature]: Dictionary of all available spike features.
+    """
     all_features = fetch_available_fts()
     features = {ft.__name__.lower(): ft for ft in all_features if is_spike_feature(ft)}
     features = {k.replace("spike_", ""): v for k, v in features.items()}

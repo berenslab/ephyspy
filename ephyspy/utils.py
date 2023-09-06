@@ -76,23 +76,24 @@ def relabel_line(ax: Axes, old_label: str, new_label: str):
             child.set_label(new_label)
 
 
-def has_baseclass(obj, base_name):
+def is_baseclass(
+    base_name: str,
+    obj: object,
+) -> bool:
     base_names = [base.__name__ for base in inspect.getmro(obj)]
     return base_name in base_names
 
 
 def is_spike_feature(ft: Any) -> bool:
-    return has_baseclass(ft, "SpikeFeature")
+    return is_baseclass("SpikeFeature", ft)
 
 
 def is_sweep_feature(ft: Any) -> bool:
-    return has_baseclass(ft, "SweepFeature") and not has_baseclass(
-        ft, "SweepSetFeature"
-    )
+    return is_baseclass("SweepFeature", ft) and not is_baseclass("SweepSetFeature", ft)
 
 
 def is_sweepset_feature(ft: Any) -> bool:
-    return has_baseclass(ft, "SweepSetFeature")
+    return is_baseclass("SweepSetFeature", ft)
 
 
 def has_spike_feature(sweep: EphysSweep, ft: str) -> bool:

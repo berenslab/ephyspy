@@ -17,7 +17,7 @@
 from __future__ import annotations
 
 # ransac = linear_model.RANSACRegressor()
-from typing import Optional
+from typing import Dict, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -36,7 +36,24 @@ from ephyspy.features.utils import fetch_available_fts, median_idx
 from ephyspy.utils import is_sweepset_feature
 
 
-def available_sweepset_features(compute_at_init=False, store_diagnostics=False):
+def available_sweepset_features(
+    compute_at_init: bool = False, store_diagnostics: bool = False
+) -> Dict[str, SweepSetFeature]:
+    """Return a dictionary of all implemented sweepset features.
+
+    Looks for all classes that inherit from SweepSetFeature and returns a dictionary
+    of all available features. If compute_at_init is True, the features are
+    computed at initialization.
+
+    Args:
+        compute_at_init (bool, optional): If True, the features are computed at
+            initialization. Defaults to False.
+        store_diagnostics (bool, optional): If True, the features are computed
+            with diagnostics. Defaults to False.
+
+    Returns:
+        dict[str, SweepSetFeature]: Dictionary of all available spike features.
+    """
     all_features = fetch_available_fts()
     features = {
         ft.__name__.lower(): ft for ft in all_features if is_sweepset_feature(ft)

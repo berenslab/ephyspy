@@ -17,7 +17,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import Callable, Optional
+from typing import Callable, Dict, Optional
 
 import numpy as np
 from matplotlib.pyplot import Axes
@@ -48,7 +48,24 @@ from ephyspy.utils import (
 )
 
 
-def available_sweep_features(compute_at_init=False, store_diagnostics=False):
+def available_sweep_features(
+    compute_at_init: bool = False, store_diagnostics: bool = False
+) -> Dict[str, SweepFeature]:
+    """Return a dictionary of all implemented sweep features.
+
+    Looks for all classes that inherit from SweepFeature and returns a dictionary
+    of all available features. If compute_at_init is True, the features are
+    computed at initialization.
+
+    Args:
+        compute_at_init (bool, optional): If True, the features are computed at
+            initialization. Defaults to False.
+        store_diagnostics (bool, optional): If True, the features are computed
+            with diagnostics. Defaults to False.
+
+    Returns:
+        dict[str, SweepFeature]: Dictionary of all available spike features.
+    """
     all_features = fetch_available_fts()
     features = {ft.__name__.lower(): ft for ft in all_features if is_sweep_feature(ft)}
     features = {k.replace("sweep_", ""): v for k, v in features.items()}

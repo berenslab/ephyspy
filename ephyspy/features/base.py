@@ -36,12 +36,55 @@ from ephyspy.utils import (
 
 
 class BaseFeature(ABC):
+    r"""Base class for all electrophysiological features.
+
+    This class defines the interface for all electrophysiological features.
+    All sweep features should inherit from this class, and must implement a
+    `_compute` and `_data_init` method. The `_compute` method should return the
+    feature value and optionally save diagnostic information for later debugging to
+    `self._diagnostics`. The `_data_init` method should be used to set the
+    `self.data` attribute, and add the feature to the `self.data.features`.
+
+    The description of the feature should contain a short description of the
+    feature, and a list of dependencies. The dependencies should be listed
+    as a comma separated list of feature names. It is parsed and can be displayed
+    but has no functional use for now. Furthermore, the units of the feature
+    should be specified. If the feature is unitless, the units should be set to "/".
+
+    The docstring should have the following format:
+
+    '''<Some Text>
+
+    description: <Short description of the feature>.
+    depends on: <Comma separated list of dependencies>.
+    units: <Units of the feature>.
+
+    <Some more text>'''
+
+    `BaseFeature`s can also implement a _plot method, that displays the diagnostic
+    information or the feature itself. If the feature cannot be displayed in a V(t)
+    or I(t) plot, instead the `plot` method should be overwritten directly. This
+    is because `plot` wraps `_plot` adds additional functionality ot it.
+    """
+
     def __init__(
         self,
         data: Optional[EphysSweep] = None,
         compute_at_init: bool = True,
         name: Optional[str] = None,
     ):
+        r"""
+        Args:
+            data: EphysSweep object.
+                Can also be passed later with `__call__`.
+            compute_at_init: If True, compute the feature at initialization.
+                Otherwise the feature is only copmuted when `__call__` or
+                `get_value` is called. This can be useful when instantiating
+                many features at once, and waiting with the computation until
+                the features are actually needed.
+            name: Custom name of the feature. If None, the name of the feature
+                class is used.
+        """
         self.name = self.__class__.__name__.lower() if name is None else name
         self.name = (
             self.name.replace("sweep_", "")
@@ -64,10 +107,30 @@ class BaseFeature(ABC):
             self.units = "" if self.units == "/" else self.units
 
     @abstractmethod
-    def _data_init(self, data: EphysSweep):
+    def _data_init(self, data: Union[EphysSweep, EphysSweepSet]):
+        """Initialize the feature with a EphysSweep or EphysSweepSet object.
+
+        This method is called at initialization and when the feature is
+        called with a new data object. It should be used to set the `self.data`
+        attribute, and add the feature to the `self.data.features` dictionary.
+        It can further be used to add any pre-existing / pre-computed features
+        stored in `self.data.features` to the class attributes (`_value`,
+        `_diagnostics`, etc.).
+
+        Args:
+            data: EphysSweep object.
+        """
         self.data = data
 
     def ensure_correct_hyperparams(self):
+        """Ensure that parameters passed with the data are used in computation.
+
+        Both EphysSweep and EphysSweepSet can come with metadata attached. This
+        metadata can be used to set default values for hyperparameters of
+        features. This method ensures that these hyperparameters are used in
+        computation. It should be called in `_data_init` after setting the
+        `self.data` attribute.
+        """
         metadata = self.data.metadata
         new_defaults = {kw: v for kw, v in metadata.items() if kw in self.__dict__}
         if len(new_defaults) > 0:
@@ -89,7 +152,7 @@ class BaseFeature(ABC):
         """Compute the feature.
 
         All computation that is neccesary to yield the value of the feature should
-        be defined here. This is the core method of SweepFeature and all other
+        be defined here. This is the core method of BaseFeature and all other
         functionality interacts with this method.
 
         Alongside computing the value of the corresponding feature, this method
@@ -124,13 +187,26 @@ class BaseFeature(ABC):
             The value of the feature."""
         return self.get_value(recompute=True, store_diagnostics=True)
 
-    def get_diagnostics(self, recompute=False):
+    def get_diagnostics(self, recompute: bool = False) -> Dict[str, Any]:
+        """Get diagnostic information about how a feature was computed.
+
+        This method returns any intermediary results obtained during computation
+        of the feature that has been stored in `_diagnostics`.  If the feature
+        is not yet computed, it will be computed first.
+
+        Args:
+            recompute: If True, recompute the feature even if it is already
+                computed.
+
+        Returns:
+            A dictionary with diagnostic information about the feature computation.
+        """
         if recompute or self._diagnostics is None:
             self.get_value(recompute=recompute, store_diagnostics=True)
         return self._diagnostics
 
     @property
-    def diagnostics(self):
+    def diagnostics(self) -> Dict[str, Any]:
         return self.get_diagnostics()
 
     def _update_diagnostics(self, dct: Dict[str, Any]):
@@ -172,7 +248,7 @@ class BaseFeature(ABC):
         return self._value
 
     @property
-    def value(self):
+    def value(self) -> Any:
         return self.get_value()
 
     @value.setter
@@ -224,14 +300,14 @@ class BaseFeature(ABC):
     ) -> Axes:
         """Adds additional kwargs and functionality to `BaseFeature`._plot`.
 
-        Before calling `SweepFeature._plot`, this function checks if the feature
+        Before calling `BaseFeature._plot`, this function checks if the feature
         is a stimulus feature and if so, ensures the feature is plotteed onto
         the stimulus axis. Additionally along with every feature, the sweep
         can be plotted. Same goes for the stimulus.
 
         If no axis is provided one is created.
         This function can be (and should be overwritten) if the feature cannot
-        be plotted on top of the unterlying sweep.
+        be displayed on top of the unterlying sweep.
 
         Args:
             self (BaseFeature): Feature to plot. Needs to have a `plot` method.
@@ -311,22 +387,89 @@ class BaseFeature(ABC):
 
 
 class SpikeFeature(BaseFeature):
+    r"""Base class for all spike level electrophysiological features.
+
+    All spike features should inherit from this class, and must implement the
+    `_compute` method. The `_compute` method should return the feature value
+    and optionally save diagnostic information for later debugging to
+    `self._diagnostics`.
+
+    Compared to `SweepFeature`, `SpikeFeature` behaves slightly differently.
+    Firstly, since spike features are computed on the spike level, results come
+    in the form of a vector, where each entry corresponds to a spike. Similar to
+    before this vector is stored in the `_value` attribute. However, because the
+    handling the spike features is left to the AllenSDK's `process_spikes`, they
+    `SpikeFeature` just provides an interface to the `_spikes_df` attribute of
+    the underlying `EphysSweep` object. Secondly, the spike features in the
+    AllenSDK are defined in a functional manner. This means the `__call__` method
+    of `SpikeFeature` provides the required functional interface to be able to
+    compute spike features with `EphysSweep.process_spikes`, while being able to
+    provide additional functionality to the spike feature class.
+
+    Currently, no diagnostics or recursive feature lookup is supported for spike
+    features! For now this class mainly just acts as a feature function.
+
+    The description of the feature should contain a short description of the
+    feature, and a list of dependencies. The dependencies should be listed
+    as a comma separated list of feature names. It is parsed and can be displayed
+    but has no functional use for now. Furthermore, the units of the feature
+    should be specified. If the feature is unitless, the units should be set to "/".
+
+    The docstring should have the following format:
+
+    '''<Some Text>
+
+    description: <Short description of the feature>.
+    depends on: <Comma separated list of dependencies>.
+    units: <Units of the feature>.
+
+    <Some more text>'''
+
+    All computed features are added to the underlying `EphysSweep`
+    object, and can be accessed via `lookup_spike_feature`. The methods will
+    first check if the feature is already computed, and if not, instantiate and
+    compute it. Any dependencies already computed will be reused, unless
+    `recompute=True` is passed.
+
+    `SpikeFeature`s can also implement a _plot method, the feature. If the
+    feature cannot be displayed in a V(t) or I(t) plot, instead the `plot` method
+    should be overwritten directly. This is because `plot` wraps `_plot` adds
+    additional functionality ot it.
+    """
+
     def __init__(
         self,
         data: Optional[EphysSweep] = None,
         compute_at_init: bool = True,
         name: Optional[str] = None,
     ):
+        r"""
+        Args:
+            data: EphysSweep object.
+                Can also be passed later with `__call__`.
+            compute_at_init: If True, compute the feature at initialization.
+                Otherwise the feature is only copmuted when `__call__` or
+                `get_value` is called. This can be useful when instantiating
+                many features at once, and waiting with the computation until
+                the features are actually needed.
+            name: Custom name of the feature. If None, the name of the feature
+                class is used.
+        """
         super().__init__(data, compute_at_init, name)
 
     def _data_init(self, data: EphysSweep):
+        """Initialize the feature with a EphysSweep object.
+
+        Sets self.data and ensures correct hyperparameters.
+
+        Args:
+            data: EphysSweep object.
+        """
         self.data = data
         if data is not None:
             assert isinstance(data, EphysSweep), "data must be EphysSweep"
             self.type = type(data).__name__
             self.ensure_correct_hyperparams()
-            if hasattr(self.data, "_spikes_df"):
-                spike_features = self.data._spikes_df
 
     def lookup_spike_feature(
         self, feature_name: str, recompute: bool = False
@@ -368,11 +511,11 @@ class SpikeFeature(BaseFeature):
     @abstractmethod
     def _compute(
         self, recompute: bool = False, store_diagnostics: bool = True
-    ) -> float:
+    ) -> ndarray:
         """Compute the feature.
 
         All computation that is neccesary to yield the value of the feature should
-        be defined here. This is the core method of SweepFeature and all other
+        be defined here. This is the core method of SpikeFeature and all other
         functionality interacts with this method.
 
         Alongside computing the value of the corresponding feature, this method
@@ -382,6 +525,9 @@ class SpikeFeature(BaseFeature):
         understanding how a feature was computed. Diagnostic information can
         be accessed with `get_diagnostics` or via the `diagnostics` property and
         updated with `_update_diagnostics`.
+
+        When `__call__` is called `_compute` can be thought of as a function
+        that takes in data (`EphysSweep`) and returns a vector of features.
 
         Args:
             recompute: If True, recompute the feature even if it is already
@@ -397,7 +543,10 @@ class SpikeFeature(BaseFeature):
         # save diagnostics using _update_diagnostics
         return
 
-    def get_diagnostics(self, recompute=False):
+    def get_diagnostics(self, recompute: bool = False):
+        """Overwrite get_diagnostics to return None.
+
+        Diagnostics is currently not supported for spike features."""
         # No diagnostics for spike features for now!
         return None
 
@@ -439,8 +588,7 @@ class SpikeFeature(BaseFeature):
 class SweepFeature(BaseFeature):
     r"""Base class for all sweep level electrophysiological features.
 
-    This class defines the interface for all electrophysiological features.
-    All features should inherit from this class, and must implement the
+    All sweep features should inherit from this class, and must implement the
     `_compute` method. The `_compute` method should return the feature value
     and optionally save diagnostic information for later debugging to
     `self._diagnostics`.
