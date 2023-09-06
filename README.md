@@ -1,4 +1,4 @@
-<!-- [![PyPI version]()]() -->
+[![PyPI version](https://badge.fury.io/py/ephyspy.svg)](https://badge.fury.io/py/ephyspy)
 <!-- [![codecov]()]() -->
 <!-- [![DOI]()]() -->
 [![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/berenslab/ephyspy/blob/main/CONTRIBUTING.md)
@@ -12,7 +12,8 @@
 This package provies an API to extract a multitude of features from voltage clamp recordings with the help of the [AllenSDK](https://allensdk.readthedocs.io/en/latest/allensdk.ephys.html). 
 
 ### Installation
-Clone the package with `https://github.com/berenslab/ephyspy.git` and install using pip via `pip install -e ./ephyspy`.
+The package can be installed via `pip install ephyspy`.
+Alternatively, clone the package with `https://github.com/berenslab/ephyspy.git` and install using pip via `pip install -e ./ephyspy`.
 
 ### Getting started
-To get started see [`example.ipynb`](./example.ipynb).
+To get started see [`example.ipynb`](https://github.com/berenslab/ephyspy/blob/main/example.ipynb).
