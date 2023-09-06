@@ -23,6 +23,7 @@ import numpy as np
 from matplotlib.pyplot import Axes, Figure
 
 from ephyspy.features.spike_features import available_spike_features
+from ephyspy.utils import remove_mpl_artist_by_label
 
 if TYPE_CHECKING:
     from ephyspy.sweeps import EphysSweep, EphysSweepSet
@@ -125,9 +126,9 @@ def plot_sweepset_diagnostics(
 
     fts = NullSweepSetFeature(sweepset)
 
-    def plot_sweepset_ft(fts, ft, ax):
+    def plot_sweepset_ft(fts, ft, ax, **kwargs):
         FT = fts.lookup_sweepset_feature(ft, return_value=False)
-        return FT.plot(ax=ax)
+        return FT.plot(ax=ax, **kwargs)
 
     def sweep_idx(fts, ft):
         try:
@@ -197,6 +198,10 @@ def plot_sweepset_diagnostics(
     plot_sweepset_ft(fts, "ap_freq_adapt", axes["fp_trace"])
     plot_sweepset_ft(fts, "ap_amp_slope", axes["fp_trace"])
 
+    stim = sweepset[sweep_idx(fts, "num_ap")].i
+    stim_amp = int(np.max(stim) + np.min(stim))
+    axes["fp_trace"].legend(title=f"@{stim_amp }pA")
+
     # different selection / aggregation
     # plot_sweepset_ft(fts, "ap_amp_adapt", axes["fp_trace"])
     # plot_sweepset_ft(fts, "isi_ff", axes["fp_trace"])
@@ -215,9 +220,14 @@ def plot_sweepset_diagnostics(
     plot_sweepset_ft(fts, "ap_adp", axes["ap_trace"])
     plot_sweepset_ft(fts, "ap_udr", axes["ap_trace"])
 
+    stim = sweepset[sweep_idx(fts, "ap_thresh")].i
+    stim_amp = int(np.max(stim) + np.min(stim))
+    axes["ap_trace"].legend(title=f"@{stim_amp }pA")
+
     ap_sweep = sweepset[ap_sweep_idx]
-    for ft in available_spike_features():
-        plot_spike_feature(ap_sweep, ft, axes["ap_window"])
+    for i, ft in enumerate(available_spike_features()):
+        plot_spike_feature(ap_sweep, ft, axes["ap_window"], color=f"C{i}")
+
     ap_start = ap_sweep.spike_feature("threshold_t")[ap_idx] - 5e-3
     ap_end = ap_sweep.spike_feature("fast_trough_t")[ap_idx] + 5e-3
     if isinstance(ap_start, np.ndarray):
@@ -232,13 +242,23 @@ def plot_sweepset_diagnostics(
     plot_sweepset_ft(fts, "tau", axes["set_hyperpol_fts"])
     plot_sweepset_ft(fts, "v_baseline", axes["set_hyperpol_fts"])
 
+    stim = sweepset[sweep_idx(fts, "tau")].i
+    stim_amp = int(np.max(stim) + np.min(stim))
+    axes["set_hyperpol_fts"].legend(title=f"@{stim_amp }pA")
+
     # sag
-    plot_sweepset_ft(fts, "sag", axes["sag_fts"])
     plot_sweepset_ft(fts, "sag_area", axes["sag_fts"])
     plot_sweepset_ft(fts, "sag_time", axes["sag_fts"])
-    plot_sweepset_ft(fts, "sag_ratio", axes["sag_fts"])
-    plot_sweepset_ft(fts, "sag_fraction", axes["sag_fts"])
+    plot_sweepset_ft(fts, "sag_ratio", axes["sag_fts"], color="tab:orange")
+    remove_mpl_artist_by_label(axes["sag_fts"], "sag")
+    plot_sweepset_ft(fts, "sag_fraction", axes["sag_fts"], color="tab:green")
+    remove_mpl_artist_by_label(axes["sag_fts"], "sag")
+    plot_sweepset_ft(fts, "sag", axes["sag_fts"])
     axes["sag_fts"].set_xlim(onset - 0.05, end + 0.05)
+
+    stim = sweepset[sweep_idx(fts, "sag")].i
+    stim_amp = int(np.max(stim) + np.min(stim))
+    axes["sag_fts"].legend(title=f"@{stim_amp }pA")
 
     # rebound
     plot_sweepset_ft(fts, "rebound", axes["rebound_fts"])
@@ -246,6 +266,10 @@ def plot_sweepset_diagnostics(
     plot_sweepset_ft(fts, "rebound_area", axes["rebound_fts"])
     plot_sweepset_ft(fts, "rebound_avg", axes["rebound_fts"])
     axes["rebound_fts"].set_xlim(end - 0.05, None)
+
+    stim = sweepset[sweep_idx(fts, "rebound")].i
+    stim_amp = int(np.max(stim) + np.min(stim))
+    axes["rebound_fts"].legend(title=f"@{stim_amp }pA")
 
     fig.text(-0.02, 0.5, "U (mV)", va="center", rotation="vertical", fontsize=16)
     fig.text(0.5, -0.02, "t (s)", ha="center", fontsize=16)

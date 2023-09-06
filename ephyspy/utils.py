@@ -31,6 +31,14 @@ if TYPE_CHECKING:
 where_between = lambda t, t0, tend: np.logical_and(t > t0, t < tend)
 
 
+def remove_mpl_artist_by_label(ax: Axes, legend_handle: str) -> Axes:
+    for artist in ax.get_children():
+        if artist.get_label() == legend_handle:
+            artist.remove()
+        ax.legend()
+    return ax
+
+
 def fwhm(
     t: ndarray, v: ndarray, t_start: float, t_end: float
 ) -> Tuple[float, float, float]:
