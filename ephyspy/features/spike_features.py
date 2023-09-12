@@ -191,7 +191,7 @@ class Spike_AP_AHP(SpikeFeature):
         return v_fast_trough - threshold_v
 
     def _plot(self, ax: Optional[Axes] = None, selected_idxs=None, **kwargs) -> Axes:
-        if has_spike_feature(self.data, "ahp_v"):
+        if has_spike_feature(self.data, "ap_ahp"):
             idxs = slice(None) if selected_idxs is None else selected_idxs
             trough_t = self.lookup_spike_feature("fast_trough_t")[idxs]
             trough_v = self.lookup_spike_feature("fast_trough_v")[idxs]
@@ -226,7 +226,7 @@ class Spike_AP_ADP(SpikeFeature):
         return v_adp - v_fast_trough
 
     def _plot(self, ax: Optional[Axes] = None, selected_idxs=None, **kwargs) -> Axes:
-        if has_spike_feature(self.data, "adp_v"):
+        if has_spike_feature(self.data, "ap_adp"):
             idxs = slice(None) if selected_idxs is None else selected_idxs
             adp_t = self.lookup_spike_feature("adp_t")[idxs]
             adp_v = self.lookup_spike_feature("adp_v")[idxs]
