@@ -340,11 +340,10 @@ class Spike_AP_width(SpikeFeature):
 
             # Some spikes in burst may have deep trough but short height, so can't use same
             # definition for width
-            fwhm = np.nan * np.zeros_like(trough_fwhm)
+            fwhm = trough_fwhm.copy()
             fwhm[trough_fwhm < v[spike_idxs]] = thresh_fwhm[trough_fwhm < v[spike_idxs]]
-            fwhm = fwhm[idxs]
 
-            width_t = np.array(
+            width_idx = np.array(
                 [
                     pk - np.flatnonzero(v[pk:spk:-1] <= wl)[0]
                     if np.flatnonzero(v[pk:spk:-1] <= wl).size > 0
@@ -355,8 +354,10 @@ class Spike_AP_width(SpikeFeature):
                         fwhm,
                     )
                 ]
-            )
-            width_t = t[width_t][idxs]
+            ).astype(int)
+
+            fwhm = fwhm[idxs]
+            width_t = t[width_idx][idxs]
             width = self.lookup_spike_feature("width")[idxs]
             ax.hlines(fwhm, width_t, width_t + width, label="width", ls="--", **kwargs)
         return ax
