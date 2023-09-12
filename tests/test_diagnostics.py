@@ -1,7 +1,11 @@
 import matplotlib.pyplot as plt
 import pytest
 
-from ephyspy.analysis import plot_spike_feature
+from ephyspy.analysis import (
+    plot_spike_feature,
+    plot_spike_features,
+    plot_sweepset_diagnostics,
+)
 from ephyspy.features import *
 from tests.helpers import (
     close_fig_b4_raising,
@@ -83,6 +87,57 @@ def test_plot_sweep_feature(Ft, sweep, show_sw, show_stim):
         assert isinstance(ax, plt.Axes), "Plot does not return an Axes object."
 
 
+@pytest.mark.parametrize(
+    "sweep", [depol_test_sweep, hyperpol_test_sweep], ids=["depol", "hyperpol"]
+)
+@pytest.mark.parametrize(
+    "with_precomputed",
+    [True, False],
+    ids=["w. precomputed fts", "w.o. precomputed fts"],
+)
+@close_fig_b4_raising
+def test_plot_sweep_features(sweep, with_precomputed):
+    if with_precomputed:
+        sweep.get_features()
+    else:
+        sweep.clear_features()
+    fig, ax = test_plot_sweep_features(sweep)
+    ax = np.stack(list(ax.values()))
+    if isinstance(ax, np.ndarray):
+        assert all(
+            [isinstance(a, plt.Axes) for a in ax]
+        ), "Plot does not return an Axes object."
+    else:
+        assert isinstance(ax, plt.Axes), "Plot does not return an Axes object."
+
+
 ###############################
 ### sweepset level features ###
 ###############################
+
+
+# test diagnostics plotting after and before computing features
+@pytest.mark.parametrize(
+    "sweepset",
+    [test_sweepset, test_sweepset],
+    ids=["w.o. precomputed fts", "w. precomputed fts"],
+)
+@pytest.mark.parametrize(
+    "with_precomputed",
+    [True, False],
+    ids=["w. precomputed fts", "w.o. precomputed fts"],
+)
+@close_fig_b4_raising
+def test_plot_sweep_features(sweepset, with_precomputed):
+    if with_precomputed:
+        sweepset.get_features()
+    else:
+        sweepset.clear_features()
+    fig, ax = plot_sweepset_diagnostics(sweepset)
+    ax = np.stack(list(ax.values()))
+    if isinstance(ax, np.ndarray):
+        assert all(
+            [isinstance(a, plt.Axes) for a in ax]
+        ), "Plot does not return an Axes object."
+    else:
+        assert isinstance(ax, plt.Axes), "Plot does not return an Axes object."

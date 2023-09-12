@@ -121,6 +121,12 @@ class EphysSweep(EphysSweepFeatureExtractor):
                     for k, ft in self.features.items()
                 }
 
+    def clear_features(self):
+        """Clear all features."""
+        self.spikes_df = None
+        if self.features is not None:
+            self.features.clear()
+
     def plot(
         self, ax: Optional[Axes] = None, show_stimulus: bool = False, **kwargs
     ) -> Axes:
@@ -358,6 +364,13 @@ class EphysSweepSet(EphysSweepSetFeatureExtractor):
                 self.features.update({feature.name: feature})
             else:
                 raise TypeError("Feature is not of a known type.")
+
+    def clear_features(self):
+        """Clear all features."""
+        if self.features is not None:
+            self.features.clear()
+        for sweep in self.sweeps():
+            sweep.clear_features()
 
     def set_stimulus_amplitude_calculator(self, func: Callable):
         """Set stimulus amplitude calculator for each sweep.

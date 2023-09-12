@@ -87,9 +87,7 @@ def test_sweep_feature(Ft, sweep):
     "sweep", [depol_test_sweep, hyperpol_test_sweep], ids=["depol", "hyperpol"]
 )
 def test_sweep_pipe(sweep):
-    # TODO: rm clear features from sweepset and sweeps?
-    if sweep.features is not None:
-        sweep.features.clear()
+    sweep.clear_features()
     sweep.add_features(available_spike_features())
     sweep.add_features(available_sweep_features())
     sweep.get_features()
@@ -113,11 +111,7 @@ def test_sweepset_feature(Ft):
 
 
 def test_sweepset_pipe():
-    if test_sweepset.features is not None:
-        test_sweepset.features.clear()
-        for sweep in test_sweepset:
-            if sweep.features is not None:
-                sweep.features.clear()
+    test_sweepset.clear_features()
     test_sweepset.add_features(available_spike_features())
     # sweepset.add_features(available_sweep_features())
     test_sweepset.add_features(available_sweepset_features())

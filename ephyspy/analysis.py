@@ -125,6 +125,9 @@ def plot_sweepset_diagnostics(
         ["sag_fts", "set_hyperpol_fts", "set_hyperpol_fts", "rebound_fts"],
     ]
 
+    sweepset.add_features(
+        available_spike_features()
+    )  # HOTFIX: Spike features are not yet looked up properly
     fts = NullSweepSetFeature(sweepset)
 
     def plot_sweepset_ft(fts, ft, ax, **kwargs):
