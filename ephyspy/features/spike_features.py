@@ -323,22 +323,49 @@ class Spike_AP_width(SpikeFeature):
         return width
 
     def _plot(self, ax: Optional[Axes] = None, selected_idxs=None, **kwargs) -> Axes:
-        if has_spike_feature(self.data, "threshold_t"):
+        if has_spike_feature(self.data, "width"):
             idxs = slice(None) if selected_idxs is None else selected_idxs
-            t_threshold = self.lookup_spike_feature("threshold_t")[idxs]
-            t_peak = self.lookup_spike_feature("peak_t")[idxs]
-            t_next = t_peak + 1.0 * (
-                t_peak - t_threshold
-            )  # T interval w.r.t. threshold
 
-            fwhm_v = np.zeros_like(t_threshold)
-            hm_up_t = np.zeros_like(t_threshold)
-            hm_down_t = np.zeros_like(t_threshold)
-            for i, (t_th, t_n) in enumerate(zip(t_threshold, t_next)):
-                fwhm_i = fwhm(self.data.t, self.data.v, t_th, t_n)
-                fwhm_v[i], hm_up_t[i], hm_down_t[i] = fwhm_i
+            # adapted from `allen_sdk.ephys_features.find_widths`
+            trough_idxs = self.lookup_spike_feature("trough_index").astype(int)
+            spike_idxs = self.lookup_spike_feature("threshold_index").astype(int)
+            peak_idxs = self.lookup_spike_feature("peak_index").astype(int)
 
-            ax.hlines(fwhm_v, hm_up_t, hm_down_t, label="width", ls="--", **kwargs)
+            heights = self.data.v[peak_idxs] - self.data.v[trough_idxs]
+            width_levels = heights / 2.0 + self.data.v[trough_idxs]
+
+            thresh_to_peak_levels = (
+                self.data.v[peak_idxs] - self.data.v[spike_idxs]
+            ) / 2.0 + self.data.v[spike_idxs]
+
+            # Some spikes in burst may have deep trough but short height, so can't use same
+            # definition for width
+            width_levels[
+                width_levels < self.data.v[spike_idxs]
+            ] = thresh_to_peak_levels[width_levels < self.data.v[spike_idxs]][idxs]
+
+            width_starts = np.array(
+                [
+                    pk - np.flatnonzero(self.data.v[pk:spk:-1] <= wl)[0]
+                    if np.flatnonzero(self.data.v[pk:spk:-1] <= wl).size > 0
+                    else np.nan
+                    for pk, spk, wl in zip(
+                        peak_idxs,
+                        spike_idxs,
+                        width_levels,
+                    )
+                ]
+            )
+            width_starts = self.data.t[width_starts][idxs]
+            width = self.lookup_spike_feature("width")[idxs]
+            ax.hlines(
+                width_levels,
+                width_starts,
+                width_starts + width,
+                label="width",
+                ls="--",
+                **kwargs,
+            )
         return ax
 
 
