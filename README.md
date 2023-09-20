@@ -1,4 +1,4 @@
-<!-- [![codecov]()]() -->
+[![codecov](https://codecov.io/gh/berenslab/ephyspy/branch/main/graph/badge.svg)](https://codecov.io/gh/berenslab/ephyspy)
 <!-- [![DOI]()]() -->
 [![PyPI version](https://badge.fury.io/py/ephyspy.svg)](https://badge.fury.io/py/ephyspy)
 [![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/berenslab/ephyspy/blob/main/CONTRIBUTING.md)
