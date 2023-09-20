@@ -1,8 +1,8 @@
-[![codecov](https://codecov.io/gh/berenslab/ephyspy/branch/main/graph/badge.svg)](https://codecov.io/gh/berenslab/ephyspy)
 <!-- [![DOI]()]() -->
 [![PyPI version](https://badge.fury.io/py/ephyspy.svg)](https://badge.fury.io/py/ephyspy)
 [![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/berenslab/ephyspy/blob/main/CONTRIBUTING.md)
 [![Tests](https://github.com/berenslab/ephyspy/workflows/Tests/badge.svg?branch=main)](https://github.com/berenslab/ephyspy/actions)
+[![codecov](https://codecov.io/gh/berenslab/ephyspy/branch/main/graph/badge.svg)](https://codecov.io/gh/berenslab/ephyspy)
 [![GitHub license](https://img.shields.io/github/license/berenslab/ephyspy)](https://github.com/berenslab/ephyspy/blob/main/LICENSE.txt)
 
 # EphysPy
