@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ephyspy.allen_sdk package &mdash; EphysPy 0.0.05 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=ecdf1fa4"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="ephyspy.features package" href="ephyspy.features.html" />
+    <link rel="prev" title="ephyspy package" href="ephyspy.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            EphysPy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">ephyspy</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="ephyspy.html">ephyspy package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="ephyspy.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4 current"><a class="current reference internal" href="#">ephyspy.allen_sdk package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ephyspy.features.html">ephyspy.features package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.html#module-ephyspy.analysis">ephyspy.analysis module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.html#module-ephyspy.sweeps">ephyspy.sweeps module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.html#module-ephyspy.utils">ephyspy.utils module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.html#module-ephyspy">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">EphysPy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">ephyspy</a></li>
+          <li class="breadcrumb-item"><a href="ephyspy.html">ephyspy package</a></li>
+      <li class="breadcrumb-item active">ephyspy.allen_sdk package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/ephyspy.allen_sdk.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="ephyspy-allen-sdk-package">
+<h1>ephyspy.allen_sdk package<a class="headerlink" href="#ephyspy-allen-sdk-package" title="Permalink to this heading"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
+</section>
+<section id="module-ephyspy.allen_sdk.ephys_extractor">
+<span id="ephyspy-allen-sdk-ephys-extractor-module"></span><h2>ephyspy.allen_sdk.ephys_extractor module<a class="headerlink" href="#module-ephyspy.allen_sdk.ephys_extractor" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_extractor.EphysCellFeatureExtractor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ephyspy.allen_sdk.ephys_extractor.</span></span><span class="sig-name descname"><span class="pre">EphysCellFeatureExtractor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ramps_ext</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">short_squares_ext</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">long_squares_ext</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subthresh_min_amp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-100</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_extractor.html#EphysCellFeatureExtractor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_extractor.EphysCellFeatureExtractor" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_extractor.EphysCellFeatureExtractor.SAG_TARGET">
+<span class="sig-name descname"><span class="pre">SAG_TARGET</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">-100.0</span></em><a class="headerlink" href="#ephyspy.allen_sdk.ephys_extractor.EphysCellFeatureExtractor.SAG_TARGET" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_extractor.EphysCellFeatureExtractor.SUBTHRESH_MAX_AMP">
+<span class="sig-name descname"><span class="pre">SUBTHRESH_MAX_AMP</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0</span></em><a class="headerlink" href="#ephyspy.allen_sdk.ephys_extractor.EphysCellFeatureExtractor.SUBTHRESH_MAX_AMP" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_extractor.EphysCellFeatureExtractor.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_extractor.html#EphysCellFeatureExtractor.as_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_extractor.EphysCellFeatureExtractor.as_dict" title="Permalink to this definition"></a></dt>
+<dd><p>Create dict of cell features.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_extractor.EphysCellFeatureExtractor.cell_features">
+<span class="sig-name descname"><span class="pre">cell_features</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_extractor.html#EphysCellFeatureExtractor.cell_features"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_extractor.EphysCellFeatureExtractor.cell_features" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_extractor.EphysCellFeatureExtractor.long_squares_features">
+<span class="sig-name descname"><span class="pre">long_squares_features</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_extractor.html#EphysCellFeatureExtractor.long_squares_features"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_extractor.EphysCellFeatureExtractor.long_squares_features" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_extractor.EphysCellFeatureExtractor.long_squares_stim_amps">
+<span class="sig-name descname"><span class="pre">long_squares_stim_amps</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_extractor.html#EphysCellFeatureExtractor.long_squares_stim_amps"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_extractor.EphysCellFeatureExtractor.long_squares_stim_amps" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_extractor.EphysCellFeatureExtractor.process">
+<span class="sig-name descname"><span class="pre">process</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">keys</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_extractor.html#EphysCellFeatureExtractor.process"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_extractor.EphysCellFeatureExtractor.process" title="Permalink to this definition"></a></dt>
+<dd><p>Processes features. Can take a specific key (or set of keys) to
+do a subset of processing.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_extractor.EphysCellFeatureExtractor.ramps_features">
+<span class="sig-name descname"><span class="pre">ramps_features</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">all</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_extractor.html#EphysCellFeatureExtractor.ramps_features"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_extractor.EphysCellFeatureExtractor.ramps_features" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_extractor.EphysCellFeatureExtractor.short_squares_features">
+<span class="sig-name descname"><span class="pre">short_squares_features</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_extractor.html#EphysCellFeatureExtractor.short_squares_features"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_extractor.EphysCellFeatureExtractor.short_squares_features" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_extractor.EphysSweepSetFeatureExtractor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ephyspy.allen_sdk.ephys_extractor.</span></span><span class="sig-name descname"><span class="pre">EphysSweepSetFeatureExtractor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t_set</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v_set</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i_set</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dv_cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">20.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_interval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.005</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_height</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_peak</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-30.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thresh_frac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baseline_interval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baseline_detect_thresh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id_set</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_extractor.html#EphysSweepSetFeatureExtractor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_extractor.EphysSweepSetFeatureExtractor" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_extractor.EphysSweepSetFeatureExtractor.from_sweeps">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_sweeps</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sweep_list</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_extractor.html#EphysSweepSetFeatureExtractor.from_sweeps"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_extractor.EphysSweepSetFeatureExtractor.from_sweeps" title="Permalink to this definition"></a></dt>
+<dd><p>Initialize EphysSweepSetFeatureExtractor object with a list of
+pre-existing sweep feature extractor objects.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_extractor.EphysSweepSetFeatureExtractor.process_spikes">
+<span class="sig-name descname"><span class="pre">process_spikes</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_extractor.html#EphysSweepSetFeatureExtractor.process_spikes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_extractor.EphysSweepSetFeatureExtractor.process_spikes" title="Permalink to this definition"></a></dt>
+<dd><p>Analyze spike features for all sweeps.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_extractor.EphysSweepSetFeatureExtractor.spike_feature_averages">
+<span class="sig-name descname"><span class="pre">spike_feature_averages</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_extractor.html#EphysSweepSetFeatureExtractor.spike_feature_averages"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_extractor.EphysSweepSetFeatureExtractor.spike_feature_averages" title="Permalink to this definition"></a></dt>
+<dd><p>Get nparray of average spike-level feature (<cite>key</cite>) for all sweeps</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_extractor.EphysSweepSetFeatureExtractor.sweep_features">
+<span class="sig-name descname"><span class="pre">sweep_features</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_missing</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_extractor.html#EphysSweepSetFeatureExtractor.sweep_features"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_extractor.EphysSweepSetFeatureExtractor.sweep_features" title="Permalink to this definition"></a></dt>
+<dd><p>Get nparray of sweep-level feature (<cite>key</cite>) for all sweeps</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>name</em><em> of </em><em>sweep-level feature</em>) – </p></li>
+<li><p><strong>allow_missing</strong> (<em>return np.nan if key is missing for sweep</em><em> (</em><em>default False</em><em>)</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>sweep_feature</strong></p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>nparray of sweep-level feature values</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_extractor.EphysSweepSetFeatureExtractor.sweeps">
+<span class="sig-name descname"><span class="pre">sweeps</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_extractor.html#EphysSweepSetFeatureExtractor.sweeps"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_extractor.EphysSweepSetFeatureExtractor.sweeps" title="Permalink to this definition"></a></dt>
+<dd><p>Get list of EphysSweepFeatureExtractor objects.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_extractor.cell_extractor_for_nwb">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.allen_sdk.ephys_extractor.</span></span><span class="sig-name descname"><span class="pre">cell_extractor_for_nwb</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ramps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">short_squares</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">long_squares</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subthresh_min_amp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-100</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_extractor.html#cell_extractor_for_nwb"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_extractor.cell_extractor_for_nwb" title="Permalink to this definition"></a></dt>
+<dd><p>Initialize EphysCellFeatureExtractor object from NWB data set</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataset</strong> (<em>NwbDataSet</em>) – </p></li>
+<li><p><strong>ramps</strong> (<em>list</em><em> of </em><em>sweep numbers</em><em> of </em><em>ramp sweeps</em>) – </p></li>
+<li><p><strong>short_squares</strong> (<em>list</em><em> of </em><em>sweep numbers</em><em> of </em><em>short square sweeps</em>) – </p></li>
+<li><p><strong>long_squares</strong> (<em>list</em><em> of </em><em>sweep numbers</em><em> of </em><em>long square sweeps</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_extractor.extractor_for_nwb_sweeps">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.allen_sdk.ephys_extractor.</span></span><span class="sig-name descname"><span class="pre">extractor_for_nwb_sweeps</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sweep_numbers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fixed_start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fixed_end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dv_cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">20.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thresh_frac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_extractor.html#extractor_for_nwb_sweeps"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_extractor.extractor_for_nwb_sweeps" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_extractor.fit_fi_slope">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.allen_sdk.ephys_extractor.</span></span><span class="sig-name descname"><span class="pre">fit_fi_slope</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ext</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_extractor.html#fit_fi_slope"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_extractor.fit_fi_slope" title="Permalink to this definition"></a></dt>
+<dd><p>Fit the rate and stimulus amplitude to a line and return the slope of
+the fit.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_extractor.input_resistance">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.allen_sdk.ephys_extractor.</span></span><span class="sig-name descname"><span class="pre">input_resistance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ext</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_extractor.html#input_resistance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_extractor.input_resistance" title="Permalink to this definition"></a></dt>
+<dd><p>Estimate input resistance in MOhms, assuming all sweeps in passed
+extractor are hyperpolarizing responses.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_extractor.membrane_time_constant">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.allen_sdk.ephys_extractor.</span></span><span class="sig-name descname"><span class="pre">membrane_time_constant</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ext</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_extractor.html#membrane_time_constant"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_extractor.membrane_time_constant" title="Permalink to this definition"></a></dt>
+<dd><p>Average the membrane time constant values estimated from each sweep
+in passed extractor.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_extractor.reset_long_squares_start">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.allen_sdk.ephys_extractor.</span></span><span class="sig-name descname"><span class="pre">reset_long_squares_start</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">when</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_extractor.html#reset_long_squares_start"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_extractor.reset_long_squares_start" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="module-ephyspy.allen_sdk.ephys_features">
+<span id="ephyspy-allen-sdk-ephys-features-module"></span><h2>ephyspy.allen_sdk.ephys_features module<a class="headerlink" href="#module-ephyspy.allen_sdk.ephys_features" title="Permalink to this heading"></a></h2>
+<dl class="py exception">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_features.FeatureError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ephyspy.allen_sdk.ephys_features.</span></span><span class="sig-name descname"><span class="pre">FeatureError</span></span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_features.html#FeatureError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_features.FeatureError" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Generic Python-exception-derived object raised by feature detection functions.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_features.adaptation_index">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.allen_sdk.ephys_features.</span></span><span class="sig-name descname"><span class="pre">adaptation_index</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">isis</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_features.html#adaptation_index"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_features.adaptation_index" title="Permalink to this definition"></a></dt>
+<dd><p>Calculate adaptation index of <cite>isis</cite>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_features.analyze_trough_details">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.allen_sdk.ephys_features.</span></span><span class="sig-name descname"><span class="pre">analyze_trough_details</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spike_indexes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">peak_indexes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clipped</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">heavy_filter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">term_frac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adp_thresh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flat_interval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.002</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adp_max_delta_t</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.005</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adp_max_delta_v</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dvdt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_features.html#analyze_trough_details"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_features.analyze_trough_details" title="Permalink to this definition"></a></dt>
+<dd><p>Analyze trough to determine if an ADP exists and whether the reset is a ‘detour’ or ‘direct’</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>v</strong> (<em>numpy array</em><em> of </em><em>voltage time series in mV</em>) – </p></li>
+<li><p><strong>t</strong> (<em>numpy array</em><em> of </em><em>times in seconds</em>) – </p></li>
+<li><p><strong>spike_indexes</strong> (<em>numpy array</em><em> of </em><em>spike indexes</em>) – </p></li>
+<li><p><strong>peak_indexes</strong> (<em>numpy array</em><em> of </em><em>spike peak indexes</em>) – </p></li>
+<li><p><strong>end</strong> (<em>end</em><em> of </em><em>time window</em><em> (</em><em>optional</em><em>)</em>) – </p></li>
+<li><p><strong>filter</strong> (<em>cutoff frequency for 4-pole low-pass Bessel filter in kHz</em><em> (</em><em>default 1</em><em>)</em>) – </p></li>
+<li><p><strong>heavy_filter</strong> (<em>lower cutoff frequency for 4-pole low-pass Bessel filter in kHz</em><em> (</em><em>default 1</em><em>)</em>) – </p></li>
+<li><p><strong>thresh_frac</strong> (<em>fraction</em><em> of </em><em>average upstroke for threshold calculation</em><em> (</em><em>optional</em><em>, </em><em>default 0.05</em><em>)</em>) – </p></li>
+<li><p><strong>adp_thresh</strong> (<em>minimum dV/dt in V/s to exceed to be considered to have an ADP</em><em> (</em><em>optional</em><em>, </em><em>default 1.5</em><em>)</em>) – </p></li>
+<li><p><strong>tol</strong> (<em>tolerance for evaluating whether Vm drops appreciably further after end</em><em> of </em><em>spike</em><em> (</em><em>default 1.0 mV</em><em>)</em>) – </p></li>
+<li><p><strong>flat_interval</strong> (<em>if the trace is flat for this duration</em><em>, </em><em>stop looking for an ADP</em><em> (</em><em>default 0.002 s</em><em>)</em>) – </p></li>
+<li><p><strong>adp_max_delta_t</strong> (<em>max possible ADP delta t</em><em> (</em><em>default 0.005 s</em><em>)</em>) – </p></li>
+<li><p><strong>adp_max_delta_v</strong> (<em>max possible ADP delta v</em><em> (</em><em>default 10 mV</em><em>)</em>) – </p></li>
+<li><p><strong>dvdt</strong> (<em>pre-calculated time-derivative</em><em> of </em><em>voltage</em><em> (</em><em>optional</em><em>)</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>isi_types</strong> (<em>numpy array of isi reset types (direct or detour)</em>)</p></li>
+<li><p><strong>fast_trough_indexes</strong> (<em>numpy array of indexes at the start of the trough (i.e. end of the spike)</em>)</p></li>
+<li><p><strong>adp_indexes</strong> (<em>numpy array of adp indexes (np.nan if there was no ADP in that ISI</em>)</p></li>
+<li><p><strong>slow_trough_indexes</strong> (<em>numpy array of indexes at the minimum of the slow phase of the trough</em>) – (if there wasn’t just a fast phase)</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_features.average_rate">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.allen_sdk.ephys_features.</span></span><span class="sig-name descname"><span class="pre">average_rate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spikes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_features.html#average_rate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_features.average_rate" title="Permalink to this definition"></a></dt>
+<dd><p>Calculate average firing rate during interval between <cite>start</cite> and <cite>end</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>t</strong> (<em>numpy array</em><em> of </em><em>times in seconds</em>) – </p></li>
+<li><p><strong>spikes</strong> (<em>numpy array</em><em> of </em><em>spike indexes</em>) – </p></li>
+<li><p><strong>start</strong> (<em>start</em><em> of </em><em>time window for spike detection</em>) – </p></li>
+<li><p><strong>end</strong> (<em>end</em><em> of </em><em>time window for spike detection</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>avg_rate</strong></p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>average firing rate in spikes/sec</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_features.average_voltage">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.allen_sdk.ephys_features.</span></span><span class="sig-name descname"><span class="pre">average_voltage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_features.html#average_voltage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_features.average_voltage" title="Permalink to this definition"></a></dt>
+<dd><p>Calculate average voltage between start and end.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>v</strong> (<em>numpy array</em><em> of </em><em>voltage time series in mV</em>) – </p></li>
+<li><p><strong>t</strong> (<em>numpy array</em><em> of </em><em>times in seconds</em>) – </p></li>
+<li><p><strong>start</strong> (<em>start</em><em> of </em><em>time window for spike detection</em><em> (</em><em>optional</em><em>, </em><em>default None</em><em>)</em>) – </p></li>
+<li><p><strong>end</strong> (<em>end</em><em> of </em><em>time window for spike detection</em><em> (</em><em>optional</em><em>, </em><em>default None</em><em>)</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>v_avg</strong></p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>average voltage</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_features.calculate_dvdt">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.allen_sdk.ephys_features.</span></span><span class="sig-name descname"><span class="pre">calculate_dvdt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_features.html#calculate_dvdt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_features.calculate_dvdt" title="Permalink to this definition"></a></dt>
+<dd><p>Low-pass filters (if requested) and differentiates voltage by time.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>v</strong> (<em>numpy array</em><em> of </em><em>voltage time series in mV</em>) – </p></li>
+<li><p><strong>t</strong> (<em>numpy array</em><em> of </em><em>times in seconds</em>) – </p></li>
+<li><p><strong>filter</strong> (<em>cutoff frequency for 4-pole low-pass Bessel filter in kHz</em><em> (</em><em>optional</em><em>, </em><em>default None</em><em>)</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>dvdt</strong></p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy array of time-derivative of voltage (V/s = mV/ms)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_features.check_thresholds_and_peaks">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.allen_sdk.ephys_features.</span></span><span class="sig-name descname"><span class="pre">check_thresholds_and_peaks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spike_indexes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">peak_indexes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">upstroke_indexes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_interval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.005</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thresh_frac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dvdt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_features.html#check_thresholds_and_peaks"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_features.check_thresholds_and_peaks" title="Permalink to this definition"></a></dt>
+<dd><p>Validate thresholds and peaks for set of spikes</p>
+<p>Check that peaks and thresholds for consecutive spikes do not overlap
+Spikes with overlapping thresholds and peaks will be merged.</p>
+<p>Check that peaks and thresholds for a given spike are not too far apart.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>v</strong> (<em>numpy array</em><em> of </em><em>voltage time series in mV</em>) – </p></li>
+<li><p><strong>t</strong> (<em>numpy array</em><em> of </em><em>times in seconds</em>) – </p></li>
+<li><p><strong>spike_indexes</strong> (<em>numpy array</em><em> of </em><em>spike indexes</em>) – </p></li>
+<li><p><strong>peak_indexes</strong> (<em>numpy array</em><em> of </em><em>indexes</em><em> of </em><em>spike peaks</em>) – </p></li>
+<li><p><strong>upstroke_indexes</strong> (<em>numpy array</em><em> of </em><em>indexes</em><em> of </em><em>spike upstrokes</em>) – </p></li>
+<li><p><strong>max_interval</strong> (<em>maximum allowed time between start</em><em> of </em><em>spike and time</em><em> of </em><em>peak in sec</em><em> (</em><em>default 0.005</em><em>)</em>) – </p></li>
+<li><p><strong>thresh_frac</strong> (<em>fraction</em><em> of </em><em>average upstroke for threshold calculation</em><em> (</em><em>optional</em><em>, </em><em>default 0.05</em><em>)</em>) – </p></li>
+<li><p><strong>filter</strong> (<em>cutoff frequency for 4-pole low-pass Bessel filter in kHz</em><em> (</em><em>optional</em><em>, </em><em>default 10</em><em>)</em>) – </p></li>
+<li><p><strong>dvdt</strong> (<em>pre-calculated time-derivative</em><em> of </em><em>voltage</em><em> (</em><em>optional</em><em>)</em>) – </p></li>
+<li><p><strong>tol</strong> (<em>tolerance for returning to threshold in mV</em><em> (</em><em>optional</em><em>, </em><em>default 1</em><em>)</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>spike_indexes</strong> (<em>numpy array of modified spike indexes</em>)</p></li>
+<li><p><strong>peak_indexes</strong> (<em>numpy array of modified spike peak indexes</em>)</p></li>
+<li><p><strong>upstroke_indexes</strong> (<em>numpy array of modified spike upstroke indexes</em>)</p></li>
+<li><p><strong>clipped</strong> (<em>numpy array of clipped status of spikes</em>)</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_features.detect_bursts">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.allen_sdk.ephys_features.</span></span><span class="sig-name descname"><span class="pre">detect_bursts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">isis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">isi_types</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fast_tr_v</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fast_tr_t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">slow_tr_v</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">slow_tr_t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thr_v</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pause_cost</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_features.html#detect_bursts"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_features.detect_bursts" title="Permalink to this definition"></a></dt>
+<dd><p>Detect bursts in spike train.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>isis</strong> (<em>numpy array</em><em> of </em><em>n interspike intervals</em>) – </p></li>
+<li><p><strong>isi_types</strong> (<em>numpy array</em><em> of </em><em>n interspike interval types</em>) – </p></li>
+<li><p><strong>fast_tr_v</strong> (<em>numpy array</em><em> of </em><em>fast trough voltages for the n + 1 spikes</em><em> of </em><em>the train</em>) – </p></li>
+<li><p><strong>fast_tr_t</strong> (<em>numpy array</em><em> of </em><em>fast trough times for the n + 1 spikes</em><em> of </em><em>the train</em>) – </p></li>
+<li><p><strong>slow_tr_v</strong> (<em>numpy array</em><em> of </em><em>slow trough voltages for the n + 1 spikes</em><em> of </em><em>the train</em>) – </p></li>
+<li><p><strong>slow_tr_t</strong> (<em>numpy array</em><em> of </em><em>slow trough times for the n + 1 spikes</em><em> of </em><em>the train</em>) – </p></li>
+<li><p><strong>thr_v</strong> (<em>numpy array</em><em> of </em><em>threshold voltages for the n + 1 spikes</em><em> of </em><em>the train</em>) – </p></li>
+<li><p><strong>tol</strong> (<em>tolerance for the difference in slow trough voltages and thresholds</em><em> (</em><em>default 0.5 mV</em><em>)</em>) – Used to identify “delay” interspike intervals that occur within a burst</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>bursts</strong> – Each item in list is a tuple of the form (burst_index, start, end) where <cite>burst_index</cite>
+is a comparison index between the highest instantaneous rate within the burst vs
+the highest instantaneous rate outside the burst. <cite>start</cite> is the index of the first
+ISI of the burst, and <cite>end</cite> is the ISI index immediately following the burst.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list of bursts</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_features.detect_pauses">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.allen_sdk.ephys_features.</span></span><span class="sig-name descname"><span class="pre">detect_pauses</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">isis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">isi_types</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cost_weight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_features.html#detect_pauses"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_features.detect_pauses" title="Permalink to this definition"></a></dt>
+<dd><p>Determine which ISIs are “pauses” in ongoing firing.</p>
+<p>Pauses are unusually long ISIs with a “detour reset” among “direct resets”.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>isis</strong> (<em>numpy array</em><em> of </em><em>interspike intervals</em>) – </p></li>
+<li><p><strong>isi_types</strong> (<em>numpy array</em><em> of </em><em>interspike interval types</em><em> (</em><em>'direct'</em><em> or </em><em>'detour'</em><em>)</em>) – </p></li>
+<li><p><strong>cost_weight</strong> (<em>weight for cost function for calling an ISI a pause</em>) – Higher cost weights lead to fewer ISIs identified as pauses. The cost function
+also depends on the difference between the duration of the “pause” ISIs and the
+average duration and standard deviation of “non-pause” ISIs.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>pauses</strong></p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy array of indices corresponding to pauses in <cite>isis</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_features.detect_putative_spikes">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.allen_sdk.ephys_features.</span></span><span class="sig-name descname"><span class="pre">detect_putative_spikes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dv_cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">20.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_features.html#detect_putative_spikes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_features.detect_putative_spikes" title="Permalink to this definition"></a></dt>
+<dd><p>Perform initial detection of spikes and return their indexes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>v</strong> (<em>numpy array</em><em> of </em><em>voltage time series in mV</em>) – </p></li>
+<li><p><strong>t</strong> (<em>numpy array</em><em> of </em><em>times in seconds</em>) – </p></li>
+<li><p><strong>start</strong> (<em>start</em><em> of </em><em>time window for spike detection</em><em> (</em><em>optional</em><em>)</em>) – </p></li>
+<li><p><strong>end</strong> (<em>end</em><em> of </em><em>time window for spike detection</em><em> (</em><em>optional</em><em>)</em>) – </p></li>
+<li><p><strong>filter</strong> (<em>cutoff frequency for 4-pole low-pass Bessel filter in kHz</em><em> (</em><em>optional</em><em>, </em><em>default 10</em><em>)</em>) – </p></li>
+<li><p><strong>dv_cutoff</strong> (<em>minimum dV/dt to qualify as a spike in V/s</em><em> (</em><em>optional</em><em>, </em><em>default 20</em><em>)</em>) – </p></li>
+<li><p><strong>dvdt</strong> (<em>pre-calculated time-derivative</em><em> of </em><em>voltage</em><em> (</em><em>optional</em><em>)</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>putative_spikes</strong></p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy array of preliminary spike indexes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_features.estimate_adjusted_detection_parameters">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.allen_sdk.ephys_features.</span></span><span class="sig-name descname"><span class="pre">estimate_adjusted_detection_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v_set</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t_set</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interval_start</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interval_end</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_features.html#estimate_adjusted_detection_parameters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_features.estimate_adjusted_detection_parameters" title="Permalink to this definition"></a></dt>
+<dd><p>Estimate adjusted values for spike detection by analyzing a period when the voltage
+changes quickly but passively (due to strong current stimulation), which can result
+in spurious spike detection results.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>v_set</strong> (<em>list</em><em> of </em><em>numpy arrays</em><em> of </em><em>voltage time series in mV</em>) – </p></li>
+<li><p><strong>t_set</strong> (<em>list</em><em> of </em><em>numpy arrays</em><em> of </em><em>times in seconds</em>) – </p></li>
+<li><p><strong>interval_start</strong> (<em>start</em><em> of </em><em>analysis interval</em><em> (</em><em>sec</em><em>)</em>) – </p></li>
+<li><p><strong>interval_end</strong> (<em>end</em><em> of </em><em>analysis interval</em><em> (</em><em>sec</em><em>)</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>new_dv_cutoff</strong> (<em>adjusted dv/dt cutoff (V/s)</em>)</p></li>
+<li><p><strong>new_thresh_frac</strong> (<em>adjusted fraction of avg upstroke to find threshold</em>)</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_features.filter_putative_spikes">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.allen_sdk.ephys_features.</span></span><span class="sig-name descname"><span class="pre">filter_putative_spikes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spike_indexes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">peak_indexes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_height</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_peak</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-30.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dvdt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_features.html#filter_putative_spikes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_features.filter_putative_spikes" title="Permalink to this definition"></a></dt>
+<dd><dl class="simple">
+<dt>Filter out events that are unlikely to be spikes based on:</dt><dd><ul class="simple">
+<li><p>Voltage failing to go down between peak and the next spike’s threshold</p></li>
+<li><p>Height (threshold to peak)</p></li>
+<li><p>Absolute peak level</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>v</strong> (<em>numpy array</em><em> of </em><em>voltage time series in mV</em>) – </p></li>
+<li><p><strong>t</strong> (<em>numpy array</em><em> of </em><em>times in seconds</em>) – </p></li>
+<li><p><strong>spike_indexes</strong> (<em>numpy array</em><em> of </em><em>preliminary spike indexes</em>) – </p></li>
+<li><p><strong>peak_indexes</strong> (<em>numpy array</em><em> of </em><em>indexes</em><em> of </em><em>spike peaks</em>) – </p></li>
+<li><p><strong>min_height</strong> (<em>minimum acceptable height from threshold to peak in mV</em><em> (</em><em>optional</em><em>, </em><em>default 2</em><em>)</em>) – </p></li>
+<li><p><strong>min_peak</strong> (<em>minimum acceptable absolute peak level in mV</em><em> (</em><em>optional</em><em>, </em><em>default -30</em><em>)</em>) – </p></li>
+<li><p><strong>filter</strong> (<em>cutoff frequency for 4-pole low-pass Bessel filter in kHz</em><em> (</em><em>optional</em><em>, </em><em>default 10</em><em>)</em>) – </p></li>
+<li><p><strong>dvdt</strong> (<em>pre-calculated time-derivative</em><em> of </em><em>voltage</em><em> (</em><em>optional</em><em>)</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>spike_indexes</strong> (<em>numpy array of threshold indexes</em>)</p></li>
+<li><p><strong>peak_indexes</strong> (<em>numpy array of peak indexes</em>)</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_features.find_downstroke_indexes">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.allen_sdk.ephys_features.</span></span><span class="sig-name descname"><span class="pre">find_downstroke_indexes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">peak_indexes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trough_indexes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clipped</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dvdt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_features.html#find_downstroke_indexes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_features.find_downstroke_indexes" title="Permalink to this definition"></a></dt>
+<dd><p>Find indexes of minimum voltage (troughs) between spikes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>v</strong> (<em>numpy array</em><em> of </em><em>voltage time series in mV</em>) – </p></li>
+<li><p><strong>t</strong> (<em>numpy array</em><em> of </em><em>times in seconds</em>) – </p></li>
+<li><p><strong>peak_indexes</strong> (<em>numpy array</em><em> of </em><em>spike peak indexes</em>) – </p></li>
+<li><p><strong>trough_indexes</strong> (<em>numpy array</em><em> of </em><em>threshold indexes</em>) – </p></li>
+<li><p><strong>clipped</strong> (<em>boolean array - False if spike not clipped by edge</em><em> of </em><em>window</em>) – </p></li>
+<li><p><strong>filter</strong> (<em>cutoff frequency for 4-pole low-pass Bessel filter in kHz</em><em> (</em><em>optional</em><em>, </em><em>default 10</em><em>)</em>) – </p></li>
+<li><p><strong>dvdt</strong> (<em>pre-calculated time-derivative</em><em> of </em><em>voltage</em><em> (</em><em>optional</em><em>)</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>downstroke_indexes</strong></p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy array of downstroke indexes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_features.find_peak_indexes">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.allen_sdk.ephys_features.</span></span><span class="sig-name descname"><span class="pre">find_peak_indexes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spike_indexes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_features.html#find_peak_indexes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_features.find_peak_indexes" title="Permalink to this definition"></a></dt>
+<dd><p>Find indexes of spike peaks.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>v</strong> (<em>numpy array</em><em> of </em><em>voltage time series in mV</em>) – </p></li>
+<li><p><strong>t</strong> (<em>numpy array</em><em> of </em><em>times in seconds</em>) – </p></li>
+<li><p><strong>spike_indexes</strong> (<em>numpy array</em><em> of </em><em>preliminary spike indexes</em>) – </p></li>
+<li><p><strong>end</strong> (<em>end</em><em> of </em><em>time window for spike detection</em><em> (</em><em>optional</em><em>)</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_features.find_time_index">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.allen_sdk.ephys_features.</span></span><span class="sig-name descname"><span class="pre">find_time_index</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t_0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_features.html#find_time_index"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_features.find_time_index" title="Permalink to this definition"></a></dt>
+<dd><p>Find the index value of a given time (t_0) in a time series (t).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_features.find_trough_indexes">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.allen_sdk.ephys_features.</span></span><span class="sig-name descname"><span class="pre">find_trough_indexes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spike_indexes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">peak_indexes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clipped</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_features.html#find_trough_indexes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_features.find_trough_indexes" title="Permalink to this definition"></a></dt>
+<dd><p>Find indexes of minimum voltage (trough) between spikes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>v</strong> (<em>numpy array</em><em> of </em><em>voltage time series in mV</em>) – </p></li>
+<li><p><strong>t</strong> (<em>numpy array</em><em> of </em><em>times in seconds</em>) – </p></li>
+<li><p><strong>spike_indexes</strong> (<em>numpy array</em><em> of </em><em>spike indexes</em>) – </p></li>
+<li><p><strong>peak_indexes</strong> (<em>numpy array</em><em> of </em><em>spike peak indexes</em>) – </p></li>
+<li><p><strong>end</strong> (<em>end</em><em> of </em><em>time window</em><em> (</em><em>optional</em><em>)</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>trough_indexes</strong></p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy array of threshold indexes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_features.find_upstroke_indexes">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.allen_sdk.ephys_features.</span></span><span class="sig-name descname"><span class="pre">find_upstroke_indexes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spike_indexes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">peak_indexes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dvdt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_features.html#find_upstroke_indexes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_features.find_upstroke_indexes" title="Permalink to this definition"></a></dt>
+<dd><p>Find indexes of maximum upstroke of spike.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>v</strong> (<em>numpy array</em><em> of </em><em>voltage time series in mV</em>) – </p></li>
+<li><p><strong>t</strong> (<em>numpy array</em><em> of </em><em>times in seconds</em>) – </p></li>
+<li><p><strong>spike_indexes</strong> (<em>numpy array</em><em> of </em><em>preliminary spike indexes</em>) – </p></li>
+<li><p><strong>peak_indexes</strong> (<em>numpy array</em><em> of </em><em>indexes</em><em> of </em><em>spike peaks</em>) – </p></li>
+<li><p><strong>filter</strong> (<em>cutoff frequency for 4-pole low-pass Bessel filter in kHz</em><em> (</em><em>optional</em><em>, </em><em>default 10</em><em>)</em>) – </p></li>
+<li><p><strong>dvdt</strong> (<em>pre-calculated time-derivative</em><em> of </em><em>voltage</em><em> (</em><em>optional</em><em>)</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>upstroke_indexes</strong></p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy array of upstroke indexes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_features.find_widths">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.allen_sdk.ephys_features.</span></span><span class="sig-name descname"><span class="pre">find_widths</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spike_indexes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">peak_indexes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trough_indexes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clipped</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_features.html#find_widths"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_features.find_widths" title="Permalink to this definition"></a></dt>
+<dd><p>Find widths at half-height for spikes.</p>
+<p>Widths are only returned when heights are defined</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>v</strong> (<em>numpy array</em><em> of </em><em>voltage time series in mV</em>) – </p></li>
+<li><p><strong>t</strong> (<em>numpy array</em><em> of </em><em>times in seconds</em>) – </p></li>
+<li><p><strong>spike_indexes</strong> (<em>numpy array</em><em> of </em><em>spike indexes</em>) – </p></li>
+<li><p><strong>peak_indexes</strong> (<em>numpy array</em><em> of </em><em>spike peak indexes</em>) – </p></li>
+<li><p><strong>trough_indexes</strong> (<em>numpy array</em><em> of </em><em>trough indexes</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>widths</strong></p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy array of spike widths in sec</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_features.fit_membrane_time_constant">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.allen_sdk.ephys_features.</span></span><span class="sig-name descname"><span class="pre">fit_membrane_time_constant</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_rsme</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0001</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_features.html#fit_membrane_time_constant"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_features.fit_membrane_time_constant" title="Permalink to this definition"></a></dt>
+<dd><p>Fit an exponential to estimate membrane time constant between start and end</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>v</strong> (<em>numpy array</em><em> of </em><em>voltages in mV</em>) – </p></li>
+<li><p><strong>t</strong> (<em>numpy array</em><em> of </em><em>times in seconds</em>) – </p></li>
+<li><p><strong>start</strong> (<em>start</em><em> of </em><em>time window for exponential fit</em>) – </p></li>
+<li><p><strong>end</strong> (<em>end</em><em> of </em><em>time window for exponential fit</em>) – </p></li>
+<li><p><strong>min_rsme</strong> (<em>minimal acceptable root mean square error</em><em> (</em><em>default 1e-4</em><em>)</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>a, inv_tau, y0</strong> (<em>Coeffients of equation y0 + a * exp(-inv_tau * x)</em>)</p></li>
+<li><p><em>returns np.nan for values if fit fails</em></p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_features.fit_prespike_time_constant">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.allen_sdk.ephys_features.</span></span><span class="sig-name descname"><span class="pre">fit_prespike_time_constant</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spike_time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dv_limit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tau_limit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.3</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_features.html#fit_prespike_time_constant"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_features.fit_prespike_time_constant" title="Permalink to this definition"></a></dt>
+<dd><p>Finds the dominant time constant of the pre-spike rise in voltage</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>v</strong> (<em>numpy array</em><em> of </em><em>voltage time series in mV</em>) – </p></li>
+<li><p><strong>t</strong> (<em>numpy array</em><em> of </em><em>times in seconds</em>) – </p></li>
+<li><p><strong>start</strong> (<em>start</em><em> of </em><em>voltage rise</em><em> (</em><em>seconds</em><em>)</em>) – </p></li>
+<li><p><strong>spike_time</strong> (<em>time</em><em> of </em><em>first spike</em><em> (</em><em>seconds</em><em>)</em>) – </p></li>
+<li><p><strong>dv_limit</strong> (<em>dV/dt cutoff</em><em> (</em><em>default -0.001</em><em>)</em>) – Shortens fit window if rate of voltage drop exceeds this limit</p></li>
+<li><p><strong>tau_limit</strong> (<em>upper bound for slow time constant</em><em> (</em><em>seconds</em><em>, </em><em>default 0.3</em><em>)</em>) – If the slower time constant of a double-exponential fit is twice that of the faster
+and exceeds this limit, the faster one will be considered the dominant one</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>tau</strong></p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dominant time constant (seconds)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_features.get_isis">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.allen_sdk.ephys_features.</span></span><span class="sig-name descname"><span class="pre">get_isis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spikes</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_features.html#get_isis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_features.get_isis" title="Permalink to this definition"></a></dt>
+<dd><p>Find interspike intervals in sec between spikes (as indexes).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_features.has_fixed_dt">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.allen_sdk.ephys_features.</span></span><span class="sig-name descname"><span class="pre">has_fixed_dt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_features.html#has_fixed_dt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_features.has_fixed_dt" title="Permalink to this definition"></a></dt>
+<dd><p>Check that all time intervals are identical.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_features.latency">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.allen_sdk.ephys_features.</span></span><span class="sig-name descname"><span class="pre">latency</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spikes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_features.html#latency"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_features.latency" title="Permalink to this definition"></a></dt>
+<dd><p>Calculate time to the first spike.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_features.norm_diff">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.allen_sdk.ephys_features.</span></span><span class="sig-name descname"><span class="pre">norm_diff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_features.html#norm_diff"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_features.norm_diff" title="Permalink to this definition"></a></dt>
+<dd><p>Calculate average of (a[i] - a[i+1]) / (a[i] + a[i+1]).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_features.norm_sq_diff">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.allen_sdk.ephys_features.</span></span><span class="sig-name descname"><span class="pre">norm_sq_diff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_features.html#norm_sq_diff"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_features.norm_sq_diff" title="Permalink to this definition"></a></dt>
+<dd><p>Calculate average of (a[i] - a[i+1])^2 / (a[i] + a[i+1])^2.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.allen_sdk.ephys_features.refine_threshold_indexes">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.allen_sdk.ephys_features.</span></span><span class="sig-name descname"><span class="pre">refine_threshold_indexes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">upstroke_indexes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thresh_frac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dvdt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/allen_sdk/ephys_features.html#refine_threshold_indexes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.allen_sdk.ephys_features.refine_threshold_indexes" title="Permalink to this definition"></a></dt>
+<dd><p>Refine threshold detection of previously-found spikes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>v</strong> (<em>numpy array</em><em> of </em><em>voltage time series in mV</em>) – </p></li>
+<li><p><strong>t</strong> (<em>numpy array</em><em> of </em><em>times in seconds</em>) – </p></li>
+<li><p><strong>upstroke_indexes</strong> (<em>numpy array</em><em> of </em><em>indexes</em><em> of </em><em>spike upstrokes</em><em> (</em><em>for threshold target calculation</em><em>)</em>) – </p></li>
+<li><p><strong>thresh_frac</strong> (<em>fraction</em><em> of </em><em>average upstroke for threshold calculation</em><em> (</em><em>optional</em><em>, </em><em>default 0.05</em><em>)</em>) – </p></li>
+<li><p><strong>filter</strong> (<em>cutoff frequency for 4-pole low-pass Bessel filter in kHz</em><em> (</em><em>optional</em><em>, </em><em>default 10</em><em>)</em>) – </p></li>
+<li><p><strong>dvdt</strong> (<em>pre-calculated time-derivative</em><em> of </em><em>voltage</em><em> (</em><em>optional</em><em>)</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>threshold_indexes</strong></p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy array of threshold indexes</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-ephyspy.allen_sdk">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-ephyspy.allen_sdk" title="Permalink to this heading"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="ephyspy.html" class="btn btn-neutral float-left" title="ephyspy package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="ephyspy.features.html" class="btn btn-neutral float-right" title="ephyspy.features package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Jonas Beck.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ephyspy.allen_sdk.ephys_extractor &mdash; EphysPy 0.0.05 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js?v=ecdf1fa4"></script>
+        <script src="../../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            EphysPy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">ephyspy</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">EphysPy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">ephyspy.allen_sdk.ephys_extractor</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for ephyspy.allen_sdk.ephys_extractor</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Allen Institute Software License - This software license is the 2-clause BSD</span>
+<span class="c1"># license plus a third clause that prohibits redistribution for commercial</span>
+<span class="c1"># purposes without further permission.</span>
+<span class="c1">#</span>
+<span class="c1"># Copyright 2015-2016. Allen Institute. All rights reserved.</span>
+<span class="c1">#</span>
+<span class="c1"># Redistribution and use in source and binary forms, with or without</span>
+<span class="c1"># modification, are permitted provided that the following conditions are met:</span>
+<span class="c1">#</span>
+<span class="c1"># 1. Redistributions of source code must retain the above copyright notice,</span>
+<span class="c1"># this list of conditions and the following disclaimer.</span>
+<span class="c1">#</span>
+<span class="c1"># 2. Redistributions in binary form must reproduce the above copyright notice,</span>
+<span class="c1"># this list of conditions and the following disclaimer in the documentation</span>
+<span class="c1"># and/or other materials provided with the distribution.</span>
+<span class="c1">#</span>
+<span class="c1"># 3. Redistributions for commercial purposes are not permitted without the</span>
+<span class="c1"># Allen Institute&#39;s written permission.</span>
+<span class="c1"># For purposes of this license, commercial purposes is the incorporation of the</span>
+<span class="c1"># Allen Institute&#39;s software into anything for which you will charge fees or</span>
+<span class="c1"># other compensation. Contact terms@alleninstitute.org for commercial licensing</span>
+<span class="c1"># opportunities.</span>
+<span class="c1">#</span>
+<span class="c1"># THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;</span>
+<span class="c1"># AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE</span>
+<span class="c1"># IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE</span>
+<span class="c1"># ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE</span>
+<span class="c1"># LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR</span>
+<span class="c1"># CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF</span>
+<span class="c1"># SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS</span>
+<span class="c1"># INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN</span>
+<span class="c1"># CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)</span>
+<span class="c1"># ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE</span>
+<span class="c1"># POSSIBILITY OF SUCH DAMAGE.</span>
+<span class="c1">#</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">Counter</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">six</span>
+<span class="kn">from</span> <span class="nn">pandas</span> <span class="kn">import</span> <span class="n">DataFrame</span>
+
+<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">ephys_features</span> <span class="k">as</span> <span class="n">ft</span>
+
+<span class="c1"># Constants for stimulus-specific analysis</span>
+<span class="n">RAMPS_START</span> <span class="o">=</span> <span class="mf">1.02</span>
+<span class="n">LONG_SQUARES_START</span> <span class="o">=</span> <span class="mf">1.02</span>
+<span class="n">LONG_SQUARES_END</span> <span class="o">=</span> <span class="mf">2.02</span>
+<span class="n">SHORT_SQUARES_WINDOW_START</span> <span class="o">=</span> <span class="mf">1.02</span>
+<span class="n">SHORT_SQUARES_WINDOW_END</span> <span class="o">=</span> <span class="mf">1.021</span>
+<span class="n">SHORT_SQUARE_TRIPLE_WINDOW_START</span> <span class="o">=</span> <span class="mf">2.02</span>
+<span class="n">SHORT_SQUARE_TRIPLE_WINDOW_END</span> <span class="o">=</span> <span class="mf">2.021</span>
+
+
+<span class="k">class</span> <span class="nc">EphysSweepFeatureExtractor</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Feature calculation for a sweep (voltage and/or current time series).&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">t</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">v</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">i</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">start</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">end</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="nb">filter</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span>
+        <span class="n">dv_cutoff</span><span class="o">=</span><span class="mf">20.0</span><span class="p">,</span>
+        <span class="n">max_interval</span><span class="o">=</span><span class="mf">0.005</span><span class="p">,</span>
+        <span class="n">min_height</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span>
+        <span class="n">min_peak</span><span class="o">=-</span><span class="mf">30.0</span><span class="p">,</span>
+        <span class="n">thresh_frac</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span>
+        <span class="n">baseline_interval</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+        <span class="n">baseline_detect_thresh</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span>
+        <span class="nb">id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize SweepFeatures object.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        t : ndarray of times (seconds)</span>
+<span class="sd">        v : ndarray of voltages (mV)</span>
+<span class="sd">        i : ndarray of currents (pA)</span>
+<span class="sd">        start : start of time window for feature analysis (optional)</span>
+<span class="sd">        end : end of time window for feature analysis (optional)</span>
+<span class="sd">        filter : cutoff frequency for 4-pole low-pass Bessel filter in kHz</span>
+<span class="sd">        (optional, default 10)</span>
+<span class="sd">        dv_cutoff : minimum dV/dt to qualify as a spike in V/s (optional,</span>
+<span class="sd">        default 20)</span>
+<span class="sd">        max_interval : maximum acceptable time between start of spike and</span>
+<span class="sd">        time of peak in sec (optional, default 0.005)</span>
+<span class="sd">        min_height : minimum acceptable height from threshold to peak in mV</span>
+<span class="sd">        (optional, default 2)</span>
+<span class="sd">        min_peak : minimum acceptable absolute peak level in mV (optional,</span>
+<span class="sd">        default -30)</span>
+<span class="sd">        thresh_frac : fraction of average upstroke for threshold calculation</span>
+<span class="sd">        (optional, default 0.05)</span>
+<span class="sd">        baseline_interval: interval length for baseline voltage calculation</span>
+<span class="sd">        (before start if start is defined, default 0.1)</span>
+<span class="sd">        baseline_detect_thresh : dV/dt threshold for evaluating flatness of</span>
+<span class="sd">        baseline region (optional, default 0.3)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="nb">id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">t</span> <span class="o">=</span> <span class="n">t</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">v</span> <span class="o">=</span> <span class="n">v</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">i</span> <span class="o">=</span> <span class="n">i</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start</span> <span class="o">=</span> <span class="n">start</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">end</span> <span class="o">=</span> <span class="n">end</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filter</span> <span class="o">=</span> <span class="nb">filter</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dv_cutoff</span> <span class="o">=</span> <span class="n">dv_cutoff</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_interval</span> <span class="o">=</span> <span class="n">max_interval</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">min_height</span> <span class="o">=</span> <span class="n">min_height</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">min_peak</span> <span class="o">=</span> <span class="n">min_peak</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">thresh_frac</span> <span class="o">=</span> <span class="n">thresh_frac</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">baseline_interval</span> <span class="o">=</span> <span class="n">baseline_interval</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">baseline_detect_thresh</span> <span class="o">=</span> <span class="n">baseline_detect_thresh</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_amplitude_calculator</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sweep_features</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_affected_by_clipping</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">def</span> <span class="nf">process_spikes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Perform spike-related feature analysis&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_process_individual_spikes</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_process_spike_related_features</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_process_individual_spikes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">v</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span>
+        <span class="n">dvdt</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">calculate_dvdt</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">filter</span><span class="p">)</span>
+
+        <span class="c1"># Basic features of spikes</span>
+        <span class="n">putative_spikes</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">detect_putative_spikes</span><span class="p">(</span>
+            <span class="n">v</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">end</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">filter</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dv_cutoff</span>
+        <span class="p">)</span>
+        <span class="n">peaks</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">find_peak_indexes</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">putative_spikes</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">end</span><span class="p">)</span>
+        <span class="n">putative_spikes</span><span class="p">,</span> <span class="n">peaks</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">filter_putative_spikes</span><span class="p">(</span>
+            <span class="n">v</span><span class="p">,</span>
+            <span class="n">t</span><span class="p">,</span>
+            <span class="n">putative_spikes</span><span class="p">,</span>
+            <span class="n">peaks</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">min_height</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">min_peak</span><span class="p">,</span>
+            <span class="n">dvdt</span><span class="o">=</span><span class="n">dvdt</span><span class="p">,</span>
+            <span class="nb">filter</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">filter</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">putative_spikes</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+            <span class="c1"># Save time if no spikes detected</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_spikes_df</span> <span class="o">=</span> <span class="n">DataFrame</span><span class="p">()</span>
+            <span class="k">return</span>
+
+        <span class="n">upstrokes</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">find_upstroke_indexes</span><span class="p">(</span>
+            <span class="n">v</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">putative_spikes</span><span class="p">,</span> <span class="n">peaks</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">filter</span><span class="p">,</span> <span class="n">dvdt</span>
+        <span class="p">)</span>
+        <span class="n">thresholds</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">refine_threshold_indexes</span><span class="p">(</span>
+            <span class="n">v</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">upstrokes</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">thresh_frac</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">filter</span><span class="p">,</span> <span class="n">dvdt</span>
+        <span class="p">)</span>
+        <span class="n">thresholds</span><span class="p">,</span> <span class="n">peaks</span><span class="p">,</span> <span class="n">upstrokes</span><span class="p">,</span> <span class="n">clipped</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">check_thresholds_and_peaks</span><span class="p">(</span>
+            <span class="n">v</span><span class="p">,</span>
+            <span class="n">t</span><span class="p">,</span>
+            <span class="n">thresholds</span><span class="p">,</span>
+            <span class="n">peaks</span><span class="p">,</span>
+            <span class="n">upstrokes</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">end</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">max_interval</span><span class="p">,</span>
+            <span class="n">dvdt</span><span class="o">=</span><span class="n">dvdt</span><span class="p">,</span>
+            <span class="nb">filter</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">filter</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">thresholds</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+            <span class="c1"># Save time if no spikes detected</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_spikes_df</span> <span class="o">=</span> <span class="n">DataFrame</span><span class="p">()</span>
+            <span class="k">return</span>
+
+        <span class="c1"># Spike list and thresholds have been refined - now find other features</span>
+        <span class="n">upstrokes</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">find_upstroke_indexes</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">thresholds</span><span class="p">,</span> <span class="n">peaks</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">filter</span><span class="p">,</span> <span class="n">dvdt</span><span class="p">)</span>
+        <span class="n">troughs</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">find_trough_indexes</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">thresholds</span><span class="p">,</span> <span class="n">peaks</span><span class="p">,</span> <span class="n">clipped</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">end</span><span class="p">)</span>
+        <span class="n">downstrokes</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">find_downstroke_indexes</span><span class="p">(</span>
+            <span class="n">v</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">peaks</span><span class="p">,</span> <span class="n">troughs</span><span class="p">,</span> <span class="n">clipped</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">filter</span><span class="p">,</span> <span class="n">dvdt</span>
+        <span class="p">)</span>
+        <span class="n">trough_details</span><span class="p">,</span> <span class="n">clipped</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">analyze_trough_details</span><span class="p">(</span>
+            <span class="n">v</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">thresholds</span><span class="p">,</span> <span class="n">peaks</span><span class="p">,</span> <span class="n">clipped</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">end</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">filter</span><span class="p">,</span> <span class="n">dvdt</span><span class="o">=</span><span class="n">dvdt</span>
+        <span class="p">)</span>
+        <span class="n">widths</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">find_widths</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">thresholds</span><span class="p">,</span> <span class="n">peaks</span><span class="p">,</span> <span class="n">trough_details</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">clipped</span><span class="p">)</span>
+
+        <span class="n">base_clipped_list</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># Points where we care about t, v, and i if available</span>
+        <span class="n">vit_data_indexes</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;threshold&quot;</span><span class="p">:</span> <span class="n">thresholds</span><span class="p">,</span>
+            <span class="s2">&quot;peak&quot;</span><span class="p">:</span> <span class="n">peaks</span><span class="p">,</span>
+            <span class="s2">&quot;trough&quot;</span><span class="p">:</span> <span class="n">troughs</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">base_clipped_list</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;trough&quot;</span><span class="p">]</span>
+
+        <span class="c1"># Points where we care about t and dv/dt</span>
+        <span class="n">dvdt_data_indexes</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;upstroke&quot;</span><span class="p">:</span> <span class="n">upstrokes</span><span class="p">,</span> <span class="s2">&quot;downstroke&quot;</span><span class="p">:</span> <span class="n">downstrokes</span><span class="p">}</span>
+        <span class="n">base_clipped_list</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;downstroke&quot;</span><span class="p">]</span>
+
+        <span class="c1"># Trough details</span>
+        <span class="n">isi_types</span> <span class="o">=</span> <span class="n">trough_details</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">trough_detail_indexes</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="nb">zip</span><span class="p">([</span><span class="s2">&quot;fast_trough&quot;</span><span class="p">,</span> <span class="s2">&quot;adp&quot;</span><span class="p">,</span> <span class="s2">&quot;slow_trough&quot;</span><span class="p">],</span> <span class="n">trough_details</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+        <span class="p">)</span>
+        <span class="n">base_clipped_list</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;fast_trough&quot;</span><span class="p">,</span> <span class="s2">&quot;adp&quot;</span><span class="p">,</span> <span class="s2">&quot;slow_trough&quot;</span><span class="p">]</span>
+
+        <span class="c1"># Redundant, but ensures that DataFrame has right number of rows</span>
+        <span class="c1"># Any better way to do it?</span>
+        <span class="n">spikes_df</span> <span class="o">=</span> <span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">thresholds</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;threshold_index&quot;</span><span class="p">])</span>
+        <span class="n">spikes_df</span><span class="p">[</span><span class="s2">&quot;clipped&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">clipped</span>
+
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">all_vals</span> <span class="ow">in</span> <span class="n">six</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(</span><span class="n">vit_data_indexes</span><span class="p">):</span>
+            <span class="n">valid_ind</span> <span class="o">=</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">all_vals</span><span class="p">)</span>
+            <span class="n">vals</span> <span class="o">=</span> <span class="n">all_vals</span><span class="p">[</span><span class="n">valid_ind</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+            <span class="n">spikes_df</span><span class="p">[</span><span class="n">k</span> <span class="o">+</span> <span class="s2">&quot;_index&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+            <span class="n">spikes_df</span><span class="p">[</span><span class="n">k</span> <span class="o">+</span> <span class="s2">&quot;_t&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+            <span class="n">spikes_df</span><span class="p">[</span><span class="n">k</span> <span class="o">+</span> <span class="s2">&quot;_v&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">vals</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">spikes_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">valid_ind</span><span class="p">,</span> <span class="n">k</span> <span class="o">+</span> <span class="s2">&quot;_index&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">vals</span>
+                <span class="n">spikes_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">valid_ind</span><span class="p">,</span> <span class="n">k</span> <span class="o">+</span> <span class="s2">&quot;_t&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="n">vals</span><span class="p">]</span>
+                <span class="n">spikes_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">valid_ind</span><span class="p">,</span> <span class="n">k</span> <span class="o">+</span> <span class="s2">&quot;_v&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="n">vals</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">i</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">spikes_df</span><span class="p">[</span><span class="n">k</span> <span class="o">+</span> <span class="s2">&quot;_i&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">vals</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">spikes_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">valid_ind</span><span class="p">,</span> <span class="n">k</span> <span class="o">+</span> <span class="s2">&quot;_i&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">i</span><span class="p">[</span><span class="n">vals</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">base_clipped_list</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_affected_by_clipping</span> <span class="o">+=</span> <span class="p">[</span>
+                    <span class="n">k</span> <span class="o">+</span> <span class="s2">&quot;_index&quot;</span><span class="p">,</span>
+                    <span class="n">k</span> <span class="o">+</span> <span class="s2">&quot;_t&quot;</span><span class="p">,</span>
+                    <span class="n">k</span> <span class="o">+</span> <span class="s2">&quot;_v&quot;</span><span class="p">,</span>
+                    <span class="n">k</span> <span class="o">+</span> <span class="s2">&quot;_i&quot;</span><span class="p">,</span>
+                <span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">all_vals</span> <span class="ow">in</span> <span class="n">six</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(</span><span class="n">dvdt_data_indexes</span><span class="p">):</span>
+            <span class="n">valid_ind</span> <span class="o">=</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">all_vals</span><span class="p">)</span>
+            <span class="n">vals</span> <span class="o">=</span> <span class="n">all_vals</span><span class="p">[</span><span class="n">valid_ind</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+            <span class="n">spikes_df</span><span class="p">[</span><span class="n">k</span> <span class="o">+</span> <span class="s2">&quot;_index&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+            <span class="n">spikes_df</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">vals</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">spikes_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">valid_ind</span><span class="p">,</span> <span class="n">k</span> <span class="o">+</span> <span class="s2">&quot;_index&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">vals</span>
+                <span class="n">spikes_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">valid_ind</span><span class="p">,</span> <span class="n">k</span> <span class="o">+</span> <span class="s2">&quot;_t&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="n">vals</span><span class="p">]</span>
+                <span class="n">spikes_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">valid_ind</span><span class="p">,</span> <span class="n">k</span> <span class="o">+</span> <span class="s2">&quot;_v&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="n">vals</span><span class="p">]</span>
+                <span class="n">spikes_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">valid_ind</span><span class="p">,</span> <span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">dvdt</span><span class="p">[</span><span class="n">vals</span><span class="p">]</span>
+
+                <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">base_clipped_list</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_affected_by_clipping</span> <span class="o">+=</span> <span class="p">[</span>
+                        <span class="n">k</span> <span class="o">+</span> <span class="s2">&quot;_index&quot;</span><span class="p">,</span>
+                        <span class="n">k</span> <span class="o">+</span> <span class="s2">&quot;_t&quot;</span><span class="p">,</span>
+                        <span class="n">k</span> <span class="o">+</span> <span class="s2">&quot;_v&quot;</span><span class="p">,</span>
+                        <span class="n">k</span><span class="p">,</span>
+                    <span class="p">]</span>
+
+        <span class="n">spikes_df</span><span class="p">[</span><span class="s2">&quot;isi_type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">isi_types</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_affected_by_clipping</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;isi_type&quot;</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">all_vals</span> <span class="ow">in</span> <span class="n">six</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(</span><span class="n">trough_detail_indexes</span><span class="p">):</span>
+            <span class="n">valid_ind</span> <span class="o">=</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">all_vals</span><span class="p">)</span>
+            <span class="n">vals</span> <span class="o">=</span> <span class="n">all_vals</span><span class="p">[</span><span class="n">valid_ind</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+            <span class="n">spikes_df</span><span class="p">[</span><span class="n">k</span> <span class="o">+</span> <span class="s2">&quot;_index&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+            <span class="n">spikes_df</span><span class="p">[</span><span class="n">k</span> <span class="o">+</span> <span class="s2">&quot;_t&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+            <span class="n">spikes_df</span><span class="p">[</span><span class="n">k</span> <span class="o">+</span> <span class="s2">&quot;_v&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">vals</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">spikes_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">valid_ind</span><span class="p">,</span> <span class="n">k</span> <span class="o">+</span> <span class="s2">&quot;_index&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">vals</span>
+                <span class="n">spikes_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">valid_ind</span><span class="p">,</span> <span class="n">k</span> <span class="o">+</span> <span class="s2">&quot;_t&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="n">vals</span><span class="p">]</span>
+                <span class="n">spikes_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">valid_ind</span><span class="p">,</span> <span class="n">k</span> <span class="o">+</span> <span class="s2">&quot;_v&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="n">vals</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">i</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">spikes_df</span><span class="p">[</span><span class="n">k</span> <span class="o">+</span> <span class="s2">&quot;_i&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">vals</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">spikes_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">valid_ind</span><span class="p">,</span> <span class="n">k</span> <span class="o">+</span> <span class="s2">&quot;_i&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">i</span><span class="p">[</span><span class="n">vals</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">base_clipped_list</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_affected_by_clipping</span> <span class="o">+=</span> <span class="p">[</span>
+                    <span class="n">k</span> <span class="o">+</span> <span class="s2">&quot;_index&quot;</span><span class="p">,</span>
+                    <span class="n">k</span> <span class="o">+</span> <span class="s2">&quot;_t&quot;</span><span class="p">,</span>
+                    <span class="n">k</span> <span class="o">+</span> <span class="s2">&quot;_v&quot;</span><span class="p">,</span>
+                    <span class="n">k</span> <span class="o">+</span> <span class="s2">&quot;_i&quot;</span><span class="p">,</span>
+                <span class="p">]</span>
+
+        <span class="n">spikes_df</span><span class="p">[</span><span class="s2">&quot;width&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">widths</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_affected_by_clipping</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;width&quot;</span><span class="p">]</span>
+
+        <span class="n">spikes_df</span><span class="p">[</span><span class="s2">&quot;upstroke_downstroke_ratio&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">spikes_df</span><span class="p">[</span><span class="s2">&quot;upstroke&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="o">-</span><span class="n">spikes_df</span><span class="p">[</span><span class="s2">&quot;downstroke&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_affected_by_clipping</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;upstroke_downstroke_ratio&quot;</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_spikes_df</span> <span class="o">=</span> <span class="n">spikes_df</span>
+
+    <span class="k">def</span> <span class="nf">_process_spike_related_features</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_spikes_df</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sweep_features</span><span class="p">[</span><span class="s2">&quot;avg_rate&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">return</span>
+
+        <span class="n">thresholds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spikes_df</span><span class="p">[</span><span class="s2">&quot;threshold_index&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">isis</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">get_isis</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">thresholds</span><span class="p">)</span>
+        <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
+            <span class="c1"># ignore mean of empty slice warnings here</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="ne">RuntimeWarning</span><span class="p">,</span> <span class="n">module</span><span class="o">=</span><span class="s2">&quot;numpy&quot;</span><span class="p">)</span>
+
+            <span class="n">sweep_level_features</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;adapt&quot;</span><span class="p">:</span> <span class="n">ft</span><span class="o">.</span><span class="n">adaptation_index</span><span class="p">(</span><span class="n">isis</span><span class="p">),</span>
+                <span class="s2">&quot;latency&quot;</span><span class="p">:</span> <span class="n">ft</span><span class="o">.</span><span class="n">latency</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">thresholds</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">),</span>
+                <span class="s2">&quot;isi_cv&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">isis</span><span class="o">.</span><span class="n">std</span><span class="p">()</span> <span class="o">/</span> <span class="n">isis</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">isis</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span>
+                <span class="s2">&quot;mean_isi&quot;</span><span class="p">:</span> <span class="n">isis</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">isis</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span>
+                <span class="s2">&quot;median_isi&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">isis</span><span class="p">),</span>
+                <span class="s2">&quot;first_isi&quot;</span><span class="p">:</span> <span class="n">isis</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">isis</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span>
+                <span class="s2">&quot;avg_rate&quot;</span><span class="p">:</span> <span class="n">ft</span><span class="o">.</span><span class="n">average_rate</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">thresholds</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">end</span><span class="p">),</span>
+            <span class="p">}</span>
+
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">six</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(</span><span class="n">sweep_level_features</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sweep_features</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+
+    <span class="k">def</span> <span class="nf">_process_pauses</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cost_weight</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
+        <span class="c1"># Pauses are unusually long ISIs with a &quot;detour reset&quot; among delay resets</span>
+        <span class="n">thresholds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spikes_df</span><span class="p">[</span><span class="s2">&quot;threshold_index&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">isis</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">get_isis</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="n">thresholds</span><span class="p">)</span>
+        <span class="n">isi_types</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spikes_df</span><span class="p">[</span><span class="s2">&quot;isi_type&quot;</span><span class="p">][:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+
+        <span class="k">return</span> <span class="n">ft</span><span class="o">.</span><span class="n">detect_pauses</span><span class="p">(</span><span class="n">isis</span><span class="p">,</span> <span class="n">isi_types</span><span class="p">,</span> <span class="n">cost_weight</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">pause_metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Estimate average number of pauses and average fraction of time spent in a pause</span>
+
+<span class="sd">        Attempts to detect pauses with a variety of conditions and averages results together.</span>
+
+<span class="sd">        Pauses that are consistently detected contribute more to estimates.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        avg_n_pauses : average number of pauses detected across conditions</span>
+<span class="sd">        avg_pause_frac : average fraction of interval (between start and end) spent in a pause</span>
+<span class="sd">        max_reliability : max fraction of times most reliable pause was detected given weights tested</span>
+<span class="sd">        n_max_rel_pauses : number of pauses detected with `max_reliability`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">thresholds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spikes_df</span><span class="p">[</span><span class="s2">&quot;threshold_index&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">isis</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">get_isis</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="n">thresholds</span><span class="p">)</span>
+
+        <span class="n">weight</span> <span class="o">=</span> <span class="mf">1.0</span>
+        <span class="n">pause_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_pauses</span><span class="p">(</span><span class="n">weight</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pause_list</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">0.0</span>
+
+        <span class="n">n_pauses</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">pause_list</span><span class="p">)</span>
+        <span class="n">pause_frac</span> <span class="o">=</span> <span class="n">isis</span><span class="p">[</span><span class="n">pause_list</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="n">pause_frac</span> <span class="o">/=</span> <span class="bp">self</span><span class="o">.</span><span class="n">end</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">start</span>
+
+        <span class="k">return</span> <span class="n">n_pauses</span><span class="p">,</span> <span class="n">pause_frac</span>
+
+    <span class="k">def</span> <span class="nf">_process_bursts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">pause_cost</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
+        <span class="n">thresholds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spikes_df</span><span class="p">[</span><span class="s2">&quot;threshold_index&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">isis</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">get_isis</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="n">thresholds</span><span class="p">)</span>
+
+        <span class="n">isi_types</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spikes_df</span><span class="p">[</span><span class="s2">&quot;isi_type&quot;</span><span class="p">][:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+
+        <span class="n">fast_tr_v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spikes_df</span><span class="p">[</span><span class="s2">&quot;fast_trough_v&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="n">fast_tr_t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spikes_df</span><span class="p">[</span><span class="s2">&quot;fast_trough_t&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="n">slow_tr_v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spikes_df</span><span class="p">[</span><span class="s2">&quot;slow_trough_v&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="n">slow_tr_t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spikes_df</span><span class="p">[</span><span class="s2">&quot;slow_trough_t&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="n">thr_v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spikes_df</span><span class="p">[</span><span class="s2">&quot;threshold_v&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+
+        <span class="n">bursts</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">detect_bursts</span><span class="p">(</span>
+            <span class="n">isis</span><span class="p">,</span>
+            <span class="n">isi_types</span><span class="p">,</span>
+            <span class="n">fast_tr_v</span><span class="p">,</span>
+            <span class="n">fast_tr_t</span><span class="p">,</span>
+            <span class="n">slow_tr_v</span><span class="p">,</span>
+            <span class="n">slow_tr_t</span><span class="p">,</span>
+            <span class="n">thr_v</span><span class="p">,</span>
+            <span class="n">tol</span><span class="p">,</span>
+            <span class="n">pause_cost</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">bursts</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">burst_metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Find bursts and return max &quot;burstiness&quot; index (normalized max rate in burst vs out).</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        max_burstiness_index : max &quot;burstiness&quot; index across detected bursts</span>
+<span class="sd">        num_bursts : number of bursts detected</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">burst_info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_bursts</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">burst_info</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">burst_info</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span> <span class="n">burst_info</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mi">0</span>
+
+    <span class="k">def</span> <span class="nf">delay_metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculates ratio of latency to dominant time constant of rise before spike</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        delay_ratio : ratio of latency to tau (higher means more delay)</span>
+<span class="sd">        tau : dominant time constant of rise before spike</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_spikes_df</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;No spikes available for delay calculation&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">start</span>
+        <span class="n">spike_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spikes_df</span><span class="p">[</span><span class="s2">&quot;threshold_t&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">tau</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">fit_prespike_time_constant</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">spike_time</span><span class="p">)</span>
+        <span class="n">latency</span> <span class="o">=</span> <span class="n">spike_time</span> <span class="o">-</span> <span class="n">start</span>
+
+        <span class="n">delay_ratio</span> <span class="o">=</span> <span class="n">latency</span> <span class="o">/</span> <span class="n">tau</span>
+        <span class="k">return</span> <span class="n">delay_ratio</span><span class="p">,</span> <span class="n">tau</span>
+
+    <span class="k">def</span> <span class="nf">_get_baseline_voltage</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">v</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span>
+        <span class="n">filter_frequency</span> <span class="o">=</span> <span class="mf">1.0</span>  <span class="c1"># in kHz</span>
+
+        <span class="c1"># Look at baseline interval before start if start is defined</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">start</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">ft</span><span class="o">.</span><span class="n">average_voltage</span><span class="p">(</span>
+                <span class="n">v</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">start</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">baseline_interval</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">start</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Otherwise try to find an interval where things are pretty flat</span>
+        <span class="n">dv</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">calculate_dvdt</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">filter_frequency</span><span class="p">)</span>
+        <span class="n">non_flat_points</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">dv</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">baseline_detect_thresh</span><span class="p">))</span>
+        <span class="n">flat_intervals</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="n">non_flat_points</span><span class="p">[</span><span class="mi">1</span><span class="p">:]]</span> <span class="o">-</span> <span class="n">t</span><span class="p">[</span><span class="n">non_flat_points</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+        <span class="n">long_flat_intervals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">flat_intervals</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">baseline_interval</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">long_flat_intervals</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">interval_index</span> <span class="o">=</span> <span class="n">long_flat_intervals</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="n">baseline_end_time</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="n">non_flat_points</span><span class="p">[</span><span class="n">interval_index</span><span class="p">]]</span>
+            <span class="k">return</span> <span class="n">ft</span><span class="o">.</span><span class="n">average_voltage</span><span class="p">(</span>
+                <span class="n">v</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">baseline_end_time</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">baseline_interval</span><span class="p">,</span> <span class="n">baseline_end_time</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s2">&quot;Could not find sufficiently flat interval for automatic baseline voltage&quot;</span><span class="p">,</span>
+                <span class="ne">RuntimeWarning</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+    <span class="k">def</span> <span class="nf">voltage_deflection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">deflect_type</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Measure deflection (min or max, between start and end if specified).</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        deflect_type : measure minimal (&#39;min&#39;) or maximal (&#39;max&#39;) voltage deflection</span>
+<span class="sd">            If not specified, it will check to see if the current (i) is positive or negative</span>
+<span class="sd">            between start and end, then choose &#39;max&#39; or &#39;min&#39;, respectively</span>
+<span class="sd">            If the current is not defined, it will default to &#39;min&#39;.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        deflect_v : peak</span>
+<span class="sd">        deflect_index : index of peak deflection</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">deflect_dispatch</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;min&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">,</span>
+            <span class="s2">&quot;max&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="n">start</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">start</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">start</span><span class="p">:</span>
+            <span class="n">start</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">start_index</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">find_time_index</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="n">start</span><span class="p">)</span>
+
+        <span class="n">end</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">end</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">end</span><span class="p">:</span>
+            <span class="n">end</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">end_index</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">find_time_index</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="n">end</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">deflect_type</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">i</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">halfway_index</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">find_time_index</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="p">(</span><span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span> <span class="o">+</span> <span class="n">start</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">i</span><span class="p">[</span><span class="n">halfway_index</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">deflect_type</span> <span class="o">=</span> <span class="s2">&quot;max&quot;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">deflect_type</span> <span class="o">=</span> <span class="s2">&quot;min&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">deflect_type</span> <span class="o">=</span> <span class="s2">&quot;min&quot;</span>
+
+        <span class="n">deflect_func</span> <span class="o">=</span> <span class="n">deflect_dispatch</span><span class="p">[</span><span class="n">deflect_type</span><span class="p">]</span>
+
+        <span class="n">v_window</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="n">start_index</span><span class="p">:</span><span class="n">end_index</span><span class="p">]</span>
+        <span class="n">deflect_index</span> <span class="o">=</span> <span class="n">deflect_func</span><span class="p">(</span><span class="n">v_window</span><span class="p">)</span> <span class="o">+</span> <span class="n">start_index</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="n">deflect_index</span><span class="p">],</span> <span class="n">deflect_index</span>
+
+    <span class="k">def</span> <span class="nf">stimulus_amplitude</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_amplitude_calculator</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_amplitude_calculator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+    <span class="k">def</span> <span class="nf">estimate_time_constant</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate the membrane time constant by fitting the voltage response with a</span>
+<span class="sd">        single exponential.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        tau : membrane time constant in seconds</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Assumes this is being done on a hyperpolarizing step</span>
+        <span class="n">v_peak</span><span class="p">,</span> <span class="n">peak_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">voltage_deflection</span><span class="p">(</span><span class="s2">&quot;min&quot;</span><span class="p">)</span>
+        <span class="n">v_baseline</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sweep_feature</span><span class="p">(</span><span class="s2">&quot;v_baseline&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">:</span>
+            <span class="n">start_index</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">find_time_index</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">start_index</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="n">frac</span> <span class="o">=</span> <span class="mf">0.1</span>
+        <span class="n">search_result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="n">start_index</span><span class="p">:]</span> <span class="o">&lt;=</span> <span class="n">frac</span> <span class="o">*</span> <span class="p">(</span><span class="n">v_peak</span> <span class="o">-</span> <span class="n">v_baseline</span><span class="p">)</span> <span class="o">+</span> <span class="n">v_baseline</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">search_result</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ft</span><span class="o">.</span><span class="n">FeatureError</span><span class="p">(</span><span class="s2">&quot;could not find interval for time constant estimate&quot;</span><span class="p">)</span>
+        <span class="n">fit_start</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">[</span><span class="n">search_result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">start_index</span><span class="p">]</span>
+        <span class="n">fit_end</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">[</span><span class="n">peak_index</span><span class="p">]</span>
+
+        <span class="n">a</span><span class="p">,</span> <span class="n">inv_tau</span><span class="p">,</span> <span class="n">y0</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">fit_membrane_time_constant</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="n">fit_start</span><span class="p">,</span> <span class="n">fit_end</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">inv_tau</span>
+
+    <span class="k">def</span> <span class="nf">estimate_sag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">peak_width</span><span class="o">=</span><span class="mf">0.005</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate the sag in a hyperpolarizing voltage response.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        peak_width : window width to get more robust peak estimate in sec (default 0.005)</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        sag : fraction that membrane potential relaxes back to baseline</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">v</span>
+
+        <span class="n">start</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">start</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">start</span><span class="p">:</span>
+            <span class="n">start</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="n">end</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">end</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">end</span><span class="p">:</span>
+            <span class="n">end</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="n">v_peak</span><span class="p">,</span> <span class="n">peak_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">voltage_deflection</span><span class="p">(</span><span class="s2">&quot;min&quot;</span><span class="p">)</span>
+        <span class="n">v_peak_avg</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">average_voltage</span><span class="p">(</span>
+            <span class="n">v</span><span class="p">,</span>
+            <span class="n">t</span><span class="p">,</span>
+            <span class="n">start</span><span class="o">=</span><span class="n">t</span><span class="p">[</span><span class="n">peak_index</span><span class="p">]</span> <span class="o">-</span> <span class="n">peak_width</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">,</span>
+            <span class="n">end</span><span class="o">=</span><span class="n">t</span><span class="p">[</span><span class="n">peak_index</span><span class="p">]</span> <span class="o">+</span> <span class="n">peak_width</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">v_baseline</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sweep_feature</span><span class="p">(</span><span class="s2">&quot;v_baseline&quot;</span><span class="p">)</span>
+        <span class="n">v_steady</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">average_voltage</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">end</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">baseline_interval</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="p">)</span>
+        <span class="n">sag</span> <span class="o">=</span> <span class="p">(</span><span class="n">v_peak_avg</span> <span class="o">-</span> <span class="n">v_steady</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">v_peak_avg</span> <span class="o">-</span> <span class="n">v_baseline</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">sag</span>
+
+    <span class="k">def</span> <span class="nf">spikes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all features for each spike as a list of records.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spikes_df</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="s2">&quot;records&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">spike_feature</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">include_clipped</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">force_exclude_clipped</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get specified feature for every spike.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        key : feature name</span>
+<span class="sd">        include_clipped: return values for every identified spike, even when</span>
+<span class="sd">        clipping means they will be incorrect/undefined</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        spike_feature_values : ndarray of features for each spike</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_spikes_df&quot;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span>
+                <span class="s2">&quot;EphysSweepFeatureExtractor instance attribute with spike &quot;</span>
+                <span class="s2">&quot;information does not exist yet - have spikes been processed?&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_spikes_df</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spikes_df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s2">&quot;requested feature &#39;</span><span class="si">{:s}</span><span class="s2">&#39; not available&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">))</span>
+
+        <span class="n">values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spikes_df</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+
+        <span class="k">if</span> <span class="n">include_clipped</span> <span class="ow">and</span> <span class="n">force_exclude_clipped</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;include_clipped and force_exclude_clipped cannot both be true&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">include_clipped</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_spike_feature_affected_by_clipping</span><span class="p">(</span><span class="n">key</span><span class="p">):</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="n">values</span><span class="p">[</span><span class="o">~</span><span class="bp">self</span><span class="o">.</span><span class="n">_spikes_df</span><span class="p">[</span><span class="s2">&quot;clipped&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">force_exclude_clipped</span><span class="p">:</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="n">values</span><span class="p">[</span><span class="o">~</span><span class="bp">self</span><span class="o">.</span><span class="n">_spikes_df</span><span class="p">[</span><span class="s2">&quot;clipped&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">values</span>
+
+    <span class="k">def</span> <span class="nf">is_spike_feature_affected_by_clipping</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_affected_by_clipping</span>
+
+    <span class="k">def</span> <span class="nf">spike_feature_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get list of every available spike feature.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spikes_df</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">sweep_feature</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">allow_missing</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get sweep-level feature (`key`).</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        key : name of sweep-level feature</span>
+<span class="sd">        allow_missing : return np.nan if key is missing for sweep (default False)</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        sweep_feature : sweep-level feature value</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">on_request_dispatch</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;v_baseline&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_baseline_voltage</span><span class="p">,</span>
+            <span class="s2">&quot;tau&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">estimate_time_constant</span><span class="p">,</span>
+            <span class="s2">&quot;sag&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">estimate_sag</span><span class="p">,</span>
+            <span class="s2">&quot;peak_deflect&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">voltage_deflection</span><span class="p">,</span>
+            <span class="s2">&quot;stim_amp&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_amplitude</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">allow_missing</span>
+            <span class="ow">and</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sweep_features</span>
+            <span class="ow">and</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">on_request_dispatch</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="k">elif</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sweep_features</span> <span class="ow">and</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">on_request_dispatch</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s2">&quot;requested feature &#39;</span><span class="si">{:s}</span><span class="s2">&#39; not available&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sweep_features</span> <span class="ow">and</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">on_request_dispatch</span><span class="p">:</span>
+            <span class="n">fn</span> <span class="o">=</span> <span class="n">on_request_dispatch</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">fn</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_sweep_features</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">fn</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s2">&quot;requested feature &#39;</span><span class="si">{:s}</span><span class="s2">&#39; not defined&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sweep_features</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">process_new_spike_feature</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">feature_name</span><span class="p">,</span> <span class="n">feature_func</span><span class="p">,</span> <span class="n">affected_by_clipping</span><span class="o">=</span><span class="kc">False</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add new spike-level feature calculation function</span>
+
+<span class="sd">        The function should take this sweep extractor as its argument. Its results</span>
+<span class="sd">        can be accessed by calling the method spike_feature(&lt;feature_name&gt;).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">feature_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spikes_df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s2">&quot;Feature </span><span class="si">{:s}</span><span class="s2"> already exists for sweep&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">feature_name</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_spikes_df</span><span class="p">[</span><span class="n">feature_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">feature_func</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">affected_by_clipping</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_affected_by_clipping</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">feature_name</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">process_new_sweep_feature</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">feature_name</span><span class="p">,</span> <span class="n">feature_func</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add new sweep-level feature calculation function</span>
+
+<span class="sd">        The function should take this sweep extractor as its argument. Its results</span>
+<span class="sd">        can be accessed by calling the method sweep_feature(&lt;feature_name&gt;).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">feature_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sweep_features</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s2">&quot;Feature </span><span class="si">{:s}</span><span class="s2"> already exists for sweep&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">feature_name</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sweep_features</span><span class="p">[</span><span class="n">feature_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">feature_func</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">set_stimulus_amplitude_calculator</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">function</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_amplitude_calculator</span> <span class="o">=</span> <span class="n">function</span>
+
+    <span class="k">def</span> <span class="nf">sweep_feature_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get list of every available sweep-level feature.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sweep_features</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">as_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create dict of features and spikes.&quot;&quot;&quot;</span>
+        <span class="n">output_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sweep_features</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">output_dict</span><span class="p">[</span><span class="s2">&quot;spikes&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spikes</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">output_dict</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span>
+        <span class="k">return</span> <span class="n">output_dict</span>
+
+
+<div class="viewcode-block" id="EphysSweepSetFeatureExtractor"><a class="viewcode-back" href="../../../ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_extractor.EphysSweepSetFeatureExtractor">[docs]</a><span class="k">class</span> <span class="nc">EphysSweepSetFeatureExtractor</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">t_set</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">v_set</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">i_set</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">start</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">end</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="nb">filter</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span>
+        <span class="n">dv_cutoff</span><span class="o">=</span><span class="mf">20.0</span><span class="p">,</span>
+        <span class="n">max_interval</span><span class="o">=</span><span class="mf">0.005</span><span class="p">,</span>
+        <span class="n">min_height</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span>
+        <span class="n">min_peak</span><span class="o">=-</span><span class="mf">30.0</span><span class="p">,</span>
+        <span class="n">thresh_frac</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span>
+        <span class="n">baseline_interval</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+        <span class="n">baseline_detect_thresh</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span>
+        <span class="n">id_set</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize EphysSweepSetFeatureExtractor object.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        t_set : list of ndarray of times in seconds</span>
+<span class="sd">        v_set : list of ndarray of voltages in mV</span>
+<span class="sd">        i_set : list of ndarray of currents in pA</span>
+<span class="sd">        start : start of time window for feature analysis (optional, can be</span>
+<span class="sd">        list)</span>
+<span class="sd">        end : end of time window for feature analysis (optional, can be list)</span>
+<span class="sd">        filter : cutoff frequency for 4-pole low-pass Bessel filter in kHz</span>
+<span class="sd">        (optional, default 10)</span>
+<span class="sd">        dv_cutoff : minimum dV/dt to qualify as a spike in V/s (optional,</span>
+<span class="sd">        default 20)</span>
+<span class="sd">        max_interval : maximum acceptable time between start of spike and</span>
+<span class="sd">        time of peak in sec (optional, default 0.005)</span>
+<span class="sd">        min_height : minimum acceptable height from threshold to peak in mV</span>
+<span class="sd">        (optional, default 2)</span>
+<span class="sd">        min_peak : minimum acceptable absolute peak level in mV (optional,</span>
+<span class="sd">        default -30)</span>
+<span class="sd">        thresh_frac : fraction of average upstroke for threshold calculation</span>
+<span class="sd">        (optional, default 0.05)</span>
+<span class="sd">        baseline_interval: interval length for baseline voltage calculation</span>
+<span class="sd">        (before start if start is defined, default 0.1)</span>
+<span class="sd">        baseline_detect_thresh : dV/dt threshold for evaluating flatness of</span>
+<span class="sd">        baseline region (optional, default 0.3)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">t_set</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">v_set</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_set_sweeps</span><span class="p">(</span>
+                <span class="n">t_set</span><span class="p">,</span>
+                <span class="n">v_set</span><span class="p">,</span>
+                <span class="n">i_set</span><span class="p">,</span>
+                <span class="n">start</span><span class="p">,</span>
+                <span class="n">end</span><span class="p">,</span>
+                <span class="nb">filter</span><span class="p">,</span>
+                <span class="n">dv_cutoff</span><span class="p">,</span>
+                <span class="n">max_interval</span><span class="p">,</span>
+                <span class="n">min_height</span><span class="p">,</span>
+                <span class="n">min_peak</span><span class="p">,</span>
+                <span class="n">thresh_frac</span><span class="p">,</span>
+                <span class="n">baseline_interval</span><span class="p">,</span>
+                <span class="n">baseline_detect_thresh</span><span class="p">,</span>
+                <span class="n">id_set</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sweeps</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="EphysSweepSetFeatureExtractor.from_sweeps"><a class="viewcode-back" href="../../../ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_extractor.EphysSweepSetFeatureExtractor.from_sweeps">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_sweeps</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">sweep_list</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize EphysSweepSetFeatureExtractor object with a list of</span>
+<span class="sd">        pre-existing sweep feature extractor objects.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">obj</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">()</span>
+        <span class="n">obj</span><span class="o">.</span><span class="n">_sweeps</span> <span class="o">=</span> <span class="n">sweep_list</span>
+        <span class="k">return</span> <span class="n">obj</span></div>
+
+    <span class="k">def</span> <span class="nf">_set_sweeps</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">t_set</span><span class="p">,</span>
+        <span class="n">v_set</span><span class="p">,</span>
+        <span class="n">i_set</span><span class="p">,</span>
+        <span class="n">start</span><span class="p">,</span>
+        <span class="n">end</span><span class="p">,</span>
+        <span class="nb">filter</span><span class="p">,</span>
+        <span class="n">dv_cutoff</span><span class="p">,</span>
+        <span class="n">max_interval</span><span class="p">,</span>
+        <span class="n">min_height</span><span class="p">,</span>
+        <span class="n">min_peak</span><span class="p">,</span>
+        <span class="n">thresh_frac</span><span class="p">,</span>
+        <span class="n">baseline_interval</span><span class="p">,</span>
+        <span class="n">baseline_detect_thresh</span><span class="p">,</span>
+        <span class="n">id_set</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">t_set</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">list</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;t_set must be a list&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">v_set</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">list</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;v_set must be a list&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">i_set</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">type</span><span class="p">(</span><span class="n">i_set</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">list</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;i_set must be a list&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">t_set</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">v_set</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;t_set and v_set must have the same number of items&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">i_set</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">t_set</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">i_set</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;t_set and i_set must have the same number of items&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">id_set</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">id_set</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">t_set</span><span class="p">))</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">id_set</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">t_set</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;t_set and id_set must have the same number of items&quot;</span><span class="p">)</span>
+
+        <span class="n">sweeps</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">i_set</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">i_set</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">t_set</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">start</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="nb">list</span><span class="p">:</span>
+            <span class="n">start</span> <span class="o">=</span> <span class="p">[</span><span class="n">start</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">t_set</span><span class="p">)</span>
+            <span class="n">end</span> <span class="o">=</span> <span class="p">[</span><span class="n">end</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">t_set</span><span class="p">)</span>
+
+        <span class="n">sweeps</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">EphysSweepFeatureExtractor</span><span class="p">(</span>
+                <span class="n">t</span><span class="p">,</span>
+                <span class="n">v</span><span class="p">,</span>
+                <span class="n">i</span><span class="p">,</span>
+                <span class="n">start</span><span class="p">,</span>
+                <span class="n">end</span><span class="p">,</span>
+                <span class="nb">filter</span><span class="o">=</span><span class="nb">filter</span><span class="p">,</span>
+                <span class="n">dv_cutoff</span><span class="o">=</span><span class="n">dv_cutoff</span><span class="p">,</span>
+                <span class="n">max_interval</span><span class="o">=</span><span class="n">max_interval</span><span class="p">,</span>
+                <span class="n">min_height</span><span class="o">=</span><span class="n">min_height</span><span class="p">,</span>
+                <span class="n">min_peak</span><span class="o">=</span><span class="n">min_peak</span><span class="p">,</span>
+                <span class="n">thresh_frac</span><span class="o">=</span><span class="n">thresh_frac</span><span class="p">,</span>
+                <span class="n">baseline_interval</span><span class="o">=</span><span class="n">baseline_interval</span><span class="p">,</span>
+                <span class="n">baseline_detect_thresh</span><span class="o">=</span><span class="n">baseline_detect_thresh</span><span class="p">,</span>
+                <span class="nb">id</span><span class="o">=</span><span class="n">sid</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">t</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">,</span> <span class="n">sid</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">t_set</span><span class="p">,</span> <span class="n">v_set</span><span class="p">,</span> <span class="n">i_set</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">,</span> <span class="n">id_set</span><span class="p">)</span>
+        <span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sweeps</span> <span class="o">=</span> <span class="n">sweeps</span>
+
+<div class="viewcode-block" id="EphysSweepSetFeatureExtractor.sweeps"><a class="viewcode-back" href="../../../ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_extractor.EphysSweepSetFeatureExtractor.sweeps">[docs]</a>    <span class="k">def</span> <span class="nf">sweeps</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get list of EphysSweepFeatureExtractor objects.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sweeps</span></div>
+
+<div class="viewcode-block" id="EphysSweepSetFeatureExtractor.process_spikes"><a class="viewcode-back" href="../../../ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_extractor.EphysSweepSetFeatureExtractor.process_spikes">[docs]</a>    <span class="k">def</span> <span class="nf">process_spikes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Analyze spike features for all sweeps.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">sweep</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sweeps</span><span class="p">:</span>
+            <span class="n">sweep</span><span class="o">.</span><span class="n">process_spikes</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="EphysSweepSetFeatureExtractor.sweep_features"><a class="viewcode-back" href="../../../ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_extractor.EphysSweepSetFeatureExtractor.sweep_features">[docs]</a>    <span class="k">def</span> <span class="nf">sweep_features</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">allow_missing</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get nparray of sweep-level feature (`key`) for all sweeps</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        key : name of sweep-level feature</span>
+<span class="sd">        allow_missing : return np.nan if key is missing for sweep (default False)</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        sweep_feature : nparray of sweep-level feature values</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">swp</span><span class="o">.</span><span class="n">sweep_feature</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">allow_missing</span><span class="p">)</span> <span class="k">for</span> <span class="n">swp</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sweeps</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="EphysSweepSetFeatureExtractor.spike_feature_averages"><a class="viewcode-back" href="../../../ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_extractor.EphysSweepSetFeatureExtractor.spike_feature_averages">[docs]</a>    <span class="k">def</span> <span class="nf">spike_feature_averages</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get nparray of average spike-level feature (`key`) for all sweeps&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">swp</span><span class="o">.</span><span class="n">spike_feature</span><span class="p">(</span><span class="n">key</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span> <span class="k">for</span> <span class="n">swp</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sweeps</span><span class="p">])</span></div></div>
+
+
+<div class="viewcode-block" id="EphysCellFeatureExtractor"><a class="viewcode-back" href="../../../ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_extractor.EphysCellFeatureExtractor">[docs]</a><span class="k">class</span> <span class="nc">EphysCellFeatureExtractor</span><span class="p">:</span>
+    <span class="c1"># Class constants for specific processing</span>
+    <span class="n">SUBTHRESH_MAX_AMP</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">SAG_TARGET</span> <span class="o">=</span> <span class="o">-</span><span class="mf">100.0</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">ramps_ext</span><span class="p">,</span> <span class="n">short_squares_ext</span><span class="p">,</span> <span class="n">long_squares_ext</span><span class="p">,</span> <span class="n">subthresh_min_amp</span><span class="o">=-</span><span class="mi">100</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize EphysCellFeatureExtractor object from EphysSweepSetExtractors for</span>
+<span class="sd">        ramp, short square, and long square sweeps.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        dataset : NwbDataSet</span>
+<span class="sd">        ramps_ext : EphysSweepSetFeatureExtractor prepared with ramp sweeps</span>
+<span class="sd">        short_squares_ext : EphysSweepSetFeatureExtractor prepared with short square sweeps</span>
+<span class="sd">        long_squares_ext : EphysSweepSetFeatureExtractor prepared with long square sweeps</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ramps_ext</span> <span class="o">=</span> <span class="n">ramps_ext</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_short_squares_ext</span> <span class="o">=</span> <span class="n">short_squares_ext</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_long_squares_ext</span> <span class="o">=</span> <span class="n">long_squares_ext</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_subthresh_min_amp</span> <span class="o">=</span> <span class="n">subthresh_min_amp</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_features</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;ramps&quot;</span><span class="p">:</span> <span class="p">{},</span>
+            <span class="s2">&quot;short_squares&quot;</span><span class="p">:</span> <span class="p">{},</span>
+            <span class="s2">&quot;long_squares&quot;</span><span class="p">:</span> <span class="p">{},</span>
+        <span class="p">}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_spiking_long_squares_ext</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_subthreshold_long_squares_ext</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_subthreshold_membrane_property_ext</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="EphysCellFeatureExtractor.process"><a class="viewcode-back" href="../../../ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_extractor.EphysCellFeatureExtractor.process">[docs]</a>    <span class="k">def</span> <span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keys</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Processes features. Can take a specific key (or set of keys) to</span>
+<span class="sd">        do a subset of processing.&quot;&quot;&quot;</span>
+
+        <span class="n">dispatch</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;ramps&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_analyze_ramps</span><span class="p">,</span>
+            <span class="s2">&quot;short_squares&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_analyze_short_squares</span><span class="p">,</span>
+            <span class="s2">&quot;long_squares&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_analyze_long_squares</span><span class="p">,</span>
+            <span class="s2">&quot;long_squares_spiking&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_analyze_long_squares_spiking</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="k">if</span> <span class="n">keys</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">keys</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">dispatch</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="nb">list</span><span class="p">:</span>
+            <span class="n">keys</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">[</span><span class="n">j</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">keys</span> <span class="k">if</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">dispatch</span><span class="p">]:</span>
+            <span class="n">dispatch</span><span class="p">[</span><span class="n">k</span><span class="p">]()</span></div>
+
+    <span class="k">def</span> <span class="nf">_analyze_ramps</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">ext</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ramps_ext</span>
+        <span class="n">ext</span><span class="o">.</span><span class="n">process_spikes</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_all_ramps_ext</span> <span class="o">=</span> <span class="n">ext</span>
+
+        <span class="c1"># pull out the spiking sweeps</span>
+        <span class="n">spiking_sweeps</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">sweep</span>
+            <span class="k">for</span> <span class="n">sweep</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ramps_ext</span><span class="o">.</span><span class="n">sweeps</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">sweep</span><span class="o">.</span><span class="n">sweep_feature</span><span class="p">(</span><span class="s2">&quot;avg_rate&quot;</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+        <span class="p">]</span>
+        <span class="n">ext</span> <span class="o">=</span> <span class="n">EphysSweepSetFeatureExtractor</span><span class="o">.</span><span class="n">from_sweeps</span><span class="p">(</span><span class="n">spiking_sweeps</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ramps_ext</span> <span class="o">=</span> <span class="n">ext</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_features</span><span class="p">[</span><span class="s2">&quot;ramps&quot;</span><span class="p">][</span><span class="s2">&quot;spiking_sweeps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ext</span><span class="o">.</span><span class="n">sweeps</span><span class="p">()</span>
+
+<div class="viewcode-block" id="EphysCellFeatureExtractor.ramps_features"><a class="viewcode-back" href="../../../ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_extractor.EphysCellFeatureExtractor.ramps_features">[docs]</a>    <span class="k">def</span> <span class="nf">ramps_features</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">all</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">all</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_all_ramps_ext</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ramps_ext</span></div>
+
+    <span class="k">def</span> <span class="nf">_analyze_short_squares</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">ext</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_short_squares_ext</span>
+        <span class="n">ext</span><span class="o">.</span><span class="n">process_spikes</span><span class="p">()</span>
+
+        <span class="c1"># Need to count how many had spikes at each amplitude; find most;</span>
+        <span class="c1"># ties go to lower amplitude</span>
+        <span class="n">spiking_sweeps</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">sweep</span> <span class="k">for</span> <span class="n">sweep</span> <span class="ow">in</span> <span class="n">ext</span><span class="o">.</span><span class="n">sweeps</span><span class="p">()</span> <span class="k">if</span> <span class="n">sweep</span><span class="o">.</span><span class="n">sweep_feature</span><span class="p">(</span><span class="s2">&quot;avg_rate&quot;</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+        <span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">spiking_sweeps</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ft</span><span class="o">.</span><span class="n">FeatureError</span><span class="p">(</span>
+                <span class="s2">&quot;No spiking short square sweeps, cannot compute cell features.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">most_common</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">_short_step_stim_amp</span><span class="p">,</span> <span class="n">spiking_sweeps</span><span class="p">))</span><span class="o">.</span><span class="n">most_common</span><span class="p">()</span>
+        <span class="n">common_amp</span><span class="p">,</span> <span class="n">common_count</span> <span class="o">=</span> <span class="n">most_common</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">most_common</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+            <span class="k">if</span> <span class="n">c</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">common_count</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="k">if</span> <span class="n">c</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">common_amp</span><span class="p">:</span>
+                <span class="n">common_amp</span> <span class="o">=</span> <span class="n">c</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_features</span><span class="p">[</span><span class="s2">&quot;short_squares&quot;</span><span class="p">][</span><span class="s2">&quot;stimulus_amplitude&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">common_amp</span>
+        <span class="n">ext</span> <span class="o">=</span> <span class="n">EphysSweepSetFeatureExtractor</span><span class="o">.</span><span class="n">from_sweeps</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="n">sweep</span>
+                <span class="k">for</span> <span class="n">sweep</span> <span class="ow">in</span> <span class="n">spiking_sweeps</span>
+                <span class="k">if</span> <span class="n">_short_step_stim_amp</span><span class="p">(</span><span class="n">sweep</span><span class="p">)</span> <span class="o">==</span> <span class="n">common_amp</span>
+            <span class="p">]</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_short_squares_ext</span> <span class="o">=</span> <span class="n">ext</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_features</span><span class="p">[</span><span class="s2">&quot;short_squares&quot;</span><span class="p">][</span><span class="s2">&quot;common_amp_sweeps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ext</span><span class="o">.</span><span class="n">sweeps</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_features</span><span class="p">[</span><span class="s2">&quot;short_squares&quot;</span><span class="p">][</span><span class="s2">&quot;common_amp_sweeps&quot;</span><span class="p">]:</span>
+            <span class="n">s</span><span class="o">.</span><span class="n">set_stimulus_amplitude_calculator</span><span class="p">(</span><span class="n">_short_step_stim_amp</span><span class="p">)</span>
+
+<div class="viewcode-block" id="EphysCellFeatureExtractor.short_squares_features"><a class="viewcode-back" href="../../../ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_extractor.EphysCellFeatureExtractor.short_squares_features">[docs]</a>    <span class="k">def</span> <span class="nf">short_squares_features</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_short_squares_ext</span></div>
+
+    <span class="k">def</span> <span class="nf">_analyze_long_squares</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_analyze_long_squares_spiking</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_analyze_long_squares_subthreshold</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_analyze_long_squares_spiking</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">force_reprocess</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">force_reprocess</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spiking_long_squares_ext</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="n">ext</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_long_squares_ext</span>
+        <span class="n">ext</span><span class="o">.</span><span class="n">process_spikes</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_features</span><span class="p">[</span><span class="s2">&quot;long_squares&quot;</span><span class="p">][</span><span class="s2">&quot;sweeps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ext</span><span class="o">.</span><span class="n">sweeps</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_features</span><span class="p">[</span><span class="s2">&quot;long_squares&quot;</span><span class="p">][</span><span class="s2">&quot;sweeps&quot;</span><span class="p">]:</span>
+            <span class="n">s</span><span class="o">.</span><span class="n">set_stimulus_amplitude_calculator</span><span class="p">(</span><span class="n">_step_stim_amp</span><span class="p">)</span>
+
+        <span class="n">spiking_indexes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">ext</span><span class="o">.</span><span class="n">sweep_features</span><span class="p">(</span><span class="s2">&quot;avg_rate&quot;</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">spiking_indexes</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ft</span><span class="o">.</span><span class="n">FeatureError</span><span class="p">(</span>
+                <span class="s2">&quot;No spiking long square sweeps, cannot compute cell features.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">amps</span> <span class="o">=</span> <span class="n">ext</span><span class="o">.</span><span class="n">sweep_features</span><span class="p">(</span><span class="s2">&quot;stim_amp&quot;</span><span class="p">)</span>  <span class="c1"># self.long_squares_stim_amps()</span>
+        <span class="n">min_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">amps</span><span class="p">[</span><span class="n">spiking_indexes</span><span class="p">])</span>
+        <span class="n">rheobase_index</span> <span class="o">=</span> <span class="n">spiking_indexes</span><span class="p">[</span><span class="n">min_index</span><span class="p">]</span>
+        <span class="n">rheobase_i</span> <span class="o">=</span> <span class="n">_step_stim_amp</span><span class="p">(</span><span class="n">ext</span><span class="o">.</span><span class="n">sweeps</span><span class="p">()[</span><span class="n">rheobase_index</span><span class="p">])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_features</span><span class="p">[</span><span class="s2">&quot;long_squares&quot;</span><span class="p">][</span><span class="s2">&quot;rheobase_extractor_index&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rheobase_index</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_features</span><span class="p">[</span><span class="s2">&quot;long_squares&quot;</span><span class="p">][</span><span class="s2">&quot;rheobase_i&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rheobase_i</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_features</span><span class="p">[</span><span class="s2">&quot;long_squares&quot;</span><span class="p">][</span><span class="s2">&quot;rheobase_sweep&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ext</span><span class="o">.</span><span class="n">sweeps</span><span class="p">()[</span><span class="n">rheobase_index</span><span class="p">]</span>
+        <span class="n">spiking_sweeps</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">sweep</span> <span class="k">for</span> <span class="n">sweep</span> <span class="ow">in</span> <span class="n">ext</span><span class="o">.</span><span class="n">sweeps</span><span class="p">()</span> <span class="k">if</span> <span class="n">sweep</span><span class="o">.</span><span class="n">sweep_feature</span><span class="p">(</span><span class="s2">&quot;avg_rate&quot;</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+        <span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_spiking_long_squares_ext</span> <span class="o">=</span> <span class="n">EphysSweepSetFeatureExtractor</span><span class="o">.</span><span class="n">from_sweeps</span><span class="p">(</span>
+            <span class="n">spiking_sweeps</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_features</span><span class="p">[</span><span class="s2">&quot;long_squares&quot;</span><span class="p">][</span>
+            <span class="s2">&quot;spiking_sweeps&quot;</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spiking_long_squares_ext</span><span class="o">.</span><span class="n">sweeps</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_features</span><span class="p">[</span><span class="s2">&quot;long_squares&quot;</span><span class="p">][</span><span class="s2">&quot;fi_fit_slope&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fit_fi_slope</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_spiking_long_squares_ext</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_analyze_long_squares_subthreshold</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">ext</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_long_squares_ext</span>
+        <span class="n">subthresh_sweeps</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">sweep</span> <span class="k">for</span> <span class="n">sweep</span> <span class="ow">in</span> <span class="n">ext</span><span class="o">.</span><span class="n">sweeps</span><span class="p">()</span> <span class="k">if</span> <span class="n">sweep</span><span class="o">.</span><span class="n">sweep_feature</span><span class="p">(</span><span class="s2">&quot;avg_rate&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
+        <span class="p">]</span>
+        <span class="n">subthresh_ext</span> <span class="o">=</span> <span class="n">EphysSweepSetFeatureExtractor</span><span class="o">.</span><span class="n">from_sweeps</span><span class="p">(</span><span class="n">subthresh_sweeps</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_subthreshold_long_squares_ext</span> <span class="o">=</span> <span class="n">subthresh_ext</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">subthresh_ext</span><span class="o">.</span><span class="n">sweeps</span><span class="p">())</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ft</span><span class="o">.</span><span class="n">FeatureError</span><span class="p">(</span>
+                <span class="s2">&quot;No subthreshold long square sweeps, cannot evaluate cell features.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">sags</span> <span class="o">=</span> <span class="n">subthresh_ext</span><span class="o">.</span><span class="n">sweep_features</span><span class="p">(</span><span class="s2">&quot;sag&quot;</span><span class="p">)</span>
+        <span class="n">sag_eval_levels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">sweep</span><span class="o">.</span><span class="n">voltage_deflection</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">sweep</span> <span class="ow">in</span> <span class="n">subthresh_ext</span><span class="o">.</span><span class="n">sweeps</span><span class="p">()]</span>
+        <span class="p">)</span>
+        <span class="n">target_level</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">SAG_TARGET</span>
+        <span class="n">closest_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">sag_eval_levels</span> <span class="o">-</span> <span class="n">target_level</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_features</span><span class="p">[</span><span class="s2">&quot;long_squares&quot;</span><span class="p">][</span><span class="s2">&quot;sag&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sags</span><span class="p">[</span><span class="n">closest_index</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_features</span><span class="p">[</span><span class="s2">&quot;long_squares&quot;</span><span class="p">][</span><span class="s2">&quot;vm_for_sag&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sag_eval_levels</span><span class="p">[</span><span class="n">closest_index</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_features</span><span class="p">[</span><span class="s2">&quot;long_squares&quot;</span><span class="p">][</span><span class="s2">&quot;subthreshold_sweeps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">subthresh_ext</span><span class="o">.</span><span class="n">sweeps</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_features</span><span class="p">[</span><span class="s2">&quot;long_squares&quot;</span><span class="p">][</span><span class="s2">&quot;subthreshold_sweeps&quot;</span><span class="p">]:</span>
+            <span class="n">s</span><span class="o">.</span><span class="n">set_stimulus_amplitude_calculator</span><span class="p">(</span><span class="n">_step_stim_amp</span><span class="p">)</span>
+
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;subthresh_sweeps: </span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">subthresh_sweeps</span><span class="p">))</span>
+        <span class="n">calc_subthresh_sweeps</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">sweep</span>
+            <span class="k">for</span> <span class="n">sweep</span> <span class="ow">in</span> <span class="n">subthresh_sweeps</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subthresh_min_amp</span>
+            <span class="o">&lt;</span> <span class="n">sweep</span><span class="o">.</span><span class="n">sweep_feature</span><span class="p">(</span><span class="s2">&quot;stim_amp&quot;</span><span class="p">)</span>
+            <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">SUBTHRESH_MAX_AMP</span>
+        <span class="p">]</span>  <span class="c1"># noqa F501</span>
+
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;calc_subthresh_sweeps: </span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">calc_subthresh_sweeps</span><span class="p">))</span>
+        <span class="n">calc_subthresh_ext</span> <span class="o">=</span> <span class="n">EphysSweepSetFeatureExtractor</span><span class="o">.</span><span class="n">from_sweeps</span><span class="p">(</span>
+            <span class="n">calc_subthresh_sweeps</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_subthreshold_membrane_property_ext</span> <span class="o">=</span> <span class="n">calc_subthresh_ext</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_features</span><span class="p">[</span><span class="s2">&quot;long_squares&quot;</span><span class="p">][</span>
+            <span class="s2">&quot;subthreshold_membrane_property_sweeps&quot;</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="n">calc_subthresh_ext</span><span class="o">.</span><span class="n">sweeps</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_features</span><span class="p">[</span><span class="s2">&quot;long_squares&quot;</span><span class="p">][</span><span class="s2">&quot;input_resistance&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">input_resistance</span><span class="p">(</span>
+            <span class="n">calc_subthresh_ext</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_features</span><span class="p">[</span><span class="s2">&quot;long_squares&quot;</span><span class="p">][</span><span class="s2">&quot;tau&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">membrane_time_constant</span><span class="p">(</span>
+            <span class="n">calc_subthresh_ext</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_features</span><span class="p">[</span><span class="s2">&quot;long_squares&quot;</span><span class="p">][</span><span class="s2">&quot;v_baseline&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span>
+            <span class="n">ext</span><span class="o">.</span><span class="n">sweep_features</span><span class="p">(</span><span class="s2">&quot;v_baseline&quot;</span><span class="p">)</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="EphysCellFeatureExtractor.long_squares_features"><a class="viewcode-back" href="../../../ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_extractor.EphysCellFeatureExtractor.long_squares_features">[docs]</a>    <span class="k">def</span> <span class="nf">long_squares_features</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">option</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">option_table</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;spiking&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spiking_long_squares_ext</span><span class="p">,</span>
+            <span class="s2">&quot;subthreshold&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subthreshold_long_squares_ext</span><span class="p">,</span>
+            <span class="s2">&quot;subthreshold_membrane_property&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subthreshold_membrane_property_ext</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="n">option</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">option_table</span><span class="p">[</span><span class="n">option</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_long_squares_ext</span></div>
+
+<div class="viewcode-block" id="EphysCellFeatureExtractor.long_squares_stim_amps"><a class="viewcode-back" href="../../../ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_extractor.EphysCellFeatureExtractor.long_squares_stim_amps">[docs]</a>    <span class="k">def</span> <span class="nf">long_squares_stim_amps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">option</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">option_table</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;spiking&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spiking_long_squares_ext</span><span class="p">,</span>
+            <span class="s2">&quot;subthreshold&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subthreshold_long_squares_ext</span><span class="p">,</span>
+            <span class="s2">&quot;subthreshold_membrane_property&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subthreshold_membrane_property_ext</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="n">option</span><span class="p">:</span>
+            <span class="n">ext</span> <span class="o">=</span> <span class="n">option_table</span><span class="p">[</span><span class="n">option</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ext</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_long_squares_ext</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">_step_stim_amp</span><span class="p">,</span> <span class="n">ext</span><span class="o">.</span><span class="n">sweeps</span><span class="p">()))</span></div>
+
+<div class="viewcode-block" id="EphysCellFeatureExtractor.cell_features"><a class="viewcode-back" href="../../../ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_extractor.EphysCellFeatureExtractor.cell_features">[docs]</a>    <span class="k">def</span> <span class="nf">cell_features</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_features</span></div>
+
+<div class="viewcode-block" id="EphysCellFeatureExtractor.as_dict"><a class="viewcode-back" href="../../../ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_extractor.EphysCellFeatureExtractor.as_dict">[docs]</a>    <span class="k">def</span> <span class="nf">as_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create dict of cell features.&quot;&quot;&quot;</span>
+
+        <span class="c1"># get shallow copies of the sub-type dictionaries</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;long_squares&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_features</span><span class="p">[</span><span class="s2">&quot;long_squares&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span>
+            <span class="s2">&quot;short_squares&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_features</span><span class="p">[</span><span class="s2">&quot;short_squares&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span>
+            <span class="s2">&quot;ramps&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_features</span><span class="p">[</span><span class="s2">&quot;ramps&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span>
+        <span class="p">}</span>
+
+        <span class="c1"># convert feature extractor lists to sweep dictionarsweep extract lists</span>
+        <span class="n">ls_sweeps</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">out</span><span class="p">[</span><span class="s2">&quot;long_squares&quot;</span><span class="p">][</span><span class="s2">&quot;sweeps&quot;</span><span class="p">]]</span>
+        <span class="n">ls_spike_sweeps</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">out</span><span class="p">[</span><span class="s2">&quot;long_squares&quot;</span><span class="p">][</span><span class="s2">&quot;spiking_sweeps&quot;</span><span class="p">]]</span>
+        <span class="n">rheo_sweep</span> <span class="o">=</span> <span class="n">out</span><span class="p">[</span><span class="s2">&quot;long_squares&quot;</span><span class="p">][</span><span class="s2">&quot;rheobase_sweep&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span>
+        <span class="n">ls_sub_sweeps</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">s</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">out</span><span class="p">[</span><span class="s2">&quot;long_squares&quot;</span><span class="p">][</span><span class="s2">&quot;subthreshold_sweeps&quot;</span><span class="p">]</span>
+        <span class="p">]</span>
+        <span class="n">ls_sub_mem_sweeps</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">s</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">out</span><span class="p">[</span><span class="s2">&quot;long_squares&quot;</span><span class="p">][</span><span class="s2">&quot;subthreshold_membrane_property_sweeps&quot;</span><span class="p">]</span>
+        <span class="p">]</span>
+        <span class="n">ss_sweeps</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">out</span><span class="p">[</span><span class="s2">&quot;short_squares&quot;</span><span class="p">][</span><span class="s2">&quot;common_amp_sweeps&quot;</span><span class="p">]]</span>
+        <span class="n">ramp_sweeps</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">out</span><span class="p">[</span><span class="s2">&quot;ramps&quot;</span><span class="p">][</span><span class="s2">&quot;spiking_sweeps&quot;</span><span class="p">]]</span>
+
+        <span class="n">out</span><span class="p">[</span><span class="s2">&quot;long_squares&quot;</span><span class="p">][</span><span class="s2">&quot;sweeps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ls_sweeps</span>
+        <span class="n">out</span><span class="p">[</span><span class="s2">&quot;long_squares&quot;</span><span class="p">][</span><span class="s2">&quot;spiking_sweeps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ls_spike_sweeps</span>
+        <span class="n">out</span><span class="p">[</span><span class="s2">&quot;long_squares&quot;</span><span class="p">][</span><span class="s2">&quot;subthreshold_sweeps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ls_sub_sweeps</span>
+        <span class="n">out</span><span class="p">[</span><span class="s2">&quot;long_squares&quot;</span><span class="p">][</span><span class="s2">&quot;subthreshold_membrane_property_sweeps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ls_sub_mem_sweeps</span>
+        <span class="n">out</span><span class="p">[</span><span class="s2">&quot;long_squares&quot;</span><span class="p">][</span><span class="s2">&quot;rheobase_sweep&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rheo_sweep</span>
+        <span class="n">out</span><span class="p">[</span><span class="s2">&quot;short_squares&quot;</span><span class="p">][</span><span class="s2">&quot;common_amp_sweeps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ss_sweeps</span>
+        <span class="n">out</span><span class="p">[</span><span class="s2">&quot;ramps&quot;</span><span class="p">][</span><span class="s2">&quot;spiking_sweeps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ramp_sweeps</span>
+
+        <span class="k">return</span> <span class="n">out</span></div></div>
+
+
+<div class="viewcode-block" id="input_resistance"><a class="viewcode-back" href="../../../ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_extractor.input_resistance">[docs]</a><span class="k">def</span> <span class="nf">input_resistance</span><span class="p">(</span><span class="n">ext</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Estimate input resistance in MOhms, assuming all sweeps in passed</span>
+<span class="sd">    extractor are hyperpolarizing responses.&quot;&quot;&quot;</span>
+
+    <span class="n">sweeps</span> <span class="o">=</span> <span class="n">ext</span><span class="o">.</span><span class="n">sweeps</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">sweeps</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">ft</span><span class="o">.</span><span class="n">FeatureError</span><span class="p">(</span><span class="s2">&quot;no sweeps available for input resistance calculation&quot;</span><span class="p">)</span>
+
+    <span class="n">v_vals</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">i_vals</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">sweep</span> <span class="ow">in</span> <span class="n">sweeps</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">sweep</span><span class="o">.</span><span class="n">i</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ft</span><span class="o">.</span><span class="n">FeatureError</span><span class="p">(</span>
+                <span class="s2">&quot;cannot calculate input resistance: i not defined for a sweep&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">v_peak</span><span class="p">,</span> <span class="n">min_index</span> <span class="o">=</span> <span class="n">sweep</span><span class="o">.</span><span class="n">voltage_deflection</span><span class="p">(</span><span class="s2">&quot;min&quot;</span><span class="p">)</span>
+        <span class="n">v_vals</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">v_peak</span><span class="p">)</span>
+        <span class="n">i_vals</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sweep</span><span class="o">.</span><span class="n">i</span><span class="p">[</span><span class="n">min_index</span><span class="p">])</span>
+
+    <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">v_vals</span><span class="p">)</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">i_vals</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="c1"># If there&#39;s just one sweep, we&#39;ll have to use its own baseline to</span>
+        <span class="c1"># estimate the input resistance</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">sweeps</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">sweep_feature</span><span class="p">(</span><span class="s2">&quot;v_baseline&quot;</span><span class="p">))</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+
+    <span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">i</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">i</span><span class="p">)])</span><span class="o">.</span><span class="n">T</span>
+    <span class="n">m</span><span class="p">,</span> <span class="n">c</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">lstsq</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">v</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">m</span> <span class="o">*</span> <span class="mf">1e3</span></div>
+
+
+<div class="viewcode-block" id="membrane_time_constant"><a class="viewcode-back" href="../../../ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_extractor.membrane_time_constant">[docs]</a><span class="k">def</span> <span class="nf">membrane_time_constant</span><span class="p">(</span><span class="n">ext</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Average the membrane time constant values estimated from each sweep</span>
+<span class="sd">    in passed extractor.&quot;&quot;&quot;</span>
+
+    <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="ne">RuntimeWarning</span><span class="p">,</span> <span class="n">module</span><span class="o">=</span><span class="s2">&quot;numpy&quot;</span><span class="p">)</span>
+        <span class="n">avg_tau</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">ext</span><span class="o">.</span><span class="n">sweep_features</span><span class="p">(</span><span class="s2">&quot;tau&quot;</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">avg_tau</span></div>
+
+
+<div class="viewcode-block" id="fit_fi_slope"><a class="viewcode-back" href="../../../ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_extractor.fit_fi_slope">[docs]</a><span class="k">def</span> <span class="nf">fit_fi_slope</span><span class="p">(</span><span class="n">ext</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fit the rate and stimulus amplitude to a line and return the slope of</span>
+<span class="sd">    the fit.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ext</span><span class="o">.</span><span class="n">sweeps</span><span class="p">())</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">ft</span><span class="o">.</span><span class="n">FeatureError</span><span class="p">(</span>
+            <span class="s2">&quot;Cannot fit f-I curve slope with less than two suprathreshold sweeps&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">_step_stim_amp</span><span class="p">,</span> <span class="n">ext</span><span class="o">.</span><span class="n">sweeps</span><span class="p">())))</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">ext</span><span class="o">.</span><span class="n">sweep_features</span><span class="p">(</span><span class="s2">&quot;avg_rate&quot;</span><span class="p">)</span>
+
+    <span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">x</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">x</span><span class="p">)])</span><span class="o">.</span><span class="n">T</span>
+
+    <span class="n">m</span><span class="p">,</span> <span class="n">c</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">lstsq</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">y</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">m</span></div>
+
+
+<div class="viewcode-block" id="reset_long_squares_start"><a class="viewcode-back" href="../../../ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_extractor.reset_long_squares_start">[docs]</a><span class="k">def</span> <span class="nf">reset_long_squares_start</span><span class="p">(</span><span class="n">when</span><span class="p">):</span>
+    <span class="k">global</span> <span class="n">LONG_SQUARES_START</span><span class="p">,</span> <span class="n">LONG_SQUARES_END</span>
+    <span class="n">delta</span> <span class="o">=</span> <span class="n">LONG_SQUARES_END</span> <span class="o">-</span> <span class="n">LONG_SQUARES_START</span>
+    <span class="n">LONG_SQUARES_START</span> <span class="o">=</span> <span class="n">when</span>
+    <span class="n">LONG_SQUARES_END</span> <span class="o">=</span> <span class="n">when</span> <span class="o">+</span> <span class="n">delta</span></div>
+
+
+<div class="viewcode-block" id="cell_extractor_for_nwb"><a class="viewcode-back" href="../../../ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_extractor.cell_extractor_for_nwb">[docs]</a><span class="k">def</span> <span class="nf">cell_extractor_for_nwb</span><span class="p">(</span>
+    <span class="n">dataset</span><span class="p">,</span> <span class="n">ramps</span><span class="p">,</span> <span class="n">short_squares</span><span class="p">,</span> <span class="n">long_squares</span><span class="p">,</span> <span class="n">subthresh_min_amp</span><span class="o">=-</span><span class="mi">100</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize EphysCellFeatureExtractor object from NWB data set</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    dataset : NwbDataSet</span>
+<span class="sd">    ramps : list of sweep numbers of ramp sweeps</span>
+<span class="sd">    short_squares : list of sweep numbers of short square sweeps</span>
+<span class="sd">    long_squares : list of sweep numbers of long square sweeps</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">short_squares</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">ft</span><span class="o">.</span><span class="n">FeatureError</span><span class="p">(</span><span class="s2">&quot;no short square sweep numbers provided&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ramps</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">ft</span><span class="o">.</span><span class="n">FeatureError</span><span class="p">(</span><span class="s2">&quot;no ramp sweep numbers provided&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">long_squares</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">ft</span><span class="o">.</span><span class="n">FeatureError</span><span class="p">(</span><span class="s2">&quot;no long_square sweep numbers provided&quot;</span><span class="p">)</span>
+
+    <span class="n">ramps_ext</span> <span class="o">=</span> <span class="n">extractor_for_nwb_sweeps</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">ramps</span><span class="p">,</span> <span class="n">fixed_start</span><span class="o">=</span><span class="n">RAMPS_START</span><span class="p">)</span>
+
+    <span class="n">temp_short_sq_ext</span> <span class="o">=</span> <span class="n">extractor_for_nwb_sweeps</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">short_squares</span><span class="p">)</span>
+    <span class="n">t_set</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">t</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">temp_short_sq_ext</span><span class="o">.</span><span class="n">sweeps</span><span class="p">()]</span>
+    <span class="n">v_set</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">v</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">temp_short_sq_ext</span><span class="o">.</span><span class="n">sweeps</span><span class="p">()]</span>
+    <span class="n">cutoff</span><span class="p">,</span> <span class="n">thresh_frac</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">estimate_adjusted_detection_parameters</span><span class="p">(</span>
+        <span class="n">v_set</span><span class="p">,</span> <span class="n">t_set</span><span class="p">,</span> <span class="n">SHORT_SQUARES_WINDOW_START</span><span class="p">,</span> <span class="n">SHORT_SQUARES_WINDOW_END</span>
+    <span class="p">)</span>
+
+    <span class="n">thresh_frac</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">thresh_frac</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">)</span>
+
+    <span class="n">short_squares_ext</span> <span class="o">=</span> <span class="n">extractor_for_nwb_sweeps</span><span class="p">(</span>
+        <span class="n">dataset</span><span class="p">,</span> <span class="n">short_squares</span><span class="p">,</span> <span class="n">dv_cutoff</span><span class="o">=</span><span class="n">cutoff</span><span class="p">,</span> <span class="n">thresh_frac</span><span class="o">=</span><span class="n">thresh_frac</span>
+    <span class="p">)</span>
+    <span class="n">long_squares_ext</span> <span class="o">=</span> <span class="n">extractor_for_nwb_sweeps</span><span class="p">(</span>
+        <span class="n">dataset</span><span class="p">,</span>
+        <span class="n">long_squares</span><span class="p">,</span>
+        <span class="n">fixed_start</span><span class="o">=</span><span class="n">LONG_SQUARES_START</span><span class="p">,</span>
+        <span class="n">fixed_end</span><span class="o">=</span><span class="n">LONG_SQUARES_END</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">EphysCellFeatureExtractor</span><span class="p">(</span>
+        <span class="n">ramps_ext</span><span class="p">,</span> <span class="n">short_squares_ext</span><span class="p">,</span> <span class="n">long_squares_ext</span><span class="p">,</span> <span class="n">subthresh_min_amp</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="extractor_for_nwb_sweeps"><a class="viewcode-back" href="../../../ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_extractor.extractor_for_nwb_sweeps">[docs]</a><span class="k">def</span> <span class="nf">extractor_for_nwb_sweeps</span><span class="p">(</span>
+    <span class="n">dataset</span><span class="p">,</span>
+    <span class="n">sweep_numbers</span><span class="p">,</span>
+    <span class="n">fixed_start</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">fixed_end</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">dv_cutoff</span><span class="o">=</span><span class="mf">20.0</span><span class="p">,</span>
+    <span class="n">thresh_frac</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="n">v_set</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">t_set</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">i_set</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="n">start</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">end</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">sweep_number</span> <span class="ow">in</span> <span class="n">sweep_numbers</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">get_sweep</span><span class="p">(</span><span class="n">sweep_number</span><span class="p">)</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;response&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1e3</span>  <span class="c1"># mV</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;stimulus&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1e12</span>  <span class="c1"># pA</span>
+        <span class="n">hz</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;sampling_rate&quot;</span><span class="p">]</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">hz</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">))</span> <span class="o">*</span> <span class="n">dt</span>  <span class="c1"># sec</span>
+
+        <span class="n">s</span><span class="p">,</span> <span class="n">e</span> <span class="o">=</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;index_range&quot;</span><span class="p">])</span>
+        <span class="n">v_set</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+        <span class="n">i_set</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+        <span class="n">t_set</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+        <span class="n">start</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+        <span class="n">end</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">fixed_start</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">fixed_end</span><span class="p">:</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="p">[</span><span class="n">fixed_start</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">end</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">fixed_start</span> <span class="ow">and</span> <span class="n">fixed_end</span><span class="p">:</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="n">fixed_start</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="n">fixed_end</span>
+
+    <span class="k">return</span> <span class="n">EphysSweepSetFeatureExtractor</span><span class="p">(</span>
+        <span class="n">t_set</span><span class="p">,</span>
+        <span class="n">v_set</span><span class="p">,</span>
+        <span class="n">i_set</span><span class="p">,</span>
+        <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span>
+        <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="p">,</span>
+        <span class="n">dv_cutoff</span><span class="o">=</span><span class="n">dv_cutoff</span><span class="p">,</span>
+        <span class="n">thresh_frac</span><span class="o">=</span><span class="n">thresh_frac</span><span class="p">,</span>
+        <span class="n">id_set</span><span class="o">=</span><span class="n">sweep_numbers</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+<span class="k">def</span> <span class="nf">_step_stim_amp</span><span class="p">(</span><span class="n">sweep</span><span class="p">):</span>
+    <span class="n">t_index</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">find_time_index</span><span class="p">(</span><span class="n">sweep</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="n">sweep</span><span class="o">.</span><span class="n">start</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">sweep</span><span class="o">.</span><span class="n">i</span><span class="p">[</span><span class="n">t_index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+
+
+<span class="k">def</span> <span class="nf">_short_step_stim_amp</span><span class="p">(</span><span class="n">sweep</span><span class="p">):</span>
+    <span class="n">t_index</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">find_time_index</span><span class="p">(</span><span class="n">sweep</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="n">sweep</span><span class="o">.</span><span class="n">start</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">sweep</span><span class="o">.</span><span class="n">i</span><span class="p">[</span><span class="n">t_index</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">:]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Jonas Beck.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ephyspy.features.utils &mdash; EphysPy 0.0.05 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js?v=ecdf1fa4"></script>
+        <script src="../../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            EphysPy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">ephyspy</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">EphysPy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">ephyspy.features.utils</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for ephyspy.features.utils</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright 2023 Jonas Beck</span>
+
+<span class="c1"># This program is free software: you can redistribute it and/or modify</span>
+<span class="c1"># it under the terms of the GNU General Public License as published by</span>
+<span class="c1"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c1"># (at your option) any later version.</span>
+
+<span class="c1"># This program is distributed in the hope that it will be useful,</span>
+<span class="c1"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c1"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c1"># GNU General Public License for more details.</span>
+
+<span class="c1"># You should have received a copy of the GNU General Public License</span>
+<span class="c1"># along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span> <span class="nn">inspect</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">TYPE_CHECKING</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">ndarray</span>
+<span class="kn">from</span> <span class="nn">pandas</span> <span class="kn">import</span> <span class="n">DataFrame</span>
+
+<span class="kn">from</span> <span class="nn">ephyspy.sweeps</span> <span class="kn">import</span> <span class="n">EphysSweep</span><span class="p">,</span> <span class="n">EphysSweepSet</span>
+
+<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">ephyspy.features.base</span> <span class="kn">import</span> <span class="n">SweepFeature</span><span class="p">,</span> <span class="n">SweepSetFeature</span>
+
+<span class="n">CUSTOM_SWEEP_FEATURES</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">CUSTOM_SWEEPSET_FEATURES</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">CUSTOM_SPIKE_FEATURES</span> <span class="o">=</span> <span class="p">[]</span>
+
+
+<div class="viewcode-block" id="register_custom_feature"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.utils.register_custom_feature">[docs]</a><span class="k">def</span> <span class="nf">register_custom_feature</span><span class="p">(</span><span class="n">Feature</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Callable</span><span class="p">,</span> <span class="n">SweepSetFeature</span><span class="p">,</span> <span class="n">SweepFeature</span><span class="p">]):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Add a custom feature class that inherits from `SweepFeature`</span>
+<span class="sd">    or from `SweepSetFeature`. This makes the feature available to all the</span>
+<span class="sd">    the EphysPy functionalities such as recursive computation of all dependend</span>
+<span class="sd">    features that are called with `lookup_X_feature`, where X can be spike,</span>
+<span class="sd">    sweep or sweepset.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        Feature: Feature class to be added to EphysPy ecosystem. Feature</span>
+<span class="sd">            must inherit from either `SweepFeature` or `SweesetFeature`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># TODO: assert more rigorously that Feature can be computed</span>
+    <span class="c1"># i.e. by calling it on a dummy sweep and checking if it raises an error</span>
+    <span class="c1"># only if it behaves as expected add it to the list of available features</span>
+    <span class="kn">from</span> <span class="nn">ephyspy.features.base</span> <span class="kn">import</span> <span class="n">SweepFeature</span><span class="p">,</span> <span class="n">SweepSetFeature</span>
+
+    <span class="k">if</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">Feature</span><span class="p">,</span> <span class="n">SweepFeature</span><span class="p">):</span>
+        <span class="n">CUSTOM_SWEEP_FEATURES</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Feature</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">Feature</span><span class="p">,</span> <span class="n">SweepSetFeature</span><span class="p">):</span>
+        <span class="n">CUSTOM_SWEEPSET_FEATURES</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Feature</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">Feature</span><span class="p">,</span> <span class="n">Callable</span><span class="p">):</span>  <span class="c1"># last, since SweepFeatures also are callable</span>
+        <span class="n">CUSTOM_SPIKE_FEATURES</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Feature</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="fetch_available_fts"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.utils.fetch_available_fts">[docs]</a><span class="k">def</span> <span class="nf">fetch_available_fts</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fetch all available features.</span>
+
+<span class="sd">    Returns a list of all available feature functions and classes that are</span>
+<span class="sd">    either part of the EphysPy package or have been registered as custom</span>
+<span class="sd">    features with `register_custom_feature`.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        List[str]: List of all available features.</span>
+
+<span class="sd">    Warnings:</span>
+<span class="sd">        If a custom feature has the same name as a feature that is part of</span>
+<span class="sd">        EphysPy, a warning is raised.&quot;&quot;&quot;</span>
+    <span class="n">classes</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getmembers</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="s2">&quot;ephyspy&quot;</span><span class="p">],</span> <span class="n">inspect</span><span class="o">.</span><span class="n">isclass</span><span class="p">)</span>
+    <span class="n">classes</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">classes</span> <span class="k">if</span> <span class="s2">&quot;ephyspy.features&quot;</span> <span class="ow">in</span> <span class="n">c</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="vm">__module__</span><span class="p">]</span>
+    <span class="n">feature_classes</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">classes</span> <span class="k">if</span> <span class="s2">&quot;Feature&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">c</span><span class="o">.</span><span class="vm">__name__</span>
+    <span class="p">]</span>  <span class="c1"># gets rid of base classes and NullFeatures</span>
+
+    <span class="k">for</span> <span class="n">custom_fts</span><span class="p">,</span> <span class="n">base_class</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+        <span class="p">[</span><span class="n">CUSTOM_SPIKE_FEATURES</span><span class="p">,</span> <span class="n">CUSTOM_SWEEP_FEATURES</span><span class="p">,</span> <span class="n">CUSTOM_SWEEPSET_FEATURES</span><span class="p">],</span>
+        <span class="p">[</span><span class="s2">&quot;SpikeFeature&quot;</span><span class="p">,</span> <span class="s2">&quot;SweepFeature&quot;</span><span class="p">,</span> <span class="s2">&quot;SweepSetFeature&quot;</span><span class="p">],</span>
+    <span class="p">):</span>
+        <span class="n">base_feature_classes</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">ft</span> <span class="k">for</span> <span class="n">ft</span> <span class="ow">in</span> <span class="n">feature_classes</span> <span class="k">if</span> <span class="n">ft</span><span class="o">.</span><span class="n">__base__</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">==</span> <span class="n">base_class</span>
+        <span class="p">]</span>
+        <span class="n">duplicate_features</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">ft</span><span class="o">.</span><span class="vm">__name__</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">ft</span> <span class="ow">in</span> <span class="n">custom_fts</span><span class="p">)</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span>
+            <span class="nb">set</span><span class="p">(</span><span class="n">ft</span><span class="o">.</span><span class="vm">__name__</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">ft</span> <span class="ow">in</span> <span class="n">base_feature_classes</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">duplicate_features</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;DUPLICATE FEATURES: Unwanted behaviour with custom versions of&quot;</span>
+                <span class="o">+</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">duplicate_features</span><span class="p">)</span>
+                <span class="o">+</span> <span class="s2">&quot;cannot be ruled out. Please consider renaming these features.&quot;</span>
+            <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">feature_classes</span> <span class="o">+</span> <span class="n">CUSTOM_SWEEP_FEATURES</span> <span class="o">+</span> <span class="n">CUSTOM_SWEEPSET_FEATURES</span></div>
+
+
+<div class="viewcode-block" id="FeatureError"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.utils.FeatureError">[docs]</a><span class="k">class</span> <span class="nc">FeatureError</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Error raised when a feature is unknown.&quot;&quot;&quot;</span>
+
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="get_sweep_burst_metrics"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.utils.get_sweep_burst_metrics">[docs]</a><span class="k">def</span> <span class="nf">get_sweep_burst_metrics</span><span class="p">(</span>
+    <span class="n">sweep</span><span class="p">:</span> <span class="n">EphysSweep</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">ndarray</span><span class="p">,</span> <span class="n">ndarray</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculate burst metrics for a sweep.</span>
+
+<span class="sd">    Uses EphysExtractor&#39;s _process_bursts() method to calculate burst metrics.</span>
+<span class="sd">    Handles case where no bursts are found.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        sweep (EphysSweep): Sweep to calculate burst metrics for.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Tuple[ndarray, ndarray, ndarray]: returns burst index, burst start index,</span>
+<span class="sd">            burst end index.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">burst_metrics</span> <span class="o">=</span> <span class="n">sweep</span><span class="o">.</span><span class="n">_process_bursts</span><span class="p">()</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">burst_metrics</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;nan&quot;</span><span class="p">),</span> <span class="nb">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="nb">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># slice(0) acts as empty index</span>
+    <span class="n">idx_burst</span><span class="p">,</span> <span class="n">idx_burst_start</span><span class="p">,</span> <span class="n">idx_burst_end</span> <span class="o">=</span> <span class="n">burst_metrics</span><span class="o">.</span><span class="n">T</span>
+    <span class="k">return</span> <span class="n">idx_burst</span><span class="p">,</span> <span class="n">idx_burst_start</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">),</span> <span class="n">idx_burst_end</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_sweep_sag_idxs"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.utils.get_sweep_sag_idxs">[docs]</a><span class="k">def</span> <span class="nf">get_sweep_sag_idxs</span><span class="p">(</span>
+    <span class="n">sag_instance</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">recompute</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">store_diagnostics</span><span class="o">=</span><span class="kc">False</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;determine idxs in a sweep that are part of the sag.</span>
+
+<span class="sd">    description: all idxs below steady state and during stimulus.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        feature (EphysSweep): sag_feature object.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        boolean array with length of sweep.t; where sag.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># TODO: refine how sag idxs are chosen!</span>
+    <span class="c1"># currently uses all idxs below steady state and during stimulus</span>
+    <span class="c1"># can lead to very fragmented idx arrays</span>
+    <span class="c1"># fix: if too many idxs are False between ones that are True</span>
+    <span class="c1"># set all True ones after to False</span>
+    <span class="c1"># also if steady state is never reached again, sag will be massive</span>
+    <span class="c1"># -&gt; set all idxs to False ?</span>
+    <span class="n">sweep</span> <span class="o">=</span> <span class="n">sag_instance</span><span class="o">.</span><span class="n">data</span>
+    <span class="n">v_deflect</span> <span class="o">=</span> <span class="n">sweep</span><span class="o">.</span><span class="n">voltage_deflection</span><span class="p">(</span><span class="s2">&quot;min&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">v_steady</span> <span class="o">=</span> <span class="n">sag_instance</span><span class="o">.</span><span class="n">lookup_sweep_feature</span><span class="p">(</span><span class="s2">&quot;v_deflect&quot;</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="n">recompute</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">v_steady</span> <span class="o">-</span> <span class="n">v_deflect</span> <span class="o">&gt;</span> <span class="mi">4</span><span class="p">:</span>  <span class="c1"># The sag should have a minimum depth of 4 mV</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="n">sag_instance</span><span class="o">.</span><span class="n">lookup_sweep_feature</span><span class="p">(</span><span class="s2">&quot;stim_onset&quot;</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="n">recompute</span><span class="p">)</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="n">sag_instance</span><span class="o">.</span><span class="n">lookup_sweep_feature</span><span class="p">(</span><span class="s2">&quot;stim_end&quot;</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="n">recompute</span><span class="p">)</span>
+        <span class="n">where_stimulus</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span>
+            <span class="n">sweep</span><span class="o">.</span><span class="n">t</span> <span class="o">&gt;</span> <span class="n">start</span><span class="p">,</span> <span class="n">sweep</span><span class="o">.</span><span class="n">t</span> <span class="o">&lt;</span> <span class="n">end</span>
+        <span class="p">)</span>  <span class="c1"># same as where_between (saves on import)</span>
+        <span class="n">sag_idxs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">where_stimulus</span><span class="p">,</span> <span class="n">sweep</span><span class="o">.</span><span class="n">v</span> <span class="o">&lt;</span> <span class="n">v_steady</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">sag_idxs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">sweep</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">store_diagnostics</span><span class="p">:</span>
+        <span class="n">sag_instance</span><span class="o">.</span><span class="n">_update_diagnostics</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;sag_idxs&quot;</span><span class="p">:</span> <span class="n">sag_idxs</span><span class="p">,</span>
+                <span class="s2">&quot;v_deflect&quot;</span><span class="p">:</span> <span class="n">v_deflect</span><span class="p">,</span>
+                <span class="s2">&quot;v_steady&quot;</span><span class="p">:</span> <span class="n">v_steady</span><span class="p">,</span>
+                <span class="s2">&quot;t_sag&quot;</span><span class="p">:</span> <span class="n">sweep</span><span class="o">.</span><span class="n">t</span><span class="p">[</span><span class="n">sag_idxs</span><span class="p">],</span>
+                <span class="s2">&quot;v_sag&quot;</span><span class="p">:</span> <span class="n">sweep</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="n">sag_idxs</span><span class="p">],</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">sag_idxs</span></div>
+
+
+<div class="viewcode-block" id="where_stimulus"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.utils.where_stimulus">[docs]</a><span class="k">def</span> <span class="nf">where_stimulus</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">EphysSweep</span><span class="p">,</span> <span class="n">EphysSweepSet</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">ndarray</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks where the stimulus is non-zero.</span>
+
+<span class="sd">    Checks where stimulus is non-zero for a single sweep or each sweep in a</span>
+<span class="sd">    sweepset.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        data (EphysSweep or EphysSweepSet):</span>
+<span class="sd">            Sweep or sweepset to check.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        bool: True if stimulus is non-zero.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">data</span><span class="o">.</span><span class="n">i</span><span class="o">.</span><span class="n">T</span> <span class="o">!=</span> <span class="mi">0</span></div>
+
+
+<div class="viewcode-block" id="has_spikes"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.utils.has_spikes">[docs]</a><span class="k">def</span> <span class="nf">has_spikes</span><span class="p">(</span><span class="n">sweep</span><span class="p">:</span> <span class="n">EphysSweep</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if sweep has spikes.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        sweep (EphysSweep): Sweep to check.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        bool: True if sweep has spikes.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">sweep</span><span class="p">,</span> <span class="s2">&quot;_spikes_df&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="n">sweep</span><span class="o">.</span><span class="n">_spikes_df</span><span class="o">.</span><span class="n">empty</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">sweep</span><span class="o">.</span><span class="n">process_spikes</span><span class="p">()</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="n">sweep</span><span class="o">.</span><span class="n">_spikes_df</span><span class="o">.</span><span class="n">empty</span></div>
+
+
+<div class="viewcode-block" id="has_stimulus"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.utils.has_stimulus">[docs]</a><span class="k">def</span> <span class="nf">has_stimulus</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">EphysSweep</span><span class="p">,</span> <span class="n">EphysSweepSet</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">ndarray</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if sweep has stimulus that is non-zero.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        data (EphysSweep or EphysSweepSet):</span>
+<span class="sd">            Sweep or sweepset to check.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        bool: True if sweep has stimulus.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">where_stimulus</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="is_hyperpol"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.utils.is_hyperpol">[docs]</a><span class="k">def</span> <span class="nf">is_hyperpol</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">EphysSweep</span><span class="p">,</span> <span class="n">EphysSweepSet</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">ndarray</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if sweep is hyperpolarizing, i.e. if the stimulus &lt; 0.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        data (EphysSweep or EphysSweepSet):</span>
+<span class="sd">            Sweep or sweepset to check.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        bool: True if sweep is hyperpolarizing.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">i</span><span class="o">.</span><span class="n">T</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="is_depol"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.utils.is_depol">[docs]</a><span class="k">def</span> <span class="nf">is_depol</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">EphysSweep</span><span class="p">,</span> <span class="n">EphysSweepSet</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">ndarray</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if sweep is depolarizing, i.e. if the stimulus &gt; 0.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        data (EphysSweep or EphysSweepSet):</span>
+<span class="sd">            Sweep or sweepset to check.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        bool: True if sweep is depolarizing.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">i</span><span class="o">.</span><span class="n">T</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="has_rebound"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.utils.has_rebound">[docs]</a><span class="k">def</span> <span class="nf">has_rebound</span><span class="p">(</span><span class="n">feature</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">T_rebound</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.3</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if sweep rebounds.</span>
+
+<span class="sd">    description: rebound if voltage exceeds baseline after stimulus offset.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        feature (SweepFeature): Feature to check for rebound.</span>
+<span class="sd">        T_rebound (float, optional): Time window after stimulus offset in which</span>
+<span class="sd">            rebound can occur. Defaults to 0.3.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        bool: True if sweep rebounds.&quot;&quot;&quot;</span>
+    <span class="n">sweep</span> <span class="o">=</span> <span class="n">feature</span><span class="o">.</span><span class="n">data</span>
+    <span class="k">if</span> <span class="n">is_hyperpol</span><span class="p">(</span><span class="n">sweep</span><span class="p">):</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="n">feature</span><span class="o">.</span><span class="n">lookup_sweep_feature</span><span class="p">(</span><span class="s2">&quot;stim_end&quot;</span><span class="p">)</span>
+        <span class="n">v_baseline</span> <span class="o">=</span> <span class="n">feature</span><span class="o">.</span><span class="n">lookup_sweep_feature</span><span class="p">(</span><span class="s2">&quot;v_baseline&quot;</span><span class="p">)</span>
+        <span class="n">ts_rebound</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">sweep</span><span class="o">.</span><span class="n">t</span> <span class="o">&gt;</span> <span class="n">end</span><span class="p">,</span> <span class="n">sweep</span><span class="o">.</span><span class="n">t</span> <span class="o">&lt;</span> <span class="n">end</span> <span class="o">+</span> <span class="n">T_rebound</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">sweep</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="n">ts_rebound</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">v_baseline</span><span class="p">)</span>
+    <span class="k">return</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="median_idx"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.utils.median_idx">[docs]</a><span class="k">def</span> <span class="nf">median_idx</span><span class="p">(</span><span class="n">d</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">ndarray</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">slice</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get index of median value in a DataFrame.</span>
+
+<span class="sd">    If median is unique return index, otherwise return all indices that are</span>
+<span class="sd">    closest to the median. If dataframe is empty or all nan return slice(0).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        d (Union[DataFrame, ndarray]): DataFrame or ndarray to get median index</span>
+<span class="sd">            from.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Union[int, slice]: Index of median value or slice(0) if d is empty or</span>
+<span class="sd">            all nan.&quot;&quot;&quot;</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="n">d</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">DataFrame</span><span class="p">)</span> <span class="k">else</span> <span class="n">DataFrame</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">d</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">is_median</span> <span class="o">=</span> <span class="n">d</span> <span class="o">==</span> <span class="n">d</span><span class="o">.</span><span class="n">median</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">is_median</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="n">is_median</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">())</span>
+        <span class="n">ranks</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="n">rank</span><span class="p">(</span><span class="n">pct</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">close_to_median</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">ranks</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">close_to_median</span><span class="o">.</span><span class="n">idxmin</span><span class="p">()]))</span>
+    <span class="k">return</span> <span class="nb">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Jonas Beck.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

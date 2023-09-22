@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ephyspy.features.spike_features &mdash; EphysPy 0.0.05 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js?v=ecdf1fa4"></script>
+        <script src="../../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            EphysPy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">ephyspy</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">EphysPy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">ephyspy.features.spike_features</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for ephyspy.features.spike_features</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright 2023 Jonas Beck</span>
+
+<span class="c1"># This program is free software: you can redistribute it and/or modify</span>
+<span class="c1"># it under the terms of the GNU General Public License as published by</span>
+<span class="c1"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c1"># (at your option) any later version.</span>
+
+<span class="c1"># This program is distributed in the hope that it will be useful,</span>
+<span class="c1"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c1"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c1"># GNU General Public License for more details.</span>
+
+<span class="c1"># You should have received a copy of the GNU General Public License</span>
+<span class="c1"># along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">matplotlib.axes</span> <span class="kn">import</span> <span class="n">Axes</span>
+
+<span class="kn">from</span> <span class="nn">ephyspy.features.base</span> <span class="kn">import</span> <span class="n">SpikeFeature</span>
+<span class="kn">from</span> <span class="nn">ephyspy.features.utils</span> <span class="kn">import</span> <span class="n">fetch_available_fts</span>
+<span class="kn">from</span> <span class="nn">ephyspy.utils</span> <span class="kn">import</span> <span class="n">fwhm</span><span class="p">,</span> <span class="n">has_spike_feature</span><span class="p">,</span> <span class="n">is_spike_feature</span><span class="p">,</span> <span class="n">scatter_spike_ft</span>
+
+
+<div class="viewcode-block" id="available_spike_features"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.spike_features.available_spike_features">[docs]</a><span class="k">def</span> <span class="nf">available_spike_features</span><span class="p">(</span>
+    <span class="n">compute_at_init</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">store_diagnostics</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">SpikeFeature</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a dictionary of all implemented spike features.</span>
+
+<span class="sd">    Looks for all classes that inherit from SpikeFeature and returns a dictionary</span>
+<span class="sd">    of all available features. If compute_at_init is True, the features are</span>
+<span class="sd">    computed at initialization.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        compute_at_init (bool, optional): If True, the features are computed at</span>
+<span class="sd">            initialization. Defaults to False.</span>
+<span class="sd">        store_diagnostics (bool, optional): If True, the features are computed</span>
+<span class="sd">            with diagnostics. Defaults to False.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict[str, SpikeFeature]: Dictionary of all available spike features.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">all_features</span> <span class="o">=</span> <span class="n">fetch_available_fts</span><span class="p">()</span>
+    <span class="n">features</span> <span class="o">=</span> <span class="p">{</span><span class="n">ft</span><span class="o">.</span><span class="vm">__name__</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span> <span class="n">ft</span> <span class="k">for</span> <span class="n">ft</span> <span class="ow">in</span> <span class="n">all_features</span> <span class="k">if</span> <span class="n">is_spike_feature</span><span class="p">(</span><span class="n">ft</span><span class="p">)}</span>
+    <span class="n">features</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;spike_&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">):</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">features</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+    <span class="k">if</span> <span class="nb">any</span><span class="p">((</span><span class="n">compute_at_init</span><span class="p">,</span> <span class="n">store_diagnostics</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="n">k</span><span class="p">:</span> <span class="k">lambda</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">v</span><span class="p">(</span>
+                <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+                <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span><span class="p">,</span>
+                <span class="n">store_diagnostics</span><span class="o">=</span><span class="n">store_diagnostics</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">features</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">}</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">features</span></div>
+
+
+<div class="viewcode-block" id="Spike_AP_upstroke"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.spike_features.Spike_AP_upstroke">[docs]</a><span class="k">class</span> <span class="nc">Spike_AP_upstroke</span><span class="p">(</span><span class="n">SpikeFeature</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract spike level upstroke feature.</span>
+
+<span class="sd">    depends on: /.</span>
+<span class="sd">    description: upstroke of AP.</span>
+<span class="sd">    units: mV.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">store_diagnostics</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="n">upstroke</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_spike_feature</span><span class="p">(</span><span class="s2">&quot;upstroke_v&quot;</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="n">recompute</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">upstroke</span>
+
+    <span class="k">def</span> <span class="nf">_plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Axes</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">selected_idxs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Axes</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">scatter_spike_ft</span><span class="p">(</span>
+            <span class="s2">&quot;upstroke&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">selected_idxs</span><span class="o">=</span><span class="n">selected_idxs</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Spike_AP_downstroke"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.spike_features.Spike_AP_downstroke">[docs]</a><span class="k">class</span> <span class="nc">Spike_AP_downstroke</span><span class="p">(</span><span class="n">SpikeFeature</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract spike level downstroke feature.</span>
+
+<span class="sd">    depends on: /.</span>
+<span class="sd">    description: downstroke of AP.</span>
+<span class="sd">    units: mV.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">store_diagnostics</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="n">upstroke</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_spike_feature</span><span class="p">(</span><span class="s2">&quot;downstroke_v&quot;</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="n">recompute</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">upstroke</span>
+
+    <span class="k">def</span> <span class="nf">_plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Axes</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">selected_idxs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Axes</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">scatter_spike_ft</span><span class="p">(</span>
+            <span class="s2">&quot;downstroke&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">selected_idxs</span><span class="o">=</span><span class="n">selected_idxs</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Spike_AP_fast_trough"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.spike_features.Spike_AP_fast_trough">[docs]</a><span class="k">class</span> <span class="nc">Spike_AP_fast_trough</span><span class="p">(</span><span class="n">SpikeFeature</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract spike level fast trough feature.</span>
+
+<span class="sd">    depends on: /.</span>
+<span class="sd">    description: fast trough of AP.</span>
+<span class="sd">    units: mV.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">store_diagnostics</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="n">upstroke</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_spike_feature</span><span class="p">(</span><span class="s2">&quot;fast_trough_v&quot;</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="n">recompute</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">upstroke</span>
+
+    <span class="k">def</span> <span class="nf">_plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Axes</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">selected_idxs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Axes</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">scatter_spike_ft</span><span class="p">(</span>
+            <span class="s2">&quot;fast_trough&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">selected_idxs</span><span class="o">=</span><span class="n">selected_idxs</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Spike_AP_slow_trough"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.spike_features.Spike_AP_slow_trough">[docs]</a><span class="k">class</span> <span class="nc">Spike_AP_slow_trough</span><span class="p">(</span><span class="n">SpikeFeature</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract spike level slow trough feature.</span>
+
+<span class="sd">    depends on: /.</span>
+<span class="sd">    description: slow trough of AP.</span>
+<span class="sd">    units: mV.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">store_diagnostics</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="n">upstroke</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_spike_feature</span><span class="p">(</span><span class="s2">&quot;slow_trough_v&quot;</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="n">recompute</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">upstroke</span>
+
+    <span class="k">def</span> <span class="nf">_plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Axes</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">selected_idxs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Axes</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">scatter_spike_ft</span><span class="p">(</span>
+            <span class="s2">&quot;slow_trough&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">selected_idxs</span><span class="o">=</span><span class="n">selected_idxs</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Spike_AP_amp"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.spike_features.Spike_AP_amp">[docs]</a><span class="k">class</span> <span class="nc">Spike_AP_amp</span><span class="p">(</span><span class="n">SpikeFeature</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract spike level peak height feature.</span>
+
+<span class="sd">    depends on: threshold_v, peak_v.</span>
+<span class="sd">    description: v_peak - threshold_v.</span>
+<span class="sd">    units: mV.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">store_diagnostics</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="n">v_peak</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_spike_feature</span><span class="p">(</span><span class="s2">&quot;peak_v&quot;</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="n">recompute</span><span class="p">)</span>
+        <span class="n">threshold_v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_spike_feature</span><span class="p">(</span><span class="s2">&quot;threshold_v&quot;</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="n">recompute</span><span class="p">)</span>
+        <span class="n">peak_height</span> <span class="o">=</span> <span class="n">v_peak</span> <span class="o">-</span> <span class="n">threshold_v</span>
+        <span class="k">return</span> <span class="n">peak_height</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">v_peak</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+
+    <span class="k">def</span> <span class="nf">_plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Axes</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">selected_idxs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Axes</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">has_spike_feature</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="s2">&quot;threshold_v&quot;</span><span class="p">):</span>
+            <span class="n">idxs</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="k">if</span> <span class="n">selected_idxs</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">selected_idxs</span>
+            <span class="n">thresh_v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_spike_feature</span><span class="p">(</span><span class="s2">&quot;threshold_v&quot;</span><span class="p">)[</span><span class="n">idxs</span><span class="p">]</span>
+            <span class="n">peak_t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_spike_feature</span><span class="p">(</span><span class="s2">&quot;peak_t&quot;</span><span class="p">)[</span><span class="n">idxs</span><span class="p">]</span>
+            <span class="n">peak_v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_spike_feature</span><span class="p">(</span><span class="s2">&quot;peak_v&quot;</span><span class="p">)[</span><span class="n">idxs</span><span class="p">]</span>
+
+            <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">peak_t</span><span class="p">,</span> <span class="n">peak_v</span><span class="p">,</span> <span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">vlines</span><span class="p">(</span><span class="n">peak_t</span><span class="p">,</span> <span class="n">thresh_v</span><span class="p">,</span> <span class="n">peak_v</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;ap_amp&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ax</span></div>
+
+
+<div class="viewcode-block" id="Spike_AP_AHP"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.spike_features.Spike_AP_AHP">[docs]</a><span class="k">class</span> <span class="nc">Spike_AP_AHP</span><span class="p">(</span><span class="n">SpikeFeature</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract spike level after hyperpolarization feature.</span>
+
+<span class="sd">    depends on: threshold_v, fast_trough_v.</span>
+<span class="sd">    description: v_fast_trough - threshold_v.</span>
+<span class="sd">    units: mV.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">store_diagnostics</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="n">v_fast_trough</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_spike_feature</span><span class="p">(</span><span class="s2">&quot;fast_trough_v&quot;</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="n">recompute</span><span class="p">)</span>
+        <span class="n">threshold_v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_spike_feature</span><span class="p">(</span><span class="s2">&quot;threshold_v&quot;</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="n">recompute</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">v_fast_trough</span> <span class="o">-</span> <span class="n">threshold_v</span>
+
+    <span class="k">def</span> <span class="nf">_plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Axes</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">selected_idxs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Axes</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">has_spike_feature</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="s2">&quot;ap_ahp&quot;</span><span class="p">):</span>
+            <span class="n">idxs</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="k">if</span> <span class="n">selected_idxs</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">selected_idxs</span>
+            <span class="n">trough_t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_spike_feature</span><span class="p">(</span><span class="s2">&quot;fast_trough_t&quot;</span><span class="p">)[</span><span class="n">idxs</span><span class="p">]</span>
+            <span class="n">trough_v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_spike_feature</span><span class="p">(</span><span class="s2">&quot;fast_trough_v&quot;</span><span class="p">)[</span><span class="n">idxs</span><span class="p">]</span>
+            <span class="n">threshold_t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_spike_feature</span><span class="p">(</span><span class="s2">&quot;threshold_t&quot;</span><span class="p">)[</span><span class="n">idxs</span><span class="p">]</span>
+            <span class="n">threshold_v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_spike_feature</span><span class="p">(</span><span class="s2">&quot;threshold_v&quot;</span><span class="p">)[</span><span class="n">idxs</span><span class="p">]</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">vlines</span><span class="p">(</span>
+                <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">trough_t</span> <span class="o">+</span> <span class="n">threshold_t</span><span class="p">),</span>
+                <span class="n">trough_v</span><span class="p">,</span>
+                <span class="n">threshold_v</span><span class="p">,</span>
+                <span class="n">ls</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">,</span>
+                <span class="n">lw</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                <span class="n">label</span><span class="o">=</span><span class="s2">&quot;ahp&quot;</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">ax</span></div>
+
+
+<div class="viewcode-block" id="Spike_AP_ADP"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.spike_features.Spike_AP_ADP">[docs]</a><span class="k">class</span> <span class="nc">Spike_AP_ADP</span><span class="p">(</span><span class="n">SpikeFeature</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract spike level after depolarization feature.</span>
+
+<span class="sd">    depends on: adp_v, fast_trough_v.</span>
+<span class="sd">    description: v_adp - v_fast_trough.</span>
+<span class="sd">    units: mV.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">store_diagnostics</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="n">v_adp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_spike_feature</span><span class="p">(</span><span class="s2">&quot;adp_v&quot;</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="n">recompute</span><span class="p">)</span>
+        <span class="n">v_fast_trough</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_spike_feature</span><span class="p">(</span><span class="s2">&quot;fast_trough_v&quot;</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="n">recompute</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">v_adp</span> <span class="o">-</span> <span class="n">v_fast_trough</span>
+
+    <span class="k">def</span> <span class="nf">_plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Axes</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">selected_idxs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Axes</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">has_spike_feature</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="s2">&quot;ap_adp&quot;</span><span class="p">):</span>
+            <span class="n">idxs</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="k">if</span> <span class="n">selected_idxs</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">selected_idxs</span>
+            <span class="n">adp_t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_spike_feature</span><span class="p">(</span><span class="s2">&quot;adp_t&quot;</span><span class="p">)[</span><span class="n">idxs</span><span class="p">]</span>
+            <span class="n">adp_v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_spike_feature</span><span class="p">(</span><span class="s2">&quot;adp_v&quot;</span><span class="p">)[</span><span class="n">idxs</span><span class="p">]</span>
+            <span class="n">trough_t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_spike_feature</span><span class="p">(</span><span class="s2">&quot;fast_trough_t&quot;</span><span class="p">)[</span><span class="n">idxs</span><span class="p">]</span>
+            <span class="n">trough_v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_spike_feature</span><span class="p">(</span><span class="s2">&quot;fast_trough_v&quot;</span><span class="p">)[</span><span class="n">idxs</span><span class="p">]</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">vlines</span><span class="p">(</span>
+                <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">adp_t</span> <span class="o">+</span> <span class="n">trough_t</span><span class="p">),</span>
+                <span class="n">adp_v</span><span class="p">,</span>
+                <span class="n">trough_v</span><span class="p">,</span>
+                <span class="n">ls</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">,</span>
+                <span class="n">lw</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                <span class="n">label</span><span class="o">=</span><span class="s2">&quot;adp&quot;</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">ax</span></div>
+
+
+<div class="viewcode-block" id="Spike_AP_peak"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.spike_features.Spike_AP_peak">[docs]</a><span class="k">class</span> <span class="nc">Spike_AP_peak</span><span class="p">(</span><span class="n">SpikeFeature</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract spike level peak feature.</span>
+
+<span class="sd">    depends on: peak_v.</span>
+<span class="sd">    description: max voltage of AP.</span>
+<span class="sd">    units: mV.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">store_diagnostics</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="n">v_peak</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_spike_feature</span><span class="p">(</span><span class="s2">&quot;peak_v&quot;</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="n">recompute</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">v_peak</span>
+
+    <span class="k">def</span> <span class="nf">_plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Axes</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">selected_idxs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Axes</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">scatter_spike_ft</span><span class="p">(</span>
+            <span class="s2">&quot;peak&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">selected_idxs</span><span class="o">=</span><span class="n">selected_idxs</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Spike_AP_thresh"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.spike_features.Spike_AP_thresh">[docs]</a><span class="k">class</span> <span class="nc">Spike_AP_thresh</span><span class="p">(</span><span class="n">SpikeFeature</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract spike level ap threshold feature.</span>
+
+<span class="sd">    depends on: threshold_v.</span>
+<span class="sd">    description: For details on how AP thresholds are computed see AllenSDK.</span>
+<span class="sd">    units: mV.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">store_diagnostics</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="n">v_thresh</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_spike_feature</span><span class="p">(</span><span class="s2">&quot;threshold_v&quot;</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="n">recompute</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">v_thresh</span>
+
+    <span class="k">def</span> <span class="nf">_plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Axes</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">selected_idxs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Axes</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">scatter_spike_ft</span><span class="p">(</span>
+            <span class="s2">&quot;threshold&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">selected_idxs</span><span class="o">=</span><span class="n">selected_idxs</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Spike_AP_trough"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.spike_features.Spike_AP_trough">[docs]</a><span class="k">class</span> <span class="nc">Spike_AP_trough</span><span class="p">(</span><span class="n">SpikeFeature</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract spike level ap trough feature.</span>
+
+<span class="sd">    depends on: through_v.</span>
+<span class="sd">    description: For details on how AP troughs are computed see AllenSDK.</span>
+<span class="sd">    units: mV.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">store_diagnostics</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="n">v_thresh</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_spike_feature</span><span class="p">(</span><span class="s2">&quot;trough_v&quot;</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="n">recompute</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">v_thresh</span>
+
+    <span class="k">def</span> <span class="nf">_plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Axes</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">selected_idxs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Axes</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">scatter_spike_ft</span><span class="p">(</span>
+            <span class="s2">&quot;trough&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">selected_idxs</span><span class="o">=</span><span class="n">selected_idxs</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Spike_AP_width"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.spike_features.Spike_AP_width">[docs]</a><span class="k">class</span> <span class="nc">Spike_AP_width</span><span class="p">(</span><span class="n">SpikeFeature</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract spike level ap width feature.</span>
+
+<span class="sd">    depends on: width.</span>
+<span class="sd">    description: full width half max of AP.</span>
+<span class="sd">    units: s.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">store_diagnostics</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="n">width</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_spike_feature</span><span class="p">(</span><span class="s2">&quot;width&quot;</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="n">recompute</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">width</span>
+
+    <span class="k">def</span> <span class="nf">_plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Axes</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">selected_idxs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Axes</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">has_spike_feature</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="s2">&quot;width&quot;</span><span class="p">):</span>
+            <span class="n">idxs</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="k">if</span> <span class="n">selected_idxs</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">selected_idxs</span>
+
+            <span class="c1"># the following is adapted from `allen_sdk.ephys_features.find_widths`</span>
+            <span class="n">trough_idxs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_spike_feature</span><span class="p">(</span><span class="s2">&quot;trough_index&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+            <span class="n">spike_idxs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_spike_feature</span><span class="p">(</span><span class="s2">&quot;threshold_index&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+            <span class="n">peak_idxs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_spike_feature</span><span class="p">(</span><span class="s2">&quot;peak_index&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">t</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">v</span>
+
+            <span class="n">ap_height</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="n">peak_idxs</span><span class="p">]</span> <span class="o">-</span> <span class="n">v</span><span class="p">[</span><span class="n">trough_idxs</span><span class="p">]</span>
+            <span class="n">trough_fwhm</span> <span class="o">=</span> <span class="n">ap_height</span> <span class="o">/</span> <span class="mf">2.0</span> <span class="o">+</span> <span class="n">v</span><span class="p">[</span><span class="n">trough_idxs</span><span class="p">]</span>
+
+            <span class="n">thresh_fwhm</span> <span class="o">=</span> <span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="n">peak_idxs</span><span class="p">]</span> <span class="o">-</span> <span class="n">v</span><span class="p">[</span><span class="n">spike_idxs</span><span class="p">])</span> <span class="o">/</span> <span class="mf">2.0</span> <span class="o">+</span> <span class="n">v</span><span class="p">[</span><span class="n">spike_idxs</span><span class="p">]</span>
+
+            <span class="c1"># Some spikes in burst may have deep trough but short height, so can&#39;t use same</span>
+            <span class="c1"># definition for width</span>
+            <span class="n">fwhm</span> <span class="o">=</span> <span class="n">trough_fwhm</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">fwhm</span><span class="p">[</span><span class="n">trough_fwhm</span> <span class="o">&lt;</span> <span class="n">v</span><span class="p">[</span><span class="n">spike_idxs</span><span class="p">]]</span> <span class="o">=</span> <span class="n">thresh_fwhm</span><span class="p">[</span><span class="n">trough_fwhm</span> <span class="o">&lt;</span> <span class="n">v</span><span class="p">[</span><span class="n">spike_idxs</span><span class="p">]]</span>
+
+            <span class="n">width_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+                <span class="p">[</span>
+                    <span class="n">pk</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="n">pk</span><span class="p">:</span><span class="n">spk</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">wl</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="n">pk</span><span class="p">:</span><span class="n">spk</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">wl</span><span class="p">)</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span>
+                    <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+                    <span class="k">for</span> <span class="n">pk</span><span class="p">,</span> <span class="n">spk</span><span class="p">,</span> <span class="n">wl</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+                        <span class="n">peak_idxs</span><span class="p">,</span>
+                        <span class="n">spike_idxs</span><span class="p">,</span>
+                        <span class="n">fwhm</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="p">]</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+            <span class="n">fwhm</span> <span class="o">=</span> <span class="n">fwhm</span><span class="p">[</span><span class="n">idxs</span><span class="p">]</span>
+            <span class="n">width_t</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="n">width_idx</span><span class="p">][</span><span class="n">idxs</span><span class="p">]</span>
+            <span class="n">width</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_spike_feature</span><span class="p">(</span><span class="s2">&quot;width&quot;</span><span class="p">)[</span><span class="n">idxs</span><span class="p">]</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">hlines</span><span class="p">(</span><span class="n">fwhm</span><span class="p">,</span> <span class="n">width_t</span><span class="p">,</span> <span class="n">width_t</span> <span class="o">+</span> <span class="n">width</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;width&quot;</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ax</span></div>
+
+
+<div class="viewcode-block" id="Spike_AP_UDR"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.spike_features.Spike_AP_UDR">[docs]</a><span class="k">class</span> <span class="nc">Spike_AP_UDR</span><span class="p">(</span><span class="n">SpikeFeature</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract spike level ap udr feature.</span>
+
+<span class="sd">    depends on: upstroke, downstroke.</span>
+<span class="sd">    description: upstroke / downstroke. For details on how upstroke, downstroke</span>
+<span class="sd">    are computed see AllenSDK.</span>
+<span class="sd">    units: /.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">store_diagnostics</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="n">upstroke</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_spike_feature</span><span class="p">(</span><span class="s2">&quot;upstroke&quot;</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="n">recompute</span><span class="p">)</span>
+        <span class="n">downstroke</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_spike_feature</span><span class="p">(</span><span class="s2">&quot;downstroke&quot;</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="n">recompute</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">upstroke</span> <span class="o">/</span> <span class="o">-</span><span class="n">downstroke</span>
+
+    <span class="k">def</span> <span class="nf">_plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Axes</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">selected_idxs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Axes</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">has_spike_feature</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="s2">&quot;threshold_t&quot;</span><span class="p">):</span>
+            <span class="n">idxs</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="k">if</span> <span class="n">selected_idxs</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">selected_idxs</span>
+            <span class="n">upstroke_t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_spike_feature</span><span class="p">(</span><span class="s2">&quot;upstroke_t&quot;</span><span class="p">)[</span><span class="n">idxs</span><span class="p">]</span>
+            <span class="n">upstroke_v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_spike_feature</span><span class="p">(</span><span class="s2">&quot;upstroke_v&quot;</span><span class="p">)[</span><span class="n">idxs</span><span class="p">]</span>
+            <span class="n">downstroke_t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_spike_feature</span><span class="p">(</span><span class="s2">&quot;downstroke_t&quot;</span><span class="p">)[</span><span class="n">idxs</span><span class="p">]</span>
+            <span class="n">downstroke_v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_spike_feature</span><span class="p">(</span><span class="s2">&quot;downstroke_v&quot;</span><span class="p">)[</span><span class="n">idxs</span><span class="p">]</span>
+
+            <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">upstroke_t</span><span class="p">,</span> <span class="n">upstroke_v</span><span class="p">,</span> <span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;upstroke&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">downstroke_t</span><span class="p">,</span> <span class="n">downstroke_v</span><span class="p">,</span> <span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;upstroke&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ax</span></div>
+
+
+<div class="viewcode-block" id="Spike_ISI"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.spike_features.Spike_ISI">[docs]</a><span class="k">class</span> <span class="nc">Spike_ISI</span><span class="p">(</span><span class="n">SpikeFeature</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract spike level inter-spike-interval feature.</span>
+
+<span class="sd">    depends on: threshold_t.</span>
+<span class="sd">    description: The distance between subsequent spike thresholds. isi at the</span>
+<span class="sd">        first index is nan since isi[t+1] = threshold_t[t+1] - threshold_t[t].</span>
+<span class="sd">    units: s.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">store_diagnostics</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="n">spike_times</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_spike_feature</span><span class="p">(</span><span class="s2">&quot;threshold_t&quot;</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="n">recompute</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">spike_times</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">isi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">spike_times</span><span class="p">)</span>
+            <span class="n">isi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">isi</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">isi</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">spike_times</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="nb">float</span><span class="p">(</span><span class="s2">&quot;nan&quot;</span><span class="p">)])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+
+    <span class="k">def</span> <span class="nf">_plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Axes</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">selected_idxs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Axes</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">has_spike_feature</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="s2">&quot;isi&quot;</span><span class="p">):</span>
+            <span class="n">idxs</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="k">if</span> <span class="n">selected_idxs</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">selected_idxs</span>
+            <span class="n">thresh_t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_spike_feature</span><span class="p">(</span><span class="s2">&quot;threshold_t&quot;</span><span class="p">)[</span><span class="n">idxs</span><span class="p">]</span>
+            <span class="n">thresh_v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_spike_feature</span><span class="p">(</span><span class="s2">&quot;threshold_v&quot;</span><span class="p">)[</span><span class="n">idxs</span><span class="p">]</span>
+            <span class="n">isi</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_spike_feature</span><span class="p">(</span><span class="s2">&quot;isi&quot;</span><span class="p">)[</span><span class="n">idxs</span><span class="p">]</span>
+
+            <span class="n">ax</span><span class="o">.</span><span class="n">hlines</span><span class="p">(</span>
+                <span class="n">thresh_v</span><span class="p">,</span> <span class="n">thresh_t</span> <span class="o">-</span> <span class="n">isi</span><span class="p">,</span> <span class="n">thresh_t</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;isi&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+            <span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">thresh_t</span><span class="p">,</span> <span class="n">thresh_v</span><span class="p">,</span> <span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ax</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Jonas Beck.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

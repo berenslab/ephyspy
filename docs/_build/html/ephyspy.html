@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ephyspy package &mdash; EphysPy 0.0.05 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=ecdf1fa4"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="ephyspy.allen_sdk package" href="ephyspy.allen_sdk.html" />
+    <link rel="prev" title="ephyspy" href="modules.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            EphysPy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">ephyspy</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">ephyspy package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#subpackages">Subpackages</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ephyspy.allen_sdk.html">ephyspy.allen_sdk package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ephyspy.features.html">ephyspy.features package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-ephyspy.analysis">ephyspy.analysis module</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#ephyspy.analysis.plot_spike_feature"><code class="docutils literal notranslate"><span class="pre">plot_spike_feature()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ephyspy.analysis.plot_spike_features"><code class="docutils literal notranslate"><span class="pre">plot_spike_features()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ephyspy.analysis.plot_sweepset_diagnostics"><code class="docutils literal notranslate"><span class="pre">plot_sweepset_diagnostics()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-ephyspy.sweeps">ephyspy.sweeps module</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#ephyspy.sweeps.EphysSweep"><code class="docutils literal notranslate"><span class="pre">EphysSweep</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ephyspy.sweeps.EphysSweepSet"><code class="docutils literal notranslate"><span class="pre">EphysSweepSet</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-ephyspy.utils">ephyspy.utils module</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#ephyspy.utils.fwhm"><code class="docutils literal notranslate"><span class="pre">fwhm()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ephyspy.utils.get_feature"><code class="docutils literal notranslate"><span class="pre">get_feature()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ephyspy.utils.has_spike_feature"><code class="docutils literal notranslate"><span class="pre">has_spike_feature()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ephyspy.utils.is_baseclass"><code class="docutils literal notranslate"><span class="pre">is_baseclass()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ephyspy.utils.is_spike_feature"><code class="docutils literal notranslate"><span class="pre">is_spike_feature()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ephyspy.utils.is_sweep_feature"><code class="docutils literal notranslate"><span class="pre">is_sweep_feature()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ephyspy.utils.is_sweepset_feature"><code class="docutils literal notranslate"><span class="pre">is_sweepset_feature()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ephyspy.utils.parse_deps"><code class="docutils literal notranslate"><span class="pre">parse_deps()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ephyspy.utils.parse_desc"><code class="docutils literal notranslate"><span class="pre">parse_desc()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ephyspy.utils.parse_func_doc_attrs"><code class="docutils literal notranslate"><span class="pre">parse_func_doc_attrs()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ephyspy.utils.relabel_line"><code class="docutils literal notranslate"><span class="pre">relabel_line()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ephyspy.utils.remove_mpl_artist_by_label"><code class="docutils literal notranslate"><span class="pre">remove_mpl_artist_by_label()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ephyspy.utils.scatter_spike_ft"><code class="docutils literal notranslate"><span class="pre">scatter_spike_ft()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ephyspy.utils.unpack"><code class="docutils literal notranslate"><span class="pre">unpack()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ephyspy.utils.where_between"><code class="docutils literal notranslate"><span class="pre">where_between()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-ephyspy">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">EphysPy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">ephyspy</a></li>
+      <li class="breadcrumb-item active">ephyspy package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/ephyspy.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="ephyspy-package">
+<h1>ephyspy package<a class="headerlink" href="#ephyspy-package" title="Permalink to this heading"></a></h1>
+<section id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="ephyspy.allen_sdk.html">ephyspy.allen_sdk package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ephyspy.allen_sdk.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ephyspy.allen_sdk.html#module-ephyspy.allen_sdk.ephys_extractor">ephyspy.allen_sdk.ephys_extractor module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_extractor.EphysCellFeatureExtractor"><code class="docutils literal notranslate"><span class="pre">EphysCellFeatureExtractor</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_extractor.EphysCellFeatureExtractor.SAG_TARGET"><code class="docutils literal notranslate"><span class="pre">EphysCellFeatureExtractor.SAG_TARGET</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_extractor.EphysCellFeatureExtractor.SUBTHRESH_MAX_AMP"><code class="docutils literal notranslate"><span class="pre">EphysCellFeatureExtractor.SUBTHRESH_MAX_AMP</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_extractor.EphysCellFeatureExtractor.as_dict"><code class="docutils literal notranslate"><span class="pre">EphysCellFeatureExtractor.as_dict()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_extractor.EphysCellFeatureExtractor.cell_features"><code class="docutils literal notranslate"><span class="pre">EphysCellFeatureExtractor.cell_features()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_extractor.EphysCellFeatureExtractor.long_squares_features"><code class="docutils literal notranslate"><span class="pre">EphysCellFeatureExtractor.long_squares_features()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_extractor.EphysCellFeatureExtractor.long_squares_stim_amps"><code class="docutils literal notranslate"><span class="pre">EphysCellFeatureExtractor.long_squares_stim_amps()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_extractor.EphysCellFeatureExtractor.process"><code class="docutils literal notranslate"><span class="pre">EphysCellFeatureExtractor.process()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_extractor.EphysCellFeatureExtractor.ramps_features"><code class="docutils literal notranslate"><span class="pre">EphysCellFeatureExtractor.ramps_features()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_extractor.EphysCellFeatureExtractor.short_squares_features"><code class="docutils literal notranslate"><span class="pre">EphysCellFeatureExtractor.short_squares_features()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_extractor.EphysSweepSetFeatureExtractor"><code class="docutils literal notranslate"><span class="pre">EphysSweepSetFeatureExtractor</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_extractor.EphysSweepSetFeatureExtractor.from_sweeps"><code class="docutils literal notranslate"><span class="pre">EphysSweepSetFeatureExtractor.from_sweeps()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_extractor.EphysSweepSetFeatureExtractor.process_spikes"><code class="docutils literal notranslate"><span class="pre">EphysSweepSetFeatureExtractor.process_spikes()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_extractor.EphysSweepSetFeatureExtractor.spike_feature_averages"><code class="docutils literal notranslate"><span class="pre">EphysSweepSetFeatureExtractor.spike_feature_averages()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_extractor.EphysSweepSetFeatureExtractor.sweep_features"><code class="docutils literal notranslate"><span class="pre">EphysSweepSetFeatureExtractor.sweep_features()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_extractor.EphysSweepSetFeatureExtractor.sweeps"><code class="docutils literal notranslate"><span class="pre">EphysSweepSetFeatureExtractor.sweeps()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_extractor.cell_extractor_for_nwb"><code class="docutils literal notranslate"><span class="pre">cell_extractor_for_nwb()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_extractor.extractor_for_nwb_sweeps"><code class="docutils literal notranslate"><span class="pre">extractor_for_nwb_sweeps()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_extractor.fit_fi_slope"><code class="docutils literal notranslate"><span class="pre">fit_fi_slope()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_extractor.input_resistance"><code class="docutils literal notranslate"><span class="pre">input_resistance()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_extractor.membrane_time_constant"><code class="docutils literal notranslate"><span class="pre">membrane_time_constant()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_extractor.reset_long_squares_start"><code class="docutils literal notranslate"><span class="pre">reset_long_squares_start()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="ephyspy.allen_sdk.html#module-ephyspy.allen_sdk.ephys_features">ephyspy.allen_sdk.ephys_features module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_features.FeatureError"><code class="docutils literal notranslate"><span class="pre">FeatureError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_features.adaptation_index"><code class="docutils literal notranslate"><span class="pre">adaptation_index()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_features.analyze_trough_details"><code class="docutils literal notranslate"><span class="pre">analyze_trough_details()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_features.average_rate"><code class="docutils literal notranslate"><span class="pre">average_rate()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_features.average_voltage"><code class="docutils literal notranslate"><span class="pre">average_voltage()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_features.calculate_dvdt"><code class="docutils literal notranslate"><span class="pre">calculate_dvdt()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_features.check_thresholds_and_peaks"><code class="docutils literal notranslate"><span class="pre">check_thresholds_and_peaks()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_features.detect_bursts"><code class="docutils literal notranslate"><span class="pre">detect_bursts()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_features.detect_pauses"><code class="docutils literal notranslate"><span class="pre">detect_pauses()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_features.detect_putative_spikes"><code class="docutils literal notranslate"><span class="pre">detect_putative_spikes()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_features.estimate_adjusted_detection_parameters"><code class="docutils literal notranslate"><span class="pre">estimate_adjusted_detection_parameters()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_features.filter_putative_spikes"><code class="docutils literal notranslate"><span class="pre">filter_putative_spikes()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_features.find_downstroke_indexes"><code class="docutils literal notranslate"><span class="pre">find_downstroke_indexes()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_features.find_peak_indexes"><code class="docutils literal notranslate"><span class="pre">find_peak_indexes()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_features.find_time_index"><code class="docutils literal notranslate"><span class="pre">find_time_index()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_features.find_trough_indexes"><code class="docutils literal notranslate"><span class="pre">find_trough_indexes()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_features.find_upstroke_indexes"><code class="docutils literal notranslate"><span class="pre">find_upstroke_indexes()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_features.find_widths"><code class="docutils literal notranslate"><span class="pre">find_widths()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_features.fit_membrane_time_constant"><code class="docutils literal notranslate"><span class="pre">fit_membrane_time_constant()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_features.fit_prespike_time_constant"><code class="docutils literal notranslate"><span class="pre">fit_prespike_time_constant()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_features.get_isis"><code class="docutils literal notranslate"><span class="pre">get_isis()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_features.has_fixed_dt"><code class="docutils literal notranslate"><span class="pre">has_fixed_dt()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_features.latency"><code class="docutils literal notranslate"><span class="pre">latency()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_features.norm_diff"><code class="docutils literal notranslate"><span class="pre">norm_diff()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_features.norm_sq_diff"><code class="docutils literal notranslate"><span class="pre">norm_sq_diff()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_features.refine_threshold_indexes"><code class="docutils literal notranslate"><span class="pre">refine_threshold_indexes()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="ephyspy.allen_sdk.html#module-ephyspy.allen_sdk">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ephyspy.features.html">ephyspy.features package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ephyspy.features.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ephyspy.features.html#module-ephyspy.features.base">ephyspy.features.base module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.base.BaseFeature"><code class="docutils literal notranslate"><span class="pre">BaseFeature</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.base.BaseFeature.diagnostics"><code class="docutils literal notranslate"><span class="pre">BaseFeature.diagnostics</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.base.BaseFeature.ensure_correct_hyperparams"><code class="docutils literal notranslate"><span class="pre">BaseFeature.ensure_correct_hyperparams()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.base.BaseFeature.get_diagnostics"><code class="docutils literal notranslate"><span class="pre">BaseFeature.get_diagnostics()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.base.BaseFeature.get_value"><code class="docutils literal notranslate"><span class="pre">BaseFeature.get_value()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.base.BaseFeature.plot"><code class="docutils literal notranslate"><span class="pre">BaseFeature.plot()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.base.BaseFeature.recompute"><code class="docutils literal notranslate"><span class="pre">BaseFeature.recompute()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.base.BaseFeature.value"><code class="docutils literal notranslate"><span class="pre">BaseFeature.value</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.base.SpikeFeature"><code class="docutils literal notranslate"><span class="pre">SpikeFeature</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.base.SpikeFeature.get_diagnostics"><code class="docutils literal notranslate"><span class="pre">SpikeFeature.get_diagnostics()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.base.SpikeFeature.lookup_spike_feature"><code class="docutils literal notranslate"><span class="pre">SpikeFeature.lookup_spike_feature()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.base.SweepFeature"><code class="docutils literal notranslate"><span class="pre">SweepFeature</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.base.SweepFeature.lookup_spike_feature"><code class="docutils literal notranslate"><span class="pre">SweepFeature.lookup_spike_feature()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.base.SweepFeature.lookup_sweep_feature"><code class="docutils literal notranslate"><span class="pre">SweepFeature.lookup_sweep_feature()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.base.SweepSetFeature"><code class="docutils literal notranslate"><span class="pre">SweepSetFeature</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.base.SweepSetFeature.dataset"><code class="docutils literal notranslate"><span class="pre">SweepSetFeature.dataset</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.base.SweepSetFeature.features"><code class="docutils literal notranslate"><span class="pre">SweepSetFeature.features</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.base.SweepSetFeature.get_features"><code class="docutils literal notranslate"><span class="pre">SweepSetFeature.get_features()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.base.SweepSetFeature.lookup_sweep_feature"><code class="docutils literal notranslate"><span class="pre">SweepSetFeature.lookup_sweep_feature()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.base.SweepSetFeature.lookup_sweepset_feature"><code class="docutils literal notranslate"><span class="pre">SweepSetFeature.lookup_sweepset_feature()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="ephyspy.features.html#module-ephyspy.features.spike_features">ephyspy.features.spike_features module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.spike_features.Spike_AP_ADP"><code class="docutils literal notranslate"><span class="pre">Spike_AP_ADP</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.spike_features.Spike_AP_AHP"><code class="docutils literal notranslate"><span class="pre">Spike_AP_AHP</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.spike_features.Spike_AP_UDR"><code class="docutils literal notranslate"><span class="pre">Spike_AP_UDR</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.spike_features.Spike_AP_amp"><code class="docutils literal notranslate"><span class="pre">Spike_AP_amp</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.spike_features.Spike_AP_downstroke"><code class="docutils literal notranslate"><span class="pre">Spike_AP_downstroke</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.spike_features.Spike_AP_fast_trough"><code class="docutils literal notranslate"><span class="pre">Spike_AP_fast_trough</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.spike_features.Spike_AP_peak"><code class="docutils literal notranslate"><span class="pre">Spike_AP_peak</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.spike_features.Spike_AP_slow_trough"><code class="docutils literal notranslate"><span class="pre">Spike_AP_slow_trough</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.spike_features.Spike_AP_thresh"><code class="docutils literal notranslate"><span class="pre">Spike_AP_thresh</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.spike_features.Spike_AP_trough"><code class="docutils literal notranslate"><span class="pre">Spike_AP_trough</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.spike_features.Spike_AP_upstroke"><code class="docutils literal notranslate"><span class="pre">Spike_AP_upstroke</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.spike_features.Spike_AP_width"><code class="docutils literal notranslate"><span class="pre">Spike_AP_width</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.spike_features.Spike_ISI"><code class="docutils literal notranslate"><span class="pre">Spike_ISI</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.spike_features.available_spike_features"><code class="docutils literal notranslate"><span class="pre">available_spike_features()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="ephyspy.features.html#module-ephyspy.features.sweep_features">ephyspy.features.sweep_features module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.APSweepFeature"><code class="docutils literal notranslate"><span class="pre">APSweepFeature</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.NullSweepFeature"><code class="docutils literal notranslate"><span class="pre">NullSweepFeature</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_AP_ADP"><code class="docutils literal notranslate"><span class="pre">Sweep_AP_ADP</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_AP_AHP"><code class="docutils literal notranslate"><span class="pre">Sweep_AP_AHP</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_AP_CV"><code class="docutils literal notranslate"><span class="pre">Sweep_AP_CV</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_AP_FF"><code class="docutils literal notranslate"><span class="pre">Sweep_AP_FF</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_AP_UDR"><code class="docutils literal notranslate"><span class="pre">Sweep_AP_UDR</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_AP_amp"><code class="docutils literal notranslate"><span class="pre">Sweep_AP_amp</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_AP_amp_adapt"><code class="docutils literal notranslate"><span class="pre">Sweep_AP_amp_adapt</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_AP_amp_adapt_avg"><code class="docutils literal notranslate"><span class="pre">Sweep_AP_amp_adapt_avg</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_AP_amp_slope"><code class="docutils literal notranslate"><span class="pre">Sweep_AP_amp_slope</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_AP_freq"><code class="docutils literal notranslate"><span class="pre">Sweep_AP_freq</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_AP_freq_adapt"><code class="docutils literal notranslate"><span class="pre">Sweep_AP_freq_adapt</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_AP_latency"><code class="docutils literal notranslate"><span class="pre">Sweep_AP_latency</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_AP_peak"><code class="docutils literal notranslate"><span class="pre">Sweep_AP_peak</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_AP_thresh"><code class="docutils literal notranslate"><span class="pre">Sweep_AP_thresh</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_AP_trough"><code class="docutils literal notranslate"><span class="pre">Sweep_AP_trough</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_AP_width"><code class="docutils literal notranslate"><span class="pre">Sweep_AP_width</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_Burstiness"><code class="docutils literal notranslate"><span class="pre">Sweep_Burstiness</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_ISI"><code class="docutils literal notranslate"><span class="pre">Sweep_ISI</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_ISI_CV"><code class="docutils literal notranslate"><span class="pre">Sweep_ISI_CV</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_ISI_FF"><code class="docutils literal notranslate"><span class="pre">Sweep_ISI_FF</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_ISI_adapt"><code class="docutils literal notranslate"><span class="pre">Sweep_ISI_adapt</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_ISI_adapt_avg"><code class="docutils literal notranslate"><span class="pre">Sweep_ISI_adapt_avg</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_Num_AP"><code class="docutils literal notranslate"><span class="pre">Sweep_Num_AP</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_Num_bursts"><code class="docutils literal notranslate"><span class="pre">Sweep_Num_bursts</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_R_input"><code class="docutils literal notranslate"><span class="pre">Sweep_R_input</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_Rebound"><code class="docutils literal notranslate"><span class="pre">Sweep_Rebound</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_Rebound_APs"><code class="docutils literal notranslate"><span class="pre">Sweep_Rebound_APs</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_Rebound_area"><code class="docutils literal notranslate"><span class="pre">Sweep_Rebound_area</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_Rebound_avg"><code class="docutils literal notranslate"><span class="pre">Sweep_Rebound_avg</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_Rebound_latency"><code class="docutils literal notranslate"><span class="pre">Sweep_Rebound_latency</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_Sag"><code class="docutils literal notranslate"><span class="pre">Sweep_Sag</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_Sag_area"><code class="docutils literal notranslate"><span class="pre">Sweep_Sag_area</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_Sag_fraction"><code class="docutils literal notranslate"><span class="pre">Sweep_Sag_fraction</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_Sag_ratio"><code class="docutils literal notranslate"><span class="pre">Sweep_Sag_ratio</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_Sag_time"><code class="docutils literal notranslate"><span class="pre">Sweep_Sag_time</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_Stim_amp"><code class="docutils literal notranslate"><span class="pre">Sweep_Stim_amp</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_Stim_end"><code class="docutils literal notranslate"><span class="pre">Sweep_Stim_end</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_Stim_onset"><code class="docutils literal notranslate"><span class="pre">Sweep_Stim_onset</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_Tau"><code class="docutils literal notranslate"><span class="pre">Sweep_Tau</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_V_baseline"><code class="docutils literal notranslate"><span class="pre">Sweep_V_baseline</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_V_deflect"><code class="docutils literal notranslate"><span class="pre">Sweep_V_deflect</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_V_plateau"><code class="docutils literal notranslate"><span class="pre">Sweep_V_plateau</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_V_rest"><code class="docutils literal notranslate"><span class="pre">Sweep_V_rest</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_V_sag"><code class="docutils literal notranslate"><span class="pre">Sweep_V_sag</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_V_steady"><code class="docutils literal notranslate"><span class="pre">Sweep_V_steady</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.Sweep_Wildness"><code class="docutils literal notranslate"><span class="pre">Sweep_Wildness</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweep_features.available_sweep_features"><code class="docutils literal notranslate"><span class="pre">available_sweep_features()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="ephyspy.features.html#module-ephyspy.features.sweepset_features">ephyspy.features.sweepset_features module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.APFeature"><code class="docutils literal notranslate"><span class="pre">APFeature</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.APsFeature"><code class="docutils literal notranslate"><span class="pre">APsFeature</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.First5MedianFeature"><code class="docutils literal notranslate"><span class="pre">First5MedianFeature</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.HyperpolMedianFeature"><code class="docutils literal notranslate"><span class="pre">HyperpolMedianFeature</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.MaxFeature"><code class="docutils literal notranslate"><span class="pre">MaxFeature</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.NullSweepSetFeature"><code class="docutils literal notranslate"><span class="pre">NullSweepSetFeature</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.ReboundFeature"><code class="docutils literal notranslate"><span class="pre">ReboundFeature</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SagFeature"><code class="docutils literal notranslate"><span class="pre">SagFeature</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_AP_ADP"><code class="docutils literal notranslate"><span class="pre">SweepSet_AP_ADP</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_AP_AHP"><code class="docutils literal notranslate"><span class="pre">SweepSet_AP_AHP</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_AP_CV"><code class="docutils literal notranslate"><span class="pre">SweepSet_AP_CV</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_AP_FF"><code class="docutils literal notranslate"><span class="pre">SweepSet_AP_FF</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_AP_UDR"><code class="docutils literal notranslate"><span class="pre">SweepSet_AP_UDR</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_AP_amp"><code class="docutils literal notranslate"><span class="pre">SweepSet_AP_amp</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_AP_amp_adapt"><code class="docutils literal notranslate"><span class="pre">SweepSet_AP_amp_adapt</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_AP_amp_adapt_avg"><code class="docutils literal notranslate"><span class="pre">SweepSet_AP_amp_adapt_avg</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_AP_amp_slope"><code class="docutils literal notranslate"><span class="pre">SweepSet_AP_amp_slope</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_AP_freq"><code class="docutils literal notranslate"><span class="pre">SweepSet_AP_freq</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_AP_freq_adapt"><code class="docutils literal notranslate"><span class="pre">SweepSet_AP_freq_adapt</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_AP_latency"><code class="docutils literal notranslate"><span class="pre">SweepSet_AP_latency</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_AP_peak"><code class="docutils literal notranslate"><span class="pre">SweepSet_AP_peak</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_AP_thresh"><code class="docutils literal notranslate"><span class="pre">SweepSet_AP_thresh</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_AP_trough"><code class="docutils literal notranslate"><span class="pre">SweepSet_AP_trough</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_AP_width"><code class="docutils literal notranslate"><span class="pre">SweepSet_AP_width</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_Burstiness"><code class="docutils literal notranslate"><span class="pre">SweepSet_Burstiness</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_ISI"><code class="docutils literal notranslate"><span class="pre">SweepSet_ISI</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_ISI_CV"><code class="docutils literal notranslate"><span class="pre">SweepSet_ISI_CV</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_ISI_FF"><code class="docutils literal notranslate"><span class="pre">SweepSet_ISI_FF</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_ISI_adapt"><code class="docutils literal notranslate"><span class="pre">SweepSet_ISI_adapt</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_ISI_adapt_avg"><code class="docutils literal notranslate"><span class="pre">SweepSet_ISI_adapt_avg</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_Num_AP"><code class="docutils literal notranslate"><span class="pre">SweepSet_Num_AP</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_Num_bursts"><code class="docutils literal notranslate"><span class="pre">SweepSet_Num_bursts</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_R_input"><code class="docutils literal notranslate"><span class="pre">SweepSet_R_input</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_R_input.plot"><code class="docutils literal notranslate"><span class="pre">SweepSet_R_input.plot()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_Rebound"><code class="docutils literal notranslate"><span class="pre">SweepSet_Rebound</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_Rebound_APs"><code class="docutils literal notranslate"><span class="pre">SweepSet_Rebound_APs</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_Rebound_area"><code class="docutils literal notranslate"><span class="pre">SweepSet_Rebound_area</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_Rebound_avg"><code class="docutils literal notranslate"><span class="pre">SweepSet_Rebound_avg</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_Rebound_latency"><code class="docutils literal notranslate"><span class="pre">SweepSet_Rebound_latency</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_Rheobase"><code class="docutils literal notranslate"><span class="pre">SweepSet_Rheobase</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_Rheobase.plot"><code class="docutils literal notranslate"><span class="pre">SweepSet_Rheobase.plot()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_Sag"><code class="docutils literal notranslate"><span class="pre">SweepSet_Sag</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_Sag_area"><code class="docutils literal notranslate"><span class="pre">SweepSet_Sag_area</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_Sag_fraction"><code class="docutils literal notranslate"><span class="pre">SweepSet_Sag_fraction</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_Sag_ratio"><code class="docutils literal notranslate"><span class="pre">SweepSet_Sag_ratio</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_Sag_time"><code class="docutils literal notranslate"><span class="pre">SweepSet_Sag_time</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_Slow_hyperpolarization"><code class="docutils literal notranslate"><span class="pre">SweepSet_Slow_hyperpolarization</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_Tau"><code class="docutils literal notranslate"><span class="pre">SweepSet_Tau</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_V_baseline"><code class="docutils literal notranslate"><span class="pre">SweepSet_V_baseline</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_V_rest"><code class="docutils literal notranslate"><span class="pre">SweepSet_V_rest</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_Wildness"><code class="docutils literal notranslate"><span class="pre">SweepSet_Wildness</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_dfdI"><code class="docutils literal notranslate"><span class="pre">SweepSet_dfdI</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_dfdI.plot"><code class="docutils literal notranslate"><span class="pre">SweepSet_dfdI.plot()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.sweepset_features.available_sweepset_features"><code class="docutils literal notranslate"><span class="pre">available_sweepset_features()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="ephyspy.features.html#module-ephyspy.features.utils">ephyspy.features.utils module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.utils.FeatureError"><code class="docutils literal notranslate"><span class="pre">FeatureError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.utils.fetch_available_fts"><code class="docutils literal notranslate"><span class="pre">fetch_available_fts()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.utils.get_sweep_burst_metrics"><code class="docutils literal notranslate"><span class="pre">get_sweep_burst_metrics()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.utils.get_sweep_sag_idxs"><code class="docutils literal notranslate"><span class="pre">get_sweep_sag_idxs()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.utils.has_rebound"><code class="docutils literal notranslate"><span class="pre">has_rebound()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.utils.has_spikes"><code class="docutils literal notranslate"><span class="pre">has_spikes()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.utils.has_stimulus"><code class="docutils literal notranslate"><span class="pre">has_stimulus()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.utils.is_depol"><code class="docutils literal notranslate"><span class="pre">is_depol()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.utils.is_hyperpol"><code class="docutils literal notranslate"><span class="pre">is_hyperpol()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.utils.median_idx"><code class="docutils literal notranslate"><span class="pre">median_idx()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.utils.register_custom_feature"><code class="docutils literal notranslate"><span class="pre">register_custom_feature()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ephyspy.features.html#ephyspy.features.utils.where_stimulus"><code class="docutils literal notranslate"><span class="pre">where_stimulus()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="ephyspy.features.html#module-ephyspy.features">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
+</section>
+<section id="module-ephyspy.analysis">
+<span id="ephyspy-analysis-module"></span><h2>ephyspy.analysis module<a class="headerlink" href="#module-ephyspy.analysis" title="Permalink to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.analysis.plot_spike_feature">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.analysis.</span></span><span class="sig-name descname"><span class="pre">plot_spike_feature</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sweep</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#ephyspy.sweeps.EphysSweep" title="ephyspy.sweeps.EphysSweep"><span class="pre">EphysSweep</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">ft</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Axes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Axes</span></span></span><a class="reference internal" href="_modules/ephyspy/analysis.html#plot_spike_feature"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.analysis.plot_spike_feature" title="Permalink to this definition"></a></dt>
+<dd><p>Plot spike feature by name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sweep</strong> (<a class="reference internal" href="#ephyspy.sweeps.EphysSweep" title="ephyspy.sweeps.EphysSweep"><em>EphysSweep</em></a>) – Sweep to plot the feature for.</p></li>
+<li><p><strong>ft</strong> (<em>str</em>) – Name of the feature to plot (all lowercase).
+Can plot all features that are included in the <cite>EphysSweep._spikes_df</cite>
+and all features in <cite>available_spike_features()</cite>.</p></li>
+<li><p><strong>ax</strong> (<em>Axes</em>) – Matplotlib axes.</p></li>
+<li><p><strong>**kwargs</strong> – Additional kwargs are passed to the plotting function.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Matplotlib axes.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Axes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.analysis.plot_spike_features">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.analysis.</span></span><span class="sig-name descname"><span class="pre">plot_spike_features</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sweep</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#ephyspy.sweeps.EphysSweep" title="ephyspy.sweeps.EphysSweep"><span class="pre">EphysSweep</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">window</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tuple</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[0.4,</span> <span class="pre">0.45]</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Figure</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Axes</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/ephyspy/analysis.html#plot_spike_features"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.analysis.plot_spike_features" title="Permalink to this definition"></a></dt>
+<dd><p>Plot overview of the extracted spike features for a sweep.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sweep</strong> (<a class="reference internal" href="#ephyspy.sweeps.EphysSweep" title="ephyspy.sweeps.EphysSweep"><em>EphysSweep</em></a>) – Sweep to plot the features for.</p></li>
+<li><p><strong>window</strong> (<em>Tuple</em><em>, </em><em>optional</em>) – Specific Time window to zoom in on a subset or
+single spikes to see more detail. Defaults to [0.4, 0.45].</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Matplotlib figure and axes.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tuple[Figure, Axes]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.analysis.plot_sweepset_diagnostics">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.analysis.</span></span><span class="sig-name descname"><span class="pre">plot_sweepset_diagnostics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sweepset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#ephyspy.sweeps.EphysSweepSet" title="ephyspy.sweeps.EphysSweepSet"><span class="pre">EphysSweepSet</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">figsize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(15,</span> <span class="pre">14)</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Figure</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Axes</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/ephyspy/analysis.html#plot_sweepset_diagnostics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.analysis.plot_sweepset_diagnostics" title="Permalink to this definition"></a></dt>
+<dd><p>Plot diagnostics overview for the whole sweepset.</p>
+<p>This function is useful to diagnose outliers on the sweepset level.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>sweepset</strong> (<a class="reference internal" href="#ephyspy.sweeps.EphysSweepSet" title="ephyspy.sweeps.EphysSweepSet"><em>EphysSweepSet</em></a>) – sweepset to diagnose.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>figure and axes with plot.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Fig, Axes</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-ephyspy.sweeps">
+<span id="ephyspy-sweeps-module"></span><h2>ephyspy.sweeps module<a class="headerlink" href="#module-ephyspy.sweeps" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="ephyspy.sweeps.EphysSweep">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ephyspy.sweeps.</span></span><span class="sig-name descname"><span class="pre">EphysSweep</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/sweeps.html#EphysSweep"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.sweeps.EphysSweep" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">EphysSweepFeatureExtractor</span></code></p>
+<p>Wrapper around EphysSweepFeatureExtractor from the AllenSDK to
+support additional functionality.</p>
+<p>Mainly it supports the addition of new spike features and metadata.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ephyspy.sweeps.EphysSweep.metadata">
+<span class="sig-name descname"><span class="pre">metadata</span></span><a class="headerlink" href="#ephyspy.sweeps.EphysSweep.metadata" title="Permalink to this definition"></a></dt>
+<dd><p>Metadata for the sweep.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ephyspy.sweeps.EphysSweep.added_spike_features">
+<span class="sig-name descname"><span class="pre">added_spike_features</span></span><a class="headerlink" href="#ephyspy.sweeps.EphysSweep.added_spike_features" title="Permalink to this definition"></a></dt>
+<dd><p>Dictionary of added spike features.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ephyspy.sweeps.EphysSweep.features">
+<span class="sig-name descname"><span class="pre">features</span></span><a class="headerlink" href="#ephyspy.sweeps.EphysSweep.features" title="Permalink to this definition"></a></dt>
+<dd><p>Dictionary of sweep features. These should be
+<cite>SweepFeature</cite> instances.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ephyspy.sweeps.EphysSweep.add_features">
+<span class="sig-name descname"><span class="pre">add_features</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">features</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/sweeps.html#EphysSweep.add_features"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.sweeps.EphysSweep.add_features" title="Permalink to this definition"></a></dt>
+<dd><p>Add features to the <cite>EphysSweep</cite> instance.</p>
+<p>This function can be used to add spike or sweep features to an <cite>EphysSweep</cite>
+object. The added features can then be accessed via <cite>self.features</cite> or
+collectively computed via <cite>self.get_features()</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>features</strong> (<em>Union</em><em>[</em><em>List</em><em>[</em><em>Any</em><em>]</em><em>, </em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em><em>]</em>) – List of features to add.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>TypeError</strong> – If feature is not of a known type.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ephyspy.sweeps.EphysSweep.add_spike_feature">
+<span class="sig-name descname"><span class="pre">add_spike_feature</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">feature_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">feature_func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/sweeps.html#EphysSweep.add_spike_feature"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.sweeps.EphysSweep.add_spike_feature" title="Permalink to this definition"></a></dt>
+<dd><p>Add a new spike feature to the extractor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>feature_name</strong> (<em>str</em>) – Name of the new feature.</p></li>
+<li><p><strong>feature_func</strong> (<em>Callable</em>) – Function to calculate the new feature.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ephyspy.sweeps.EphysSweep.clear_features">
+<span class="sig-name descname"><span class="pre">clear_features</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/sweeps.html#EphysSweep.clear_features"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.sweeps.EphysSweep.clear_features" title="Permalink to this definition"></a></dt>
+<dd><p>Clear all features.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ephyspy.sweeps.EphysSweep.get_features">
+<span class="sig-name descname"><span class="pre">get_features</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">recompute</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/ephyspy/sweeps.html#EphysSweep.get_features"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.sweeps.EphysSweep.get_features" title="Permalink to this definition"></a></dt>
+<dd><p>Compute all features that have been added to the <cite>EphysSweep</cite> instance.</p>
+<p>Includes all features that can be found in <cite>self.features</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>recompute</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to force recomputation of the
+features. Defaults to False.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dictionary of features and values.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dict[str, float]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ephyspy.sweeps.EphysSweep.plot">
+<span class="sig-name descname"><span class="pre">plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Axes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_stimulus</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Axes</span></span></span><a class="reference internal" href="_modules/ephyspy/sweeps.html#EphysSweep.plot"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.sweeps.EphysSweep.plot" title="Permalink to this definition"></a></dt>
+<dd><p>Plot the sweep.</p>
+<p>If no axes object is provided, one will be created. It will have one or
+two subplots, depending on whether the stimulus is shown.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ax</strong> (<em>Axes</em><em>, </em><em>optional</em>) – Matplotlib axes to plot on.</p></li>
+<li><p><strong>show_stimulus</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to plot the stimulus. Defaults to False.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Matplotlib axes object.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Axes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ephyspy.sweeps.EphysSweep.plot_feature">
+<span class="sig-name descname"><span class="pre">plot_feature</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ft</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Axes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_sweep</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Axes</span></span></span><a class="reference internal" href="_modules/ephyspy/sweeps.html#EphysSweep.plot_feature"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.sweeps.EphysSweep.plot_feature" title="Permalink to this definition"></a></dt>
+<dd><p>Plot any feature of the sweep by specifying its name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ft</strong> (<em>str</em>) – Name of the feature to plot. (all lower case)</p></li>
+<li><p><strong>ax</strong> (<em>Axes</em><em>, </em><em>optional</em>) – Matplotlib axes to plot on.</p></li>
+<li><p><strong>show_sweep</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to plot V(t).
+Defaults to True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Matplotlib axes object.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Axes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ephyspy.sweeps.EphysSweep.plot_features">
+<span class="sig-name descname"><span class="pre">plot_features</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Axes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_sweep</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Axes</span></span></span><a class="reference internal" href="_modules/ephyspy/sweeps.html#EphysSweep.plot_features"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.sweeps.EphysSweep.plot_features" title="Permalink to this definition"></a></dt>
+<dd><p>Plot multiple features of the sweep by specifying their names.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fts</strong> (<em>List</em><em>[</em><em>str</em><em>]</em>) – Names of the features to plot. (all lower case)</p></li>
+<li><p><strong>ax</strong> (<em>Axes</em><em>, </em><em>optional</em>) – Matplotlib axes to plot on.</p></li>
+<li><p><strong>show_sweep</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to plot V(t).
+Defaults to True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Matplotlib axes object.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Axes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ephyspy.sweeps.EphysSweep.process_spikes">
+<span class="sig-name descname"><span class="pre">process_spikes</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/sweeps.html#EphysSweep.process_spikes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.sweeps.EphysSweep.process_spikes" title="Permalink to this definition"></a></dt>
+<dd><p>Perform spike-related feature analysis, which includes added spike
+features not part of the original AllenSDK implementation.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ephyspy.sweeps.EphysSweepSet">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ephyspy.sweeps.</span></span><span class="sig-name descname"><span class="pre">EphysSweepSet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t_set</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v_set</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i_set</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t_start</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t_end</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/sweeps.html#EphysSweepSet"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.sweeps.EphysSweepSet" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_extractor.EphysSweepSetFeatureExtractor" title="ephyspy.allen_sdk.ephys_extractor.EphysSweepSetFeatureExtractor"><code class="xref py py-class docutils literal notranslate"><span class="pre">EphysSweepSetFeatureExtractor</span></code></a></p>
+<p>Wrapper around EphysSweepSetFeatureExtractor from the AllenSDK to
+support additional functionality.</p>
+<p>t_set, v_set and i_set are optional and <cite>EphysSweepSet</cite> can also be initialized
+using an iterable of sweeps via the <cite>from_sweeps</cite> method. In this case all the
+metadata already needs to be contained in the sweeps.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>t_set</strong> (<em>ndarray</em>) – Time array for set of sweeps.</p></li>
+<li><p><strong>v_set</strong> (<em>ndarray</em>) – Voltage array for set of sweeps.</p></li>
+<li><p><strong>i_set</strong> (<em>ndarray</em>) – Current array for set of sweeps.</p></li>
+<li><p><strong>metadata</strong> (<em>dict</em><em>, </em><em>optional</em>) – Metadata for the sweep set. Defaults to None.</p></li>
+<li><p><strong>or</strong> (<em>The metadata can be used to set hyperparameters for features</em>) – store identifying information, such as cell id etc..</p></li>
+<li><p><strong>*args</strong> – Additional arguments for EphysSweepSetFeatureExtractor.</p></li>
+<li><p><strong>**kwargs</strong> – Additional keyword arguments for EphysSweepSetFeatureExtractor.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ephyspy.sweeps.EphysSweepSet.metadata">
+<span class="sig-name descname"><span class="pre">metadata</span></span><a class="headerlink" href="#ephyspy.sweeps.EphysSweepSet.metadata" title="Permalink to this definition"></a></dt>
+<dd><p>Metadata for the sweep set.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ephyspy.sweeps.EphysSweepSet.add_features">
+<span class="sig-name descname"><span class="pre">add_features</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">features</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/sweeps.html#EphysSweepSet.add_features"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.sweeps.EphysSweepSet.add_features" title="Permalink to this definition"></a></dt>
+<dd><p>Add features to the <cite>EphysSweepSet</cite> instance.</p>
+<p>This function can be used to add spike sweep or sweepset features to an
+<cite>EphysSweepSet</cite> object. The added features can then be accessed via
+<cite>self.features</cite> or collectively computed via <cite>self.get_features()</cite>.</p>
+<p>Sweep features are passed to each sweep in the set and added there.
+Any sweep features needed in their computation are automatically added
+and handled by <cite>SweepSetFeature</cite> instances. This means they don’t
+necessarily need to be added manually.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>features</strong> (<em>Union</em><em>[</em><em>List</em><em>[</em><em>Any</em><em>]</em><em>, </em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em><em>]</em>) – List of features to add.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>TypeError</strong> – If feature is not of a known type.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ephyspy.sweeps.EphysSweepSet.add_spike_feature">
+<span class="sig-name descname"><span class="pre">add_spike_feature</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">feature_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">feature_func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/sweeps.html#EphysSweepSet.add_spike_feature"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.sweeps.EphysSweepSet.add_spike_feature" title="Permalink to this definition"></a></dt>
+<dd><p>Add a new spike feature to the extractor.</p>
+<p>Adds new spike feature to each <cite>EphysSweep</cite> instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>feature_name</strong> (<em>str</em>) – Name of the new feature.</p></li>
+<li><p><strong>feature_func</strong> (<em>Callable</em>) – Function to calculate the new feature.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>TypeError</strong> – If feature is not of a known type.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ephyspy.sweeps.EphysSweepSet.clear_features">
+<span class="sig-name descname"><span class="pre">clear_features</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/sweeps.html#EphysSweepSet.clear_features"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.sweeps.EphysSweepSet.clear_features" title="Permalink to this definition"></a></dt>
+<dd><p>Clear all features.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ephyspy.sweeps.EphysSweepSet.get_features">
+<span class="sig-name descname"><span class="pre">get_features</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">recompute</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/ephyspy/sweeps.html#EphysSweepSet.get_features"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.sweeps.EphysSweepSet.get_features" title="Permalink to this definition"></a></dt>
+<dd><p>Compute all features that have been added to the <cite>EphysSweepSet</cite> instance.</p>
+<p>Includes all features that can be found in <cite>self.features</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>recompute</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to force recomputation of the
+features. Defaults to False.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dictionary of features and values.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dict[str, float]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ephyspy.sweeps.EphysSweepSet.get_sweep_features">
+<span class="sig-name descname"><span class="pre">get_sweep_features</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">recompute</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/ephyspy/sweeps.html#EphysSweepSet.get_sweep_features"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.sweeps.EphysSweepSet.get_sweep_features" title="Permalink to this definition"></a></dt>
+<dd><p>Collect features on a sweep level.</p>
+<p>This computes / looks up all features that have been computed at the
+sweep level and returns them as a dictionary of lists. Each list contains
+the values for the respective feature for each sweep, i.e.
+<cite>get_sweep_features()[feature_name][sweep_idx]</cite> returns the value of
+<cite>feature_name</cite> for the <cite>sweep_idx</cite>-th sweep.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>recompute</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to force recomputation of the
+features. Defaults to False.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dictionary of features and values.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dict[str, List[float]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="ephyspy.sweeps.EphysSweepSet.i">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">i</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ndarray</span></em><a class="headerlink" href="#ephyspy.sweeps.EphysSweepSet.i" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ephyspy.sweeps.EphysSweepSet.plot">
+<span class="sig-name descname"><span class="pre">plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Axes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_stimulus</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Axes</span></span></span><a class="reference internal" href="_modules/ephyspy/sweeps.html#EphysSweepSet.plot"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.sweeps.EphysSweepSet.plot" title="Permalink to this definition"></a></dt>
+<dd><p>Plot all sweeps in the set.</p>
+<p>If no axes object is provided, one will be created. It will have one or
+two subplots, depending on whether the stimulus is shown.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ax</strong> (<em>Axes</em><em>, </em><em>optional</em>) – Matplotlib axes to plot on.</p></li>
+<li><p><strong>show_stimulus</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to plot the stimulus. Defaults to False.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Matplotlib axes object.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Axes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ephyspy.sweeps.EphysSweepSet.set_stimulus_amplitude_calculator">
+<span class="sig-name descname"><span class="pre">set_stimulus_amplitude_calculator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/sweeps.html#EphysSweepSet.set_stimulus_amplitude_calculator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.sweeps.EphysSweepSet.set_stimulus_amplitude_calculator" title="Permalink to this definition"></a></dt>
+<dd><p>Set stimulus amplitude calculator for each sweep.</p>
+<p>This is potentially only relevant for working with the AllenSDK and should
+not be needed for using <cite>ephyspy</cite> on its own.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>func</strong> (<em>Callable</em>) – Function to calculate stimulus amplitude.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="ephyspy.sweeps.EphysSweepSet.t">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">t</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ndarray</span></em><a class="headerlink" href="#ephyspy.sweeps.EphysSweepSet.t" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="ephyspy.sweeps.EphysSweepSet.v">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">v</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ndarray</span></em><a class="headerlink" href="#ephyspy.sweeps.EphysSweepSet.v" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-ephyspy.utils">
+<span id="ephyspy-utils-module"></span><h2>ephyspy.utils module<a class="headerlink" href="#module-ephyspy.utils" title="Permalink to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.utils.fwhm">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.utils.</span></span><span class="sig-name descname"><span class="pre">fwhm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t_start</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t_end</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/ephyspy/utils.html#fwhm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.utils.fwhm" title="Permalink to this definition"></a></dt>
+<dd><p>Get full width at half maximum of a ap.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>t</strong> (<em>ndarray</em>) – time array.</p></li>
+<li><p><strong>v</strong> (<em>ndarray</em>) – voltage array.</p></li>
+<li><p><strong>t_start</strong> (<em>float</em>) – start time of ap.</p></li>
+<li><p><strong>t_end</strong> (<em>float</em>) – end time of ap.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>full width at half maximum,</dt><dd><p>time of half maximum upstroke, time of half maximum downstroke.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tuple[float, float, float]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.utils.get_feature">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.utils.</span></span><span class="sig-name descname"><span class="pre">get_feature</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#ephyspy.sweeps.EphysSweep" title="ephyspy.sweeps.EphysSweep"><span class="pre">EphysSweep</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="#ephyspy.sweeps.EphysSweepSet" title="ephyspy.sweeps.EphysSweepSet"><span class="pre">EphysSweepSet</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/utils.html#get_feature"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.utils.get_feature" title="Permalink to this definition"></a></dt>
+<dd><p>Get feature by name.</p>
+<p>This is a convenience function to compute features without having to import
+the feature classes or think about wether a feature is computed on a sweep or
+sweepset.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – Name of feature.</p></li>
+<li><p><strong>data</strong> (<a class="reference internal" href="#ephyspy.sweeps.EphysSweep" title="ephyspy.sweeps.EphysSweep"><em>EphysSweep</em></a><em> or </em><a class="reference internal" href="#ephyspy.sweeps.EphysSweepSet" title="ephyspy.sweeps.EphysSweepSet"><em>EphysSweepSet</em></a>) – Data to compute feature on. This can be
+either a single sweep or a sweepset.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="ephyspy.allen_sdk.html#ephyspy.allen_sdk.ephys_features.FeatureError" title="ephyspy.allen_sdk.ephys_features.FeatureError"><strong>FeatureError</strong></a> – If feature is not available for data type.</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Feature object.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Feature</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.utils.has_spike_feature">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.utils.</span></span><span class="sig-name descname"><span class="pre">has_spike_feature</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sweep</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#ephyspy.sweeps.EphysSweep" title="ephyspy.sweeps.EphysSweep"><span class="pre">EphysSweep</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">ft</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/ephyspy/utils.html#has_spike_feature"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.utils.has_spike_feature" title="Permalink to this definition"></a></dt>
+<dd><p>Checks if sweep has a given spike feature.</p>
+<p>First checks for <cite>_spikes_df</cite> attribute, which should get instantiated if
+spikes have already been processed. If not present <cite>process_spikes</cite> will be
+called. Then, if the feature is present in the <cite>_spikes_df</cite> and not all values
+are NaN, returns True.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sweep</strong> (<a class="reference internal" href="#ephyspy.sweeps.EphysSweep" title="ephyspy.sweeps.EphysSweep"><em>EphysSweep</em></a>) – Sweep to check for existance of spike feature.</p></li>
+<li><p><strong>ft</strong> (<em>str</em>) – Spike feature to check for. Feature must be present in <cite>_spikes_df</cite>
+for a healthy spiking sweep.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Whether sweep has the given spike feature.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.utils.is_baseclass">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.utils.</span></span><span class="sig-name descname"><span class="pre">is_baseclass</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obj</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">object</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/ephyspy/utils.html#is_baseclass"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.utils.is_baseclass" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.utils.is_spike_feature">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.utils.</span></span><span class="sig-name descname"><span class="pre">is_spike_feature</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ft</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/ephyspy/utils.html#is_spike_feature"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.utils.is_spike_feature" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.utils.is_sweep_feature">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.utils.</span></span><span class="sig-name descname"><span class="pre">is_sweep_feature</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ft</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/ephyspy/utils.html#is_sweep_feature"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.utils.is_sweep_feature" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.utils.is_sweepset_feature">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.utils.</span></span><span class="sig-name descname"><span class="pre">is_sweepset_feature</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ft</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/ephyspy/utils.html#is_sweepset_feature"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.utils.is_sweepset_feature" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.utils.parse_deps">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.utils.</span></span><span class="sig-name descname"><span class="pre">parse_deps</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">deps_string</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/ephyspy/utils.html#parse_deps"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.utils.parse_deps" title="Permalink to this definition"></a></dt>
+<dd><p>Parses docstring for feature dependencies.</p>
+<p>If no dependencies are found, returns empty list.
+Special case of <cite>parse_func_doc_attrs</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>deps_string</strong> (<em>str</em>) – String to parse for dependencies.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>List of dependencies.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List[str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.utils.parse_desc">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.utils.</span></span><span class="sig-name descname"><span class="pre">parse_desc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/ephyspy/utils.html#parse_desc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.utils.parse_desc" title="Permalink to this definition"></a></dt>
+<dd><p>Parses docstring for description.</p>
+<p>If no description is found, returns empty string.
+Special case of <cite>parse_func_doc_attrs</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>func</strong> (<em>Callable</em>) – Function to parse docstring of.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Description of function.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.utils.parse_func_doc_attrs">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.utils.</span></span><span class="sig-name descname"><span class="pre">parse_func_doc_attrs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span></span></span><a class="reference internal" href="_modules/ephyspy/utils.html#parse_func_doc_attrs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.utils.parse_func_doc_attrs" title="Permalink to this definition"></a></dt>
+<dd><p>Parses docstrings for attributes.</p>
+<p>Docstrings should have the following format:
+&lt;Some text&gt;
+attr: &lt;attr text&gt;.
+attr: &lt;attr text&gt;.
+…
+&lt;Some more text&gt;</p>
+<p>IMPORTANT: EACH ATTRIBUTE MUST END WITH A “.”</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>func</strong> (<em>Callable</em>) – Function to parse docstring of.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>all attributes found in document string.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>doc_attrs</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.utils.relabel_line">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.utils.</span></span><span class="sig-name descname"><span class="pre">relabel_line</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Axes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">old_label</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_label</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ephyspy/utils.html#relabel_line"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.utils.relabel_line" title="Permalink to this definition"></a></dt>
+<dd><p>Rename line label in one given axes.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.utils.remove_mpl_artist_by_label">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.utils.</span></span><span class="sig-name descname"><span class="pre">remove_mpl_artist_by_label</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Axes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legend_handle</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Axes</span></span></span><a class="reference internal" href="_modules/ephyspy/utils.html#remove_mpl_artist_by_label"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.utils.remove_mpl_artist_by_label" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.utils.scatter_spike_ft">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.utils.</span></span><span class="sig-name descname"><span class="pre">scatter_spike_ft</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ft</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sweep</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#ephyspy.sweeps.EphysSweep" title="ephyspy.sweeps.EphysSweep"><span class="pre">EphysSweep</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Axes</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">selected_idxs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Axes</span></span></span><a class="reference internal" href="_modules/ephyspy/utils.html#scatter_spike_ft"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.utils.scatter_spike_ft" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.utils.unpack">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.utils.</span></span><span class="sig-name descname"><span class="pre">unpack</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keys</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/ephyspy/utils.html#unpack"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ephyspy.utils.unpack" title="Permalink to this definition"></a></dt>
+<dd><p>Unpack dict to tuple of values.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ephyspy.utils.where_between">
+<span class="sig-prename descclassname"><span class="pre">ephyspy.utils.</span></span><span class="sig-name descname"><span class="pre">where_between</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tend</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#ephyspy.utils.where_between" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="module-ephyspy">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-ephyspy" title="Permalink to this heading"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="modules.html" class="btn btn-neutral float-left" title="ephyspy" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="ephyspy.allen_sdk.html" class="btn btn-neutral float-right" title="ephyspy.allen_sdk package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Jonas Beck.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

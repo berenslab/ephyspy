@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ephyspy.features.base &mdash; EphysPy 0.0.05 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js?v=ecdf1fa4"></script>
+        <script src="../../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            EphysPy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">ephyspy</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">EphysPy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">ephyspy.features.base</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for ephyspy.features.base</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright 2023 Jonas Beck</span>
+
+<span class="c1"># This program is free software: you can redistribute it and/or modify</span>
+<span class="c1"># it under the terms of the GNU General Public License as published by</span>
+<span class="c1"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c1"># (at your option) any later version.</span>
+
+<span class="c1"># This program is distributed in the hope that it will be useful,</span>
+<span class="c1"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c1"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c1"># GNU General Public License for more details.</span>
+
+<span class="c1"># You should have received a copy of the GNU General Public License</span>
+<span class="c1"># along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">import</span> <span class="n">Axes</span>
+<span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">ndarray</span>
+
+<span class="kn">from</span> <span class="nn">ephyspy.features.utils</span> <span class="kn">import</span> <span class="n">FeatureError</span><span class="p">,</span> <span class="n">fetch_available_fts</span>
+<span class="kn">from</span> <span class="nn">ephyspy.sweeps</span> <span class="kn">import</span> <span class="n">EphysSweep</span><span class="p">,</span> <span class="n">EphysSweepSet</span>
+<span class="kn">from</span> <span class="nn">ephyspy.utils</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">is_sweep_feature</span><span class="p">,</span>
+    <span class="n">is_sweepset_feature</span><span class="p">,</span>
+    <span class="n">parse_deps</span><span class="p">,</span>
+    <span class="n">parse_func_doc_attrs</span><span class="p">,</span>
+    <span class="n">unpack</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="BaseFeature"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.base.BaseFeature">[docs]</a><span class="k">class</span> <span class="nc">BaseFeature</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Base class for all electrophysiological features.</span>
+
+<span class="sd">    This class defines the interface for all electrophysiological features.</span>
+<span class="sd">    All sweep features should inherit from this class, and must implement a</span>
+<span class="sd">    `_compute` and `_data_init` method. The `_compute` method should return the</span>
+<span class="sd">    feature value and optionally save diagnostic information for later debugging to</span>
+<span class="sd">    `self._diagnostics`. The `_data_init` method should be used to set the</span>
+<span class="sd">    `self.data` attribute, and add the feature to the `self.data.features`.</span>
+
+<span class="sd">    The description of the feature should contain a short description of the</span>
+<span class="sd">    feature, and a list of dependencies. The dependencies should be listed</span>
+<span class="sd">    as a comma separated list of feature names. It is parsed and can be displayed</span>
+<span class="sd">    but has no functional use for now. Furthermore, the units of the feature</span>
+<span class="sd">    should be specified. If the feature is unitless, the units should be set to &quot;/&quot;.</span>
+
+<span class="sd">    The docstring should have the following format:</span>
+
+<span class="sd">    &#39;&#39;&#39;&lt;Some Text&gt;</span>
+
+<span class="sd">    description: &lt;Short description of the feature&gt;.</span>
+<span class="sd">    depends on: &lt;Comma separated list of dependencies&gt;.</span>
+<span class="sd">    units: &lt;Units of the feature&gt;.</span>
+
+<span class="sd">    &lt;Some more text&gt;&#39;&#39;&#39;</span>
+
+<span class="sd">    `BaseFeature`s can also implement a _plot method, that displays the diagnostic</span>
+<span class="sd">    information or the feature itself. If the feature cannot be displayed in a V(t)</span>
+<span class="sd">    or I(t) plot, instead the `plot` method should be overwritten directly. This</span>
+<span class="sd">    is because `plot` wraps `_plot` adds additional functionality ot it.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">EphysSweep</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">compute_at_init</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Args:</span>
+<span class="sd">            data: EphysSweep object.</span>
+<span class="sd">                Can also be passed later with `__call__`.</span>
+<span class="sd">            compute_at_init: If True, compute the feature at initialization.</span>
+<span class="sd">                Otherwise the feature is only copmuted when `__call__` or</span>
+<span class="sd">                `get_value` is called. This can be useful when instantiating</span>
+<span class="sd">                many features at once, and waiting with the computation until</span>
+<span class="sd">                the features are actually needed.</span>
+<span class="sd">            name: Custom name of the feature. If None, the name of the feature</span>
+<span class="sd">                class is used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;sweep_&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;spike_&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;sweepset_&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_diagnostics</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data_init</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">data</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">compute_at_init</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_value</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__doc__</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">attrs</span> <span class="o">=</span> <span class="n">parse_func_doc_attrs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="kc">None</span> <span class="k">if</span> <span class="ow">not</span> <span class="s2">&quot;description&quot;</span> <span class="ow">in</span> <span class="n">attrs</span> <span class="k">else</span> <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;description&quot;</span><span class="p">]</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">depends_on</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="ow">not</span> <span class="s2">&quot;depends on&quot;</span> <span class="ow">in</span> <span class="n">attrs</span> <span class="k">else</span> <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;depends on&quot;</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">units</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="ow">not</span> <span class="s2">&quot;units&quot;</span> <span class="ow">in</span> <span class="n">attrs</span> <span class="k">else</span> <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;units&quot;</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">units</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span> <span class="o">==</span> <span class="s2">&quot;/&quot;</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">_data_init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">EphysSweep</span><span class="p">,</span> <span class="n">EphysSweepSet</span><span class="p">]):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the feature with a EphysSweep or EphysSweepSet object.</span>
+
+<span class="sd">        This method is called at initialization and when the feature is</span>
+<span class="sd">        called with a new data object. It should be used to set the `self.data`</span>
+<span class="sd">        attribute, and add the feature to the `self.data.features` dictionary.</span>
+<span class="sd">        It can further be used to add any pre-existing / pre-computed features</span>
+<span class="sd">        stored in `self.data.features` to the class attributes (`_value`,</span>
+<span class="sd">        `_diagnostics`, etc.).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data: EphysSweep object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data</span>
+
+<div class="viewcode-block" id="BaseFeature.ensure_correct_hyperparams"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.base.BaseFeature.ensure_correct_hyperparams">[docs]</a>    <span class="k">def</span> <span class="nf">ensure_correct_hyperparams</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Ensure that parameters passed with the data are used in computation.</span>
+
+<span class="sd">        Both EphysSweep and EphysSweepSet can come with metadata attached. This</span>
+<span class="sd">        metadata can be used to set default values for hyperparameters of</span>
+<span class="sd">        features. This method ensures that these hyperparameters are used in</span>
+<span class="sd">        computation. It should be called in `_data_init` after setting the</span>
+<span class="sd">        `self.data` attribute.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">metadata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">metadata</span>
+        <span class="n">new_defaults</span> <span class="o">=</span> <span class="p">{</span><span class="n">kw</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">kw</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">metadata</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">kw</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">}</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">new_defaults</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">new_defaults</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> = ? </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">_compute</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">recompute</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">store_diagnostics</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute the feature.</span>
+
+<span class="sd">        All computation that is neccesary to yield the value of the feature should</span>
+<span class="sd">        be defined here. This is the core method of BaseFeature and all other</span>
+<span class="sd">        functionality interacts with this method.</span>
+
+<span class="sd">        Alongside computing the value of the corresponding feature, this method</span>
+<span class="sd">        can also be used to updat the `_diagnostics` attribute, which is a</span>
+<span class="sd">        dictionary that can be used to store any additional information about</span>
+<span class="sd">        the feature computation. This can be useful for debugging or better</span>
+<span class="sd">        understanding how a feature was computed. Diagnostic information can</span>
+<span class="sd">        be accessed with `get_diagnostics` or via the `diagnostics` property and</span>
+<span class="sd">        updated with `_update_diagnostics`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            recompute: If True, recompute the feature even if it is already</span>
+<span class="sd">                computed.</span>
+<span class="sd">            store_diagnostics: If True, store any additional information about</span>
+<span class="sd">                the feature computation in the `_diagnostics` attribute.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The value of the feature.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># load dependencies using lookup_sweep_feature or lookup_spike_feature</span>
+        <span class="c1"># do some computation</span>
+        <span class="c1"># save diagnostics using _update_diagnostics</span>
+        <span class="k">return</span>
+
+<div class="viewcode-block" id="BaseFeature.recompute"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.base.BaseFeature.recompute">[docs]</a>    <span class="k">def</span> <span class="nf">recompute</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convencience method to recompute the feature.</span>
+
+<span class="sd">        This method is equivalent to calling `get_value` with `recompute=True`</span>
+<span class="sd">        and `store_diagnostics=True`.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The value of the feature.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">recompute</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">store_diagnostics</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BaseFeature.get_diagnostics"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.base.BaseFeature.get_diagnostics">[docs]</a>    <span class="k">def</span> <span class="nf">get_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">recompute</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get diagnostic information about how a feature was computed.</span>
+
+<span class="sd">        This method returns any intermediary results obtained during computation</span>
+<span class="sd">        of the feature that has been stored in `_diagnostics`.  If the feature</span>
+<span class="sd">        is not yet computed, it will be computed first.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            recompute: If True, recompute the feature even if it is already</span>
+<span class="sd">                computed.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A dictionary with diagnostic information about the feature computation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">recompute</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_diagnostics</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">recompute</span><span class="o">=</span><span class="n">recompute</span><span class="p">,</span> <span class="n">store_diagnostics</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_diagnostics</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_diagnostics</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_update_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dct</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update the `_diagnostics` attribute with a dictionary.</span>
+
+<span class="sd">        This method can be used to store information about the</span>
+<span class="sd">        feature computation in the `_diagnostics` attribute of the object.</span>
+<span class="sd">        This method should be called in `_compute` if `store_diagnostics` is</span>
+<span class="sd">        True.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            dct: Dictionary with additional diagnostic information.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_diagnostics</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_diagnostics</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_diagnostics</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">dct</span><span class="p">)</span>
+
+<div class="viewcode-block" id="BaseFeature.get_value"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.base.BaseFeature.get_value">[docs]</a>    <span class="k">def</span> <span class="nf">get_value</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">recompute</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">store_diagnostics</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the value of the feature.</span>
+
+<span class="sd">        Allows to force recomputation of the feature and toggle whether</span>
+<span class="sd">        diagnostic information should be stored.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            recompute: If True, recompute the feature even if it is already</span>
+<span class="sd">                computed.</span>
+<span class="sd">            store_diagnostics: If True, store any additional information about</span>
+<span class="sd">                the feature computation in the `_diagnostics` attribute.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The value of the feature.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">recompute</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compute</span><span class="p">(</span>
+                <span class="n">recompute</span><span class="o">=</span><span class="n">recompute</span><span class="p">,</span>
+                <span class="n">store_diagnostics</span><span class="o">=</span><span class="n">store_diagnostics</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">value</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_value</span><span class="p">()</span>
+
+    <span class="nd">@value</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">_set_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">EphysSweep</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">compute</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">store_diagnostics</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">return_value</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">SweepFeature</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute the feature for a given dataset.</span>
+
+<span class="sd">        Essentially chains together `_data_init` and `get_value`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data: The dataset to compute the feature for, i.e. an instance of</span>
+<span class="sd">                `EphysSweep`.</span>
+<span class="sd">            compute: If True, compute the feature even if it is already</span>
+<span class="sd">                computed.</span>
+<span class="sd">            store_diagnostics: If True, store any additional information about</span>
+<span class="sd">                the feature computation in the `_diagnostics` attribute.</span>
+<span class="sd">            return_value: If True, return the value of the feature, otherwise</span>
+<span class="sd">                return the feature object.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The value of the feature.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data_init</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">compute</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span>
+                <span class="n">recompute</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">store_diagnostics</span><span class="o">=</span><span class="n">store_diagnostics</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">return_value</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+<div class="viewcode-block" id="BaseFeature.plot"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.base.BaseFeature.plot">[docs]</a>    <span class="k">def</span> <span class="nf">plot</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+        <span class="n">ax</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Axes</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">show_sweep</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">show_stimulus</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">sweep_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;color&quot;</span><span class="p">:</span> <span class="s2">&quot;grey&quot;</span><span class="p">,</span> <span class="s2">&quot;alpha&quot;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">},</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Axes</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Adds additional kwargs and functionality to `BaseFeature`._plot`.</span>
+
+<span class="sd">        Before calling `BaseFeature._plot`, this function checks if the feature</span>
+<span class="sd">        is a stimulus feature and if so, ensures the feature is plotteed onto</span>
+<span class="sd">        the stimulus axis. Additionally along with every feature, the sweep</span>
+<span class="sd">        can be plotted. Same goes for the stimulus.</span>
+
+<span class="sd">        If no axis is provided one is created.</span>
+<span class="sd">        This function can be (and should be overwritten) if the feature cannot</span>
+<span class="sd">        be displayed on top of the unterlying sweep.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            self (BaseFeature): Feature to plot. Needs to have a `plot` method.</span>
+<span class="sd">            *args: Additional arguments to pass to `self.plot`.</span>
+<span class="sd">            ax (Optional[Axes], optional): Axes to plot on.</span>
+<span class="sd">            show_sweep (bool, optional): Whether to plot the sweep. Defaults to False.</span>
+<span class="sd">            show_stimulus (bool, optional): Whether to plot the stimulus. Defaults to False.</span>
+<span class="sd">            kwargs: Additional kwargs to pass to `self.plot`.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Axes: Axes of plot.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">is_stim_ft</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;stim_amp&quot;</span><span class="p">,</span> <span class="s2">&quot;stim_onset&quot;</span><span class="p">,</span> <span class="s2">&quot;stim_end&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">show_sweep</span><span class="p">:</span>
+            <span class="n">show_stimulus</span> <span class="o">=</span> <span class="n">is_stim_ft</span> <span class="ow">or</span> <span class="n">show_stimulus</span>
+            <span class="c1"># let self.data.plot handle creation of axes</span>
+            <span class="n">axes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">show_stimulus</span><span class="o">=</span><span class="n">show_stimulus</span><span class="p">,</span> <span class="o">**</span><span class="n">sweep_kwargs</span><span class="p">)</span>
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">show_stimulus</span> <span class="k">else</span> <span class="n">axes</span>
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">is_stim_ft</span> <span class="k">else</span> <span class="n">ax</span>
+        <span class="k">elif</span> <span class="n">show_stimulus</span> <span class="ow">and</span> <span class="n">is_stim_ft</span><span class="p">:</span>
+            <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span> <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">ax</span>
+            <span class="n">axes</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">i</span><span class="p">,</span> <span class="o">**</span><span class="n">sweep_kwargs</span><span class="p">)</span>
+            <span class="n">axes</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Current (pA)&quot;</span><span class="p">)</span>
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span>
+        <span class="k">elif</span> <span class="n">show_stimulus</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">is_stim_ft</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span>
+                    <span class="mi">2</span><span class="p">,</span>
+                    <span class="mi">1</span><span class="p">,</span>
+                    <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                    <span class="n">gridspec_kw</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;height_ratios&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">]},</span>
+                    <span class="n">constrained_layout</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">axes</span> <span class="o">=</span> <span class="n">ax</span>
+            <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">i</span><span class="p">,</span> <span class="o">**</span><span class="n">sweep_kwargs</span><span class="p">)</span>
+            <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Current (pA)&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span> <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">ax</span>
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span>
+
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">)):</span>
+            <span class="k">return</span> <span class="n">axes</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_diagnostics</span><span class="p">(</span><span class="n">recompute</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_plot</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_xlabel</span><span class="p">():</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Time (s)&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_ylabel</span><span class="p">():</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Voltage (mV)&quot;</span><span class="p">)</span>
+
+        <span class="c1"># if ax has artists with legend handles</span>
+        <span class="c1"># add legend</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ax</span><span class="o">.</span><span class="n">get_legend_handles_labels</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">axes</span></div>
+
+    <span class="k">def</span> <span class="nf">_plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">ax</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Axes</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Axes</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Plot the feature.</span>
+
+<span class="sd">        Similar to _compute, this method implements a core functionality of</span>
+<span class="sd">        SweepFeature. It is not an abstract feature though. It is called by</span>
+<span class="sd">        `plot` and can be used to visualize the feature in any shape of form.</span>
+<span class="sd">        If the feature cannot be plotted on top of the underlying sweep, `plot`</span>
+<span class="sd">        should be overwritten directly.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            *args: Additional arguments to pass.</span>
+<span class="sd">            ax (Optional[Axes], optional): Axes to plot on.</span>
+<span class="sd">            kwargs: Additional kwargs to pass to `self.plot`.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Axes: Axes of plot.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;This method does not exist for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+        <span class="c1"># implements a plotting method</span>
+        <span class="k">return</span> <span class="n">ax</span></div>
+
+
+<div class="viewcode-block" id="SpikeFeature"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.base.SpikeFeature">[docs]</a><span class="k">class</span> <span class="nc">SpikeFeature</span><span class="p">(</span><span class="n">BaseFeature</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Base class for all spike level electrophysiological features.</span>
+
+<span class="sd">    All spike features should inherit from this class, and must implement the</span>
+<span class="sd">    `_compute` method. The `_compute` method should return the feature value</span>
+<span class="sd">    and optionally save diagnostic information for later debugging to</span>
+<span class="sd">    `self._diagnostics`.</span>
+
+<span class="sd">    Compared to `SweepFeature`, `SpikeFeature` behaves slightly differently.</span>
+<span class="sd">    Firstly, since spike features are computed on the spike level, results come</span>
+<span class="sd">    in the form of a vector, where each entry corresponds to a spike. Similar to</span>
+<span class="sd">    before this vector is stored in the `_value` attribute. However, because the</span>
+<span class="sd">    handling the spike features is left to the AllenSDK&#39;s `process_spikes`, they</span>
+<span class="sd">    `SpikeFeature` just provides an interface to the `_spikes_df` attribute of</span>
+<span class="sd">    the underlying `EphysSweep` object. Secondly, the spike features in the</span>
+<span class="sd">    AllenSDK are defined in a functional manner. This means the `__call__` method</span>
+<span class="sd">    of `SpikeFeature` provides the required functional interface to be able to</span>
+<span class="sd">    compute spike features with `EphysSweep.process_spikes`, while being able to</span>
+<span class="sd">    provide additional functionality to the spike feature class.</span>
+
+<span class="sd">    Currently, no diagnostics or recursive feature lookup is supported for spike</span>
+<span class="sd">    features! For now this class mainly just acts as a feature function.</span>
+
+<span class="sd">    The description of the feature should contain a short description of the</span>
+<span class="sd">    feature, and a list of dependencies. The dependencies should be listed</span>
+<span class="sd">    as a comma separated list of feature names. It is parsed and can be displayed</span>
+<span class="sd">    but has no functional use for now. Furthermore, the units of the feature</span>
+<span class="sd">    should be specified. If the feature is unitless, the units should be set to &quot;/&quot;.</span>
+
+<span class="sd">    The docstring should have the following format:</span>
+
+<span class="sd">    &#39;&#39;&#39;&lt;Some Text&gt;</span>
+
+<span class="sd">    description: &lt;Short description of the feature&gt;.</span>
+<span class="sd">    depends on: &lt;Comma separated list of dependencies&gt;.</span>
+<span class="sd">    units: &lt;Units of the feature&gt;.</span>
+
+<span class="sd">    &lt;Some more text&gt;&#39;&#39;&#39;</span>
+
+<span class="sd">    All computed features are added to the underlying `EphysSweep`</span>
+<span class="sd">    object, and can be accessed via `lookup_spike_feature`. The methods will</span>
+<span class="sd">    first check if the feature is already computed, and if not, instantiate and</span>
+<span class="sd">    compute it. Any dependencies already computed will be reused, unless</span>
+<span class="sd">    `recompute=True` is passed.</span>
+
+<span class="sd">    `SpikeFeature`s can also implement a _plot method, the feature. If the</span>
+<span class="sd">    feature cannot be displayed in a V(t) or I(t) plot, instead the `plot` method</span>
+<span class="sd">    should be overwritten directly. This is because `plot` wraps `_plot` adds</span>
+<span class="sd">    additional functionality ot it.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">EphysSweep</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">compute_at_init</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Args:</span>
+<span class="sd">            data: EphysSweep object.</span>
+<span class="sd">                Can also be passed later with `__call__`.</span>
+<span class="sd">            compute_at_init: If True, compute the feature at initialization.</span>
+<span class="sd">                Otherwise the feature is only copmuted when `__call__` or</span>
+<span class="sd">                `get_value` is called. This can be useful when instantiating</span>
+<span class="sd">                many features at once, and waiting with the computation until</span>
+<span class="sd">                the features are actually needed.</span>
+<span class="sd">            name: Custom name of the feature. If None, the name of the feature</span>
+<span class="sd">                class is used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_data_init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">EphysSweep</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the feature with a EphysSweep object.</span>
+
+<span class="sd">        Sets self.data and ensures correct hyperparameters.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data: EphysSweep object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data</span>
+        <span class="k">if</span> <span class="n">data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">EphysSweep</span><span class="p">),</span> <span class="s2">&quot;data must be EphysSweep&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ensure_correct_hyperparams</span><span class="p">()</span>
+
+<div class="viewcode-block" id="SpikeFeature.lookup_spike_feature"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.base.SpikeFeature.lookup_spike_feature">[docs]</a>    <span class="k">def</span> <span class="nf">lookup_spike_feature</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">feature_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">recompute</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Look up a spike level feature and return its value.</span>
+
+<span class="sd">        This method will first check if the feature is already computed,</span>
+<span class="sd">        and if not, compute all spike level features using `process_spikes` from</span>
+<span class="sd">        the underlying `EphysSweep` object, and then</span>
+<span class="sd">        instantiate and compute the feature.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            feature_name: Name of the feature to look up.</span>
+<span class="sd">            recompute: If True, recompute the feature even if it is already</span>
+<span class="sd">                computed.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The value of the feature for each detected spike.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="s2">&quot;_spikes_df&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">recompute</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">process_spikes</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="p">(</span>
+            <span class="n">feature_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">added_spike_features</span>
+            <span class="ow">and</span> <span class="n">feature_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">_spikes_df</span><span class="o">.</span><span class="n">columns</span>
+        <span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">process_spikes</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">spike_feature</span><span class="p">(</span><span class="n">feature_name</span><span class="p">,</span> <span class="n">include_clipped</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="n">vals</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">v</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)]</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">name</span> <span class="o">+</span> <span class="n">vals</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="se">\n</span><span class="s2">0: ? </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">_compute</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">recompute</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">store_diagnostics</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute the feature.</span>
+
+<span class="sd">        All computation that is neccesary to yield the value of the feature should</span>
+<span class="sd">        be defined here. This is the core method of SpikeFeature and all other</span>
+<span class="sd">        functionality interacts with this method.</span>
+
+<span class="sd">        Alongside computing the value of the corresponding feature, this method</span>
+<span class="sd">        can also be used to updat the `_diagnostics` attribute, which is a</span>
+<span class="sd">        dictionary that can be used to store any additional information about</span>
+<span class="sd">        the feature computation. This can be useful for debugging or better</span>
+<span class="sd">        understanding how a feature was computed. Diagnostic information can</span>
+<span class="sd">        be accessed with `get_diagnostics` or via the `diagnostics` property and</span>
+<span class="sd">        updated with `_update_diagnostics`.</span>
+
+<span class="sd">        When `__call__` is called `_compute` can be thought of as a function</span>
+<span class="sd">        that takes in data (`EphysSweep`) and returns a vector of features.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            recompute: If True, recompute the feature even if it is already</span>
+<span class="sd">                computed.</span>
+<span class="sd">            store_diagnostics: If True, store any additional information about</span>
+<span class="sd">                the feature computation in the `_diagnostics` attribute.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The value of the feature.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># load dependencies using lookup_sweep_feature or lookup_spike_feature</span>
+        <span class="c1"># do some computation</span>
+        <span class="c1"># save diagnostics using _update_diagnostics</span>
+        <span class="k">return</span>
+
+<div class="viewcode-block" id="SpikeFeature.get_diagnostics"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.base.SpikeFeature.get_diagnostics">[docs]</a>    <span class="k">def</span> <span class="nf">get_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">recompute</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Overwrite get_diagnostics to return None.</span>
+
+<span class="sd">        Diagnostics is currently not supported for spike features.&quot;&quot;&quot;</span>
+        <span class="c1"># No diagnostics for spike features for now!</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">EphysSweep</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">compute</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">store_diagnostics</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">return_value</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">SweepFeature</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute the feature for a given dataset.</span>
+
+<span class="sd">        Essentially chains together `_data_init` and `get_value`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data: The dataset to compute the feature for, i.e. an instance of</span>
+<span class="sd">                `EphysSweep`.</span>
+<span class="sd">            compute: If True, compute the feature even if it is already</span>
+<span class="sd">                computed.</span>
+<span class="sd">            store_diagnostics: If True, store any additional information about</span>
+<span class="sd">                the feature computation in the `_diagnostics` attribute.</span>
+<span class="sd">            return_value: If True, return the value of the feature, otherwise</span>
+<span class="sd">                return the feature object.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The value of the feature.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data_init</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">compute</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span>
+                <span class="n">recompute</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">store_diagnostics</span><span class="o">=</span><span class="n">store_diagnostics</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">return_value</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+
+<div class="viewcode-block" id="SweepFeature"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.base.SweepFeature">[docs]</a><span class="k">class</span> <span class="nc">SweepFeature</span><span class="p">(</span><span class="n">BaseFeature</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Base class for all sweep level electrophysiological features.</span>
+
+<span class="sd">    All sweep features should inherit from this class, and must implement the</span>
+<span class="sd">    `_compute` method. The `_compute` method should return the feature value</span>
+<span class="sd">    and optionally save diagnostic information for later debugging to</span>
+<span class="sd">    `self._diagnostics`.</span>
+
+<span class="sd">    The description of the feature should contain a short description of the</span>
+<span class="sd">    feature, and a list of dependencies. The dependencies should be listed</span>
+<span class="sd">    as a comma separated list of feature names. It is parsed and can be displayed</span>
+<span class="sd">    but has no functional use for now. Furthermore, the units of the feature</span>
+<span class="sd">    should be specified. If the feature is unitless, the units should be set to &quot;/&quot;.</span>
+
+<span class="sd">    The docstring should have the following format:</span>
+
+<span class="sd">    &#39;&#39;&#39;&lt;Some Text&gt;</span>
+
+<span class="sd">    description: &lt;Short description of the feature&gt;.</span>
+<span class="sd">    depends on: &lt;Comma separated list of dependencies&gt;.</span>
+<span class="sd">    units: &lt;Units of the feature&gt;.</span>
+
+<span class="sd">    &lt;Some more text&gt;&#39;&#39;&#39;</span>
+
+<span class="sd">    All computed features are added to the underlying `EphysSweep`</span>
+<span class="sd">    object, and can be accessed via `lookup_sweep_feature` or `lookup_spike_feature`.</span>
+<span class="sd">    The methods will first check if the feature is already computed, and if not,</span>
+<span class="sd">    instantiate and compute it. This works recursively, so that features can depend</span>
+<span class="sd">    on other features as long as they are looked up with `lookup_sweep_feature`</span>
+<span class="sd">    or `lookup_spike_feature`. Hence any feature can be computed at any point,</span>
+<span class="sd">    without having to compute any dependencies first. Any dependencies already</span>
+<span class="sd">    computed will be reused, unless `recompute=True` is passed.</span>
+
+<span class="sd">    `SweepFeature`s can also implement a _plot method, that displays the diagnostic</span>
+<span class="sd">    information or the feature itself. If the feature cannot be displayed in a V(t)</span>
+<span class="sd">    or I(t) plot, instead the `plot` method should be overwritten directly. This</span>
+<span class="sd">    is because `plot` wraps `_plot` adds additional functionality ot it.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">EphysSweep</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">compute_at_init</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Args:</span>
+<span class="sd">            data: EphysSweep object.</span>
+<span class="sd">                Can also be passed later with `__call__`.</span>
+<span class="sd">            compute_at_init: If True, compute the feature at initialization.</span>
+<span class="sd">                Otherwise the feature is only copmuted when `__call__` or</span>
+<span class="sd">                `get_value` is called. This can be useful when instantiating</span>
+<span class="sd">                many features at once, and waiting with the computation until</span>
+<span class="sd">                the features are actually needed.</span>
+<span class="sd">            name: Custom name of the feature. If None, the name of the feature</span>
+<span class="sd">                class is used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_data_init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">EphysSweep</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the feature with a EphysSweep object.</span>
+
+<span class="sd">        This method is called at initialization and when the feature is</span>
+<span class="sd">        called with a new EphysSweep object. It should</span>
+<span class="sd">        be used to set the `self.data` attribute, and add the feature</span>
+<span class="sd">        to the `self.data.features` dictionary.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data: EphysSweep object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data</span>
+        <span class="k">if</span> <span class="n">data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">EphysSweep</span><span class="p">),</span> <span class="s2">&quot;data must be EphysSweep&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ensure_correct_hyperparams</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="s2">&quot;features&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">features</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">features</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">features</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="bp">self</span><span class="p">})</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">features</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">features</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="n">features</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">_value</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_diagnostics</span> <span class="o">=</span> <span class="n">features</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">_diagnostics</span>
+
+<div class="viewcode-block" id="SweepFeature.lookup_sweep_feature"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.base.SweepFeature.lookup_sweep_feature">[docs]</a>    <span class="k">def</span> <span class="nf">lookup_sweep_feature</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">feature_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">recompute</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">return_value</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">SweepFeature</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Look up a sweep level feature and return its value.</span>
+
+<span class="sd">        This method will first check if the feature is already computed,</span>
+<span class="sd">        and if not, instantiate and compute it. This works as long as the feature</span>
+<span class="sd">        can be found via `fetch_available_fts`. Works recursively,</span>
+<span class="sd">        so that features can depend on other features as long as they are</span>
+<span class="sd">        looked up with `lookup_sweep_feature` or `lookup_spike_feature`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            feature_name: Name of the feature to look up.</span>
+<span class="sd">            recompute: If True, recompute the feature even if it is already</span>
+<span class="sd">                computed.</span>
+<span class="sd">            return_value: If True, return the value of the feature. Otherwise</span>
+<span class="sd">                return the feature object.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The feature or the value of the feature depending on `return_value`.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            FeatureError: If the feature is not found via `fetch_available_fts`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">feature_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">features</span><span class="p">:</span>
+            <span class="n">available_fts</span> <span class="o">=</span> <span class="n">fetch_available_fts</span><span class="p">()</span>
+            <span class="n">available_fts</span> <span class="o">=</span> <span class="p">[</span><span class="n">ft</span> <span class="k">for</span> <span class="n">ft</span> <span class="ow">in</span> <span class="n">available_fts</span> <span class="k">if</span> <span class="n">is_sweep_feature</span><span class="p">(</span><span class="n">ft</span><span class="p">)]</span>
+            <span class="n">available_fts</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">ft</span><span class="o">.</span><span class="vm">__name__</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;sweep_&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">):</span> <span class="n">ft</span> <span class="k">for</span> <span class="n">ft</span> <span class="ow">in</span> <span class="n">available_fts</span>
+            <span class="p">}</span>
+            <span class="k">if</span> <span class="n">feature_name</span> <span class="ow">in</span> <span class="n">available_fts</span><span class="p">:</span>
+                <span class="n">ft</span> <span class="o">=</span> <span class="n">available_fts</span><span class="p">[</span><span class="n">feature_name</span><span class="p">](</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">return_value</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">ft</span><span class="o">.</span><span class="n">value</span>
+                <span class="k">return</span> <span class="n">ft</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">FeatureError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">feature_name</span><span class="si">}</span><span class="s2"> is not a known feature.&quot;</span><span class="p">)</span>
+        <span class="n">ft</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">features</span><span class="p">[</span><span class="n">feature_name</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">return_value</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">ft</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">recompute</span><span class="o">=</span><span class="n">recompute</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ft</span></div>
+
+<div class="viewcode-block" id="SweepFeature.lookup_spike_feature"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.base.SweepFeature.lookup_spike_feature">[docs]</a>    <span class="k">def</span> <span class="nf">lookup_spike_feature</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">feature_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">recompute</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Look up a spike level feature and return its value.</span>
+
+<span class="sd">        This method will first check if the feature is already computed,</span>
+<span class="sd">        and if not, compute all spike level features using `process_spikes` from</span>
+<span class="sd">        the underlying `EphysSweep` object, and then</span>
+<span class="sd">        instantiate and compute the feature.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            feature_name: Name of the feature to look up.</span>
+<span class="sd">            recompute: If True, recompute the feature even if it is already</span>
+<span class="sd">                computed.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The value of the feature for each detected spike.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="s2">&quot;_spikes_df&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">recompute</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">process_spikes</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="p">(</span>
+            <span class="n">feature_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">added_spike_features</span>
+            <span class="ow">and</span> <span class="n">feature_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">_spikes_df</span><span class="o">.</span><span class="n">columns</span>
+        <span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">process_spikes</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">spike_feature</span><span class="p">(</span><span class="n">feature_name</span><span class="p">,</span> <span class="n">include_clipped</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> = ? </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">_compute</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">recompute</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">store_diagnostics</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute the feature.</span>
+
+<span class="sd">        All computation that is neccesary to yield the value of the feature should</span>
+<span class="sd">        be defined here. This is the core method of SweepFeature and all other</span>
+<span class="sd">        functionality interacts with this method.</span>
+
+<span class="sd">        Alongside computing the value of the corresponding feature, this method</span>
+<span class="sd">        can also be used to updat the `_diagnostics` attribute, which is a</span>
+<span class="sd">        dictionary that can be used to store any additional information about</span>
+<span class="sd">        the feature computation. This can be useful for debugging or better</span>
+<span class="sd">        understanding how a feature was computed. Diagnostic information can</span>
+<span class="sd">        be accessed with `get_diagnostics` or via the `diagnostics` property and</span>
+<span class="sd">        updated with `_update_diagnostics`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            recompute: If True, recompute the feature even if it is already</span>
+<span class="sd">                computed.</span>
+<span class="sd">            store_diagnostics: If True, store any additional information about</span>
+<span class="sd">                the feature computation in the `_diagnostics` attribute.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The value of the feature.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># load dependencies using lookup_sweep_feature or lookup_spike_feature</span>
+        <span class="c1"># do some computation</span>
+        <span class="c1"># save diagnostics using _update_diagnostics</span>
+        <span class="k">return</span></div>
+
+
+<div class="viewcode-block" id="SweepSetFeature"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.base.SweepSetFeature">[docs]</a><span class="k">class</span> <span class="nc">SweepSetFeature</span><span class="p">(</span><span class="n">SweepFeature</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for sweepset level features that are computed from a</span>
+<span class="sd">    `EphysSweepSet`. Wraps around any `SweepFeature` derived</span>
+<span class="sd">    feature and extends it to the sweepset level.</span>
+
+<span class="sd">    This class mostly acts like an `SweepFeature` and implements the same basic</span>
+<span class="sd">    functionalities. See Documentation of `SweepFeature` for defails. Most</span>
+<span class="sd">    importantly it also allows to recursively look up dependend features and</span>
+<span class="sd">    compute them if necessary. This can be done on the spike, sweep and sweepset</span>
+<span class="sd">    level. On the sweep level, instead of returning just a float however,</span>
+<span class="sd">    `lookup_sweep_feature` will return a vector of feature values, where each</span>
+<span class="sd">    entry corresponds to a sweep in the sweepset. Since all computation is</span>
+<span class="sd">    done on the sweep level, all features are also stored with along with each</span>
+<span class="sd">    sweep.</span>
+
+<span class="sd">    All sweepset features should inherit from this class, and must implement the</span>
+<span class="sd">    `_select` and `_aggregate` method. The `_select` method takes a vector of</span>
+<span class="sd">    feature values and return a subset of these values based on a selection</span>
+<span class="sd">    criterion (e.g. return all values that are larger than 0). The `_aggregate`</span>
+<span class="sd">    method also takes a vector of feature values and aggregates them into a</span>
+<span class="sd">    single value (e.g. return the mean of all values). Together the `_select`</span>
+<span class="sd">    and `_aggregate` methods are able to compute representative values for every</span>
+<span class="sd">    feature that can also be computed on the sweep level.</span>
+
+<span class="sd">    In cases where the feature cannot directly be computed as an aggregate of the</span>
+<span class="sd">    corresponding sweep feature, the `_compute` method can be overwritten. In</span>
+<span class="sd">    this case the inheriting class should instantiate the `SweepSetFeature` super</span>
+<span class="sd">    with `AbstractSweepFeature`. Similar to `SweepFeature`, the `_compute` method</span>
+<span class="sd">    should then return the value of the feature.</span>
+
+<span class="sd">    Other SweepSetFeatures can also be used in the computation of other features</span>
+<span class="sd">    by using the `lookup_sweepset_feature` method.</span>
+
+<span class="sd">    The description of the sweepset feature should contain a short description of</span>
+<span class="sd">    the feature, and a list of dependencies. The dependencies should be listed</span>
+<span class="sd">    as a comma separated list of feature names. It is parsed and can be displayed</span>
+<span class="sd">    but has no functional use. Furthermore, the units of the feature should be</span>
+<span class="sd">    specified. If the feature is unitless, the units should be set to &quot;/&quot;.</span>
+
+<span class="sd">    The docstring should have the following format:</span>
+
+<span class="sd">    &#39;&#39;&#39;&lt;Some Text&gt;</span>
+
+<span class="sd">    description: &lt;Short description of the feature&gt;.</span>
+<span class="sd">    depends on: &lt;Comma separated list of dependencies&gt;.</span>
+<span class="sd">    units: &lt;Units of the feature&gt;.</span>
+
+<span class="sd">    &lt;Some more text&gt;&#39;&#39;&#39;</span>
+
+<span class="sd">    All computed features are added to the underlying `EphysSweepSet`</span>
+<span class="sd">    object, and can be accessed the `get_features()`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">SwFt</span><span class="p">:</span> <span class="n">SweepFeature</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">EphysSweepSet</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">compute_at_init</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the SweepSetFeature.</span>
+
+<span class="sd">        parses the description, dependencies and units from the docstring of the</span>
+<span class="sd">        feature and stores them as attributes. Also stores the name of the</span>
+<span class="sd">        feature in the name attribute.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            SwFt: The sweep level feature which is wrapped and aggregated</span>
+<span class="sd">                with this class.</span>
+<span class="sd">            data: The data to compute the feature for, i.e. an instance of</span>
+<span class="sd">                SweepSetEphysExtractor.</span>
+<span class="sd">            compute_at_init: If True, compute the feature at initialization.</span>
+<span class="sd">            name: Custom name of the feature. If None, the name of the feature</span>
+<span class="sd">                class is used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">SwFt</span> <span class="o">=</span> <span class="n">SwFt</span>
+        <span class="n">ft_cls</span> <span class="o">=</span> <span class="n">SwFt</span><span class="p">()</span><span class="o">.</span><span class="vm">__class__</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">SwFt</span><span class="p">()</span><span class="o">.</span><span class="n">name</span> <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_diagnostics</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data_init</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">data</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">compute_at_init</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_value</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">ft_cls</span><span class="o">.</span><span class="vm">__doc__</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">attrs</span> <span class="o">=</span> <span class="n">parse_func_doc_attrs</span><span class="p">(</span><span class="n">ft_cls</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;description&quot;</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">depends_on</span> <span class="o">=</span> <span class="n">parse_deps</span><span class="p">(</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;depends on&quot;</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">units</span> <span class="o">=</span> <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;units&quot;</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Proxy for self.data at the sweepset level.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">ft</span> <span class="k">for</span> <span class="n">ft</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">_data_init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">EphysSweepSet</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the feature with a EphysSweepSet object.</span>
+
+<span class="sd">        This method is called at initialization and when the feature is</span>
+<span class="sd">        called with a new EphysSweepSet object. It should</span>
+<span class="sd">        be used to set the `self.data` attribute, and add the feature</span>
+<span class="sd">        to the `self.data.features` dictionary.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data: EphysSweepSet object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data</span>
+        <span class="k">if</span> <span class="n">data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span>
+                <span class="n">data</span><span class="p">,</span> <span class="n">EphysSweepSet</span>
+            <span class="p">),</span> <span class="s2">&quot;data must be a EphysSweepSet object&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ensure_correct_hyperparams</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">sw</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">sw</span><span class="o">.</span><span class="n">features</span><span class="p">:</span>
+                    <span class="n">ft</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">SwFt</span><span class="p">(</span><span class="n">sw</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">ft</span> <span class="o">=</span> <span class="n">sw</span><span class="o">.</span><span class="n">features</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="s2">&quot;features&quot;</span> <span class="ow">in</span> <span class="n">ft</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">:</span>
+                    <span class="n">ft</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">features</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="n">ft</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">features</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">ft</span><span class="p">})</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="s2">&quot;features&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">features</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">features</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">features</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="bp">self</span><span class="p">})</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">features</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">features</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="n">features</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">_value</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_diagnostics</span> <span class="o">=</span> <span class="n">features</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">_diagnostics</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">EphysSweepSet</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">compute</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">store_diagnostics</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">return_value</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">SweepSetFeature</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute the feature for a given dataset.</span>
+
+<span class="sd">        Essentially chains together `_data_init` and `get_value`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data: The dataset to compute the feature for, i.e. an instance of</span>
+<span class="sd">                `EphysSweepSet`.</span>
+<span class="sd">            compute: If True, compute the feature even if it is already</span>
+<span class="sd">                computed.</span>
+<span class="sd">            store_diagnostics: If True, store any additional information about</span>
+<span class="sd">                the feature computation in the `_diagnostics` attribute.</span>
+<span class="sd">            return_value: If True, return the value of the feature, otherwise</span>
+<span class="sd">                return the feature object.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The value of the feature.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data_init</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">compute</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span>
+                <span class="n">recompute</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">store_diagnostics</span><span class="o">=</span><span class="n">store_diagnostics</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">return_value</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> = ? </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">features</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="fm">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Hands off all functionality to the sweep level feature objects and</span>
+<span class="sd">        collects the results in a vector.</span>
+
+<span class="sd">        If a function exists on the sweep level that does not exist on the</span>
+<span class="sd">        sweepset level, this function will be called on all sweep level</span>
+<span class="sd">        features and the results will be returned as a vector. If the function</span>
+<span class="sd">        exists on the sweepset level, it will be called on the sweepset level</span>
+<span class="sd">        feature object and the result will be returned.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            name: Name of the attribute to get.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">attr</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">sw</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">sw</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">attr_broadcast</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Takes a function and broadcasts it over all sweeps in the sweepset.&quot;&quot;&quot;</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">attr</span><span class="p">(</span><span class="n">sw</span><span class="p">)(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="k">for</span> <span class="n">sw</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">name</span><span class="p">),</span> <span class="n">Callable</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">attr_broadcast</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">attr</span><span class="p">(</span><span class="n">sw</span><span class="p">)</span> <span class="k">for</span> <span class="n">sw</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+
+<div class="viewcode-block" id="SweepSetFeature.lookup_sweep_feature"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.base.SweepSetFeature.lookup_sweep_feature">[docs]</a>    <span class="k">def</span> <span class="nf">lookup_sweep_feature</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">feature_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">recompute</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">return_value</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Lookup feature for each sweep and return the results as a vector.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            feature_name: Name of the feature to lookup.</span>
+<span class="sd">            recompute: If True, recompute the feature even if it is already</span>
+<span class="sd">                has been computed previously.</span>
+<span class="sd">            return_value: If True, return the value of the feature, otherwise</span>
+<span class="sd">                return the feature object.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Vector of feature values or feature objects.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">available_fts</span> <span class="o">=</span> <span class="n">fetch_available_fts</span><span class="p">()</span>
+        <span class="n">available_fts</span> <span class="o">=</span> <span class="p">[</span><span class="n">ft</span> <span class="k">for</span> <span class="n">ft</span> <span class="ow">in</span> <span class="n">available_fts</span> <span class="k">if</span> <span class="n">is_sweep_feature</span><span class="p">(</span><span class="n">ft</span><span class="p">)]</span>
+        <span class="n">available_fts</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">ft</span><span class="o">.</span><span class="vm">__name__</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;sweep_&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">):</span> <span class="n">ft</span> <span class="k">for</span> <span class="n">ft</span> <span class="ow">in</span> <span class="n">available_fts</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="n">feature_name</span> <span class="ow">in</span> <span class="n">available_fts</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+                <span class="p">[</span>
+                    <span class="n">sweep</span><span class="o">.</span><span class="n">lookup_sweep_feature</span><span class="p">(</span>
+                        <span class="n">feature_name</span><span class="p">,</span>
+                        <span class="n">recompute</span><span class="o">=</span><span class="n">recompute</span><span class="p">,</span>
+                        <span class="n">return_value</span><span class="o">=</span><span class="n">return_value</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="k">for</span> <span class="n">sweep</span> <span class="ow">in</span> <span class="bp">self</span>
+                <span class="p">]</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">FeatureError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">feature_name</span><span class="si">}</span><span class="s2"> is not a known feature. If it is a custom feature, make sure it was registered with `register_custom_feature`.&quot;</span>
+            <span class="p">)</span></div>
+
+<div class="viewcode-block" id="SweepSetFeature.lookup_sweepset_feature"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.base.SweepSetFeature.lookup_sweepset_feature">[docs]</a>    <span class="k">def</span> <span class="nf">lookup_sweepset_feature</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">feature_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">recompute</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">return_value</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">SweepSetFeature</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Lookup feature for the sweepset and return the result.</span>
+
+<span class="sd">        Analogous to `lookup_sweep_feature`, on the sweep level, but for sweepset</span>
+<span class="sd">        level features.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            feature_name: Name of the feature to lookup.</span>
+<span class="sd">            recompute: If True, recompute the feature even if it is already</span>
+<span class="sd">                has been computed previously.</span>
+<span class="sd">            return_value: If True, return the value of the feature, otherwise</span>
+<span class="sd">                return the feature object.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Feature value.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">feature_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">features</span><span class="p">:</span>
+            <span class="n">available_fts</span> <span class="o">=</span> <span class="n">fetch_available_fts</span><span class="p">()</span>
+            <span class="n">available_fts</span> <span class="o">=</span> <span class="p">[</span><span class="n">ft</span> <span class="k">for</span> <span class="n">ft</span> <span class="ow">in</span> <span class="n">available_fts</span> <span class="k">if</span> <span class="n">is_sweepset_feature</span><span class="p">(</span><span class="n">ft</span><span class="p">)]</span>
+            <span class="n">available_fts</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">ft</span><span class="o">.</span><span class="vm">__name__</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;sweepset_&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">):</span> <span class="n">ft</span> <span class="k">for</span> <span class="n">ft</span> <span class="ow">in</span> <span class="n">available_fts</span>
+            <span class="p">}</span>
+            <span class="k">if</span> <span class="n">feature_name</span> <span class="ow">in</span> <span class="n">available_fts</span><span class="p">:</span>
+                <span class="n">ft</span> <span class="o">=</span> <span class="n">available_fts</span><span class="p">[</span><span class="n">feature_name</span><span class="p">](</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">return_value</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">ft</span><span class="o">.</span><span class="n">value</span>
+                <span class="k">return</span> <span class="n">ft</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">FeatureError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">feature_name</span><span class="si">}</span><span class="s2"> is not a known feature.&quot;</span><span class="p">)</span>
+        <span class="n">ft</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_features</span><span class="p">()[</span><span class="n">feature_name</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">return_value</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">ft</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">recompute</span><span class="o">=</span><span class="n">recompute</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ft</span></div>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">_select</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fts</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Select a subset of the feature values.</span>
+
+<span class="sd">        This method is called by `self._compute` and should be used to select</span>
+<span class="sd">        a subset of the feature values. This method implements a selection</span>
+<span class="sd">        criterion that is specific to the feature. For example, a hypothetical</span>
+<span class="sd">        `SpikeAmplitude` feature could select the 3 highest spike amplitudes from</span>
+<span class="sd">        the feature values.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            fts: Vector of feature values.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Vector with a selected subset of feature values.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">make_selection</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">fts</span><span class="p">:</span> <span class="n">fts</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_diagnostics</span><span class="p">({})</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">make_selection</span><span class="p">(</span><span class="n">fts</span><span class="p">))</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">_aggregate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fts</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Aggregate the feature values.</span>
+
+<span class="sd">        This method is called by `self._compute` and should be used to aggregate</span>
+<span class="sd">        the subset of feature values that were selected by `self._select`. This</span>
+<span class="sd">        method implements an aggregation criterion that is specific to the</span>
+<span class="sd">        feature. For example, a hypothetical `SpikeAmplitude` feature could</span>
+<span class="sd">        just take the maximum spike amplitude from the feature values.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            fts: Vector of feature values.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Aggregated feature value.&quot;&quot;&quot;</span>
+        <span class="n">aggregate</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_diagnostics</span><span class="p">({})</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">aggregate</span><span class="p">(</span><span class="n">fts</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">_compute</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">recompute</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">store_diagnostics</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Copmutes representative feature value by aggregating over a selected</span>
+<span class="sd">        subset of sweep level feature values.</span>
+
+<span class="sd">        This method chains together `self.lookup_sweep_feature(self.name)`,</span>
+<span class="sd">        `self._select` and `self._aggregate` to yield a representative feature</span>
+<span class="sd">        value for the entire sweepset.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            recompute: If True, recompute the feature even if it is already</span>
+<span class="sd">                has been computed previously.</span>
+<span class="sd">            store_diagnostics: If True, store diagnostic information about the</span>
+<span class="sd">                feature computation in the `diagnostics` attribute of the</span>
+<span class="sd">                feature object.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Feature value.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">fts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_sweep_feature</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="n">recompute</span><span class="p">)</span>
+
+        <span class="n">subset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_select</span><span class="p">(</span><span class="n">fts</span><span class="p">)</span>
+        <span class="n">ft</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_aggregate</span><span class="p">(</span><span class="n">subset</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">store_diagnostics</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update_diagnostics</span><span class="p">({</span><span class="s2">&quot;values&quot;</span><span class="p">:</span> <span class="n">fts</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">ft</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">features</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;List values for all computed features.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">ft</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">ft</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_features</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+
+<div class="viewcode-block" id="SweepSetFeature.get_features"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.base.SweepSetFeature.get_features">[docs]</a>    <span class="k">def</span> <span class="nf">get_features</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;List all computed features.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">ft</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">ft</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">features</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span></div>
+
+    <span class="k">def</span> <span class="nf">_plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">ax</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Axes</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Axes</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Plot the feature.</span>
+
+<span class="sd">        Similar to _compute, _aggregate or _select, this method implements</span>
+<span class="sd">        a core functionality of SweepSetFeature. It is not an abstract feature</span>
+<span class="sd">        though. It is called by `plot` and can be used to visualize the feature</span>
+<span class="sd">        in any shape of form. If the feature cannot be plotted on top of the</span>
+<span class="sd">        underlying sweep, `plot` should be overwritten directly.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            *args: Additional arguments to pass.</span>
+<span class="sd">            ax (Optional[Axes], optional): Axes to plot on.</span>
+<span class="sd">            kwargs: Additional kwargs to pass to `self.plot`.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Axes: Axes of plot.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">idxs</span> <span class="o">=</span> <span class="n">unpack</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">,</span> <span class="s2">&quot;selected_idx&quot;</span><span class="p">)</span>
+        <span class="n">idxs</span> <span class="o">=</span> <span class="n">idxs</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">idxs</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span> <span class="k">else</span> <span class="p">[</span><span class="n">idxs</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">idxs</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+            <span class="n">data</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">features</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ax</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Jonas Beck.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

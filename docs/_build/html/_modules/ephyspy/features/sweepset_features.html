@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ephyspy.features.sweepset_features &mdash; EphysPy 0.0.05 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js?v=ecdf1fa4"></script>
+        <script src="../../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            EphysPy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">ephyspy</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">EphysPy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">ephyspy.features.sweepset_features</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for ephyspy.features.sweepset_features</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright 2023 Jonas Beck</span>
+
+<span class="c1"># This program is free software: you can redistribute it and/or modify</span>
+<span class="c1"># it under the terms of the GNU General Public License as published by</span>
+<span class="c1"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c1"># (at your option) any later version.</span>
+
+<span class="c1"># This program is distributed in the hope that it will be useful,</span>
+<span class="c1"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c1"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c1"># GNU General Public License for more details.</span>
+
+<span class="c1"># You should have received a copy of the GNU General Public License</span>
+<span class="c1"># along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="c1"># ransac = linear_model.RANSACRegressor()</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">matplotlib.axes</span> <span class="kn">import</span> <span class="n">Axes</span>
+<span class="kn">from</span> <span class="nn">sklearn</span> <span class="kn">import</span> <span class="n">linear_model</span>
+
+<span class="kn">import</span> <span class="nn">ephyspy.features.sweep_features</span> <span class="k">as</span> <span class="nn">swft</span>
+<span class="kn">from</span> <span class="nn">ephyspy.utils</span> <span class="kn">import</span> <span class="n">parse_desc</span><span class="p">,</span> <span class="n">unpack</span>
+
+<span class="n">ransac</span> <span class="o">=</span> <span class="n">linear_model</span><span class="o">.</span><span class="n">LinearRegression</span><span class="p">()</span>
+
+
+<span class="kn">from</span> <span class="nn">ephyspy.features.base</span> <span class="kn">import</span> <span class="n">SweepSetFeature</span>
+<span class="kn">from</span> <span class="nn">ephyspy.features.utils</span> <span class="kn">import</span> <span class="n">fetch_available_fts</span><span class="p">,</span> <span class="n">median_idx</span>
+<span class="kn">from</span> <span class="nn">ephyspy.utils</span> <span class="kn">import</span> <span class="n">is_sweepset_feature</span>
+
+
+<div class="viewcode-block" id="available_sweepset_features"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.available_sweepset_features">[docs]</a><span class="k">def</span> <span class="nf">available_sweepset_features</span><span class="p">(</span>
+    <span class="n">compute_at_init</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">store_diagnostics</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">SweepSetFeature</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a dictionary of all implemented sweepset features.</span>
+
+<span class="sd">    Looks for all classes that inherit from SweepSetFeature and returns a dictionary</span>
+<span class="sd">    of all available features. If compute_at_init is True, the features are</span>
+<span class="sd">    computed at initialization.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        compute_at_init (bool, optional): If True, the features are computed at</span>
+<span class="sd">            initialization. Defaults to False.</span>
+<span class="sd">        store_diagnostics (bool, optional): If True, the features are computed</span>
+<span class="sd">            with diagnostics. Defaults to False.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict[str, SweepSetFeature]: Dictionary of all available spike features.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">all_features</span> <span class="o">=</span> <span class="n">fetch_available_fts</span><span class="p">()</span>
+    <span class="n">features</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">ft</span><span class="o">.</span><span class="vm">__name__</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span> <span class="n">ft</span> <span class="k">for</span> <span class="n">ft</span> <span class="ow">in</span> <span class="n">all_features</span> <span class="k">if</span> <span class="n">is_sweepset_feature</span><span class="p">(</span><span class="n">ft</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="n">features</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;sweepset_&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">):</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">features</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+    <span class="k">if</span> <span class="nb">any</span><span class="p">((</span><span class="n">compute_at_init</span><span class="p">,</span> <span class="n">store_diagnostics</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="n">k</span><span class="p">:</span> <span class="k">lambda</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">v</span><span class="p">(</span>
+                <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+                <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span><span class="p">,</span>
+                <span class="n">store_diagnostics</span><span class="o">=</span><span class="n">store_diagnostics</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">features</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">}</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">features</span></div>
+
+
+<div class="viewcode-block" id="APFeature"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.APFeature">[docs]</a><span class="k">class</span> <span class="nc">APFeature</span><span class="p">(</span><span class="n">SweepSetFeature</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Obtain sweepset level single AP feature.</span>
+
+<span class="sd">    This includes the following features:</span>
+<span class="sd">    - AP threshold</span>
+<span class="sd">    - AP amplitude</span>
+<span class="sd">    - AP width</span>
+<span class="sd">    - AP peak</span>
+<span class="sd">    - AP trough</span>
+<span class="sd">    - AP afterhyperpolarization (AHP)</span>
+<span class="sd">    - AP afterdepolarization (ADP)</span>
+<span class="sd">    - AP upstroke-to-downstroke ratio (UDR)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">feature</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">feature</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_select</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fts</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Select representative sweep and use its AP features to represent the</span>
+<span class="sd">        entire sweepset.</span>
+
+<span class="sd">        description: sweep where the least amount of AP features are NaNs.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># TODO: Consult if this is sensible!</span>
+        <span class="n">relevant_ap_fts</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;ap_thresh&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;ap_amp&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;ap_width&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;ap_peak&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;ap_trough&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;ap_ahp&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;ap_adp&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;ap_udr&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+
+        <span class="n">is_depol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_sweep_feature</span><span class="p">(</span><span class="s2">&quot;stim_amp&quot;</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+        <span class="n">has_spikes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_sweep_feature</span><span class="p">(</span><span class="s2">&quot;num_ap&quot;</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+        <span class="n">ft_is_na</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">relevant_ap_fts</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">ft</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">relevant_ap_fts</span><span class="p">):</span>
+            <span class="n">ft_is_na</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lookup_sweep_feature</span><span class="p">(</span><span class="n">ft</span><span class="p">))</span>
+
+        <span class="n">num_nans</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">ft_is_na</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">num_nans</span><span class="p">[</span><span class="n">is_depol</span> <span class="o">&amp;</span> <span class="n">has_spikes</span><span class="p">]</span><span class="o">.</span><span class="n">idxmin</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_diagnostics</span><span class="p">(</span>
+            <span class="p">{</span><span class="s2">&quot;selected_idx&quot;</span><span class="p">:</span> <span class="n">idx</span><span class="p">,</span> <span class="s2">&quot;selection&quot;</span><span class="p">:</span> <span class="n">parse_desc</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_select</span><span class="p">)}</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">fts</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_aggregate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fts</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_diagnostics</span><span class="p">(</span>
+            <span class="p">{</span><span class="s2">&quot;aggregation&quot;</span><span class="p">:</span> <span class="s2">&quot;not an aggregate features, only single index is selected.&quot;</span><span class="p">}</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">fts</span><span class="o">.</span><span class="n">item</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="ReboundFeature"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.ReboundFeature">[docs]</a><span class="k">class</span> <span class="nc">ReboundFeature</span><span class="p">(</span><span class="n">SweepSetFeature</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Obtain sweepset level rebound related feature.</span>
+
+<span class="sd">    This includes the following features:</span>
+<span class="sd">    - rebound</span>
+<span class="sd">    - rebound APs</span>
+<span class="sd">    - rebound latency</span>
+<span class="sd">    - average rebound</span>
+<span class="sd">    - rebound area</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">feature</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">feature</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_select</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fts</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Select representative sweep and use its rebound features to represent the</span>
+<span class="sd">        entire sweepset.</span>
+
+<span class="sd">        description: Lowest hyperpolarization sweep. If 3 lowest sweeps are NaN,</span>
+<span class="sd">        then the first sweep is selected, meaning the feature is set to NaN.&quot;&quot;&quot;</span>
+        <span class="n">rebound</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_sweep_feature</span><span class="p">(</span><span class="s2">&quot;rebound&quot;</span><span class="p">)</span>
+        <span class="n">nan_rebounds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">rebound</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">nan_rebounds</span><span class="p">[:</span><span class="mi">3</span><span class="p">]):</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">rebound</span><span class="p">))[</span><span class="o">~</span><span class="n">nan_rebounds</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_diagnostics</span><span class="p">(</span>
+            <span class="p">{</span><span class="s2">&quot;selected_idx&quot;</span><span class="p">:</span> <span class="n">idx</span><span class="p">,</span> <span class="s2">&quot;selection&quot;</span><span class="p">:</span> <span class="n">parse_desc</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_select</span><span class="p">)}</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">fts</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_aggregate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fts</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_diagnostics</span><span class="p">(</span>
+            <span class="p">{</span><span class="s2">&quot;aggregation&quot;</span><span class="p">:</span> <span class="s2">&quot;not an aggregate features, only single index is selected.&quot;</span><span class="p">}</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">fts</span><span class="o">.</span><span class="n">item</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="SagFeature"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SagFeature">[docs]</a><span class="k">class</span> <span class="nc">SagFeature</span><span class="p">(</span><span class="n">SweepSetFeature</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Obtain sweepset level sag related feature.</span>
+
+<span class="sd">    This includes the following features:</span>
+<span class="sd">    - sag</span>
+<span class="sd">    - sag area</span>
+<span class="sd">    - sag time</span>
+<span class="sd">    - sag ratio</span>
+<span class="sd">    - sag fraction&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">feature</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">feature</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_select</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fts</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Select representative sweep and use its sag features to represent the</span>
+<span class="sd">        entire sweepset.</span>
+
+<span class="sd">        description: Lowest hyperpolarization sweep that is not NaN. If 3 lowest</span>
+<span class="sd">        sweeps are NaN, then the first sweep is selected, meaning the feature is set</span>
+<span class="sd">        to NaN.&quot;&quot;&quot;</span>
+        <span class="n">sag</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_sweep_feature</span><span class="p">(</span><span class="s2">&quot;sag&quot;</span><span class="p">)</span>
+        <span class="n">nan_sags</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">sag</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">nan_sags</span><span class="p">[:</span><span class="mi">3</span><span class="p">]):</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sag</span><span class="p">))[</span><span class="o">~</span><span class="n">nan_sags</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_diagnostics</span><span class="p">(</span>
+            <span class="p">{</span><span class="s2">&quot;selected_idx&quot;</span><span class="p">:</span> <span class="n">idx</span><span class="p">,</span> <span class="s2">&quot;selection&quot;</span><span class="p">:</span> <span class="n">parse_desc</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_select</span><span class="p">)}</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">fts</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_aggregate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fts</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_diagnostics</span><span class="p">(</span>
+            <span class="p">{</span><span class="s2">&quot;aggregation&quot;</span><span class="p">:</span> <span class="s2">&quot;not an aggregate features, only single index is selected.&quot;</span><span class="p">}</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">fts</span><span class="o">.</span><span class="n">item</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="APsFeature"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.APsFeature">[docs]</a><span class="k">class</span> <span class="nc">APsFeature</span><span class="p">(</span><span class="n">SweepSetFeature</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Obtain sweepset level spiking related feature.</span>
+
+<span class="sd">    This includes the following features:</span>
+<span class="sd">    - number of spikes</span>
+<span class="sd">    - spike frequency</span>
+<span class="sd">    - spike frequency adaptation (SFA)</span>
+<span class="sd">    - spike amplitude slope</span>
+<span class="sd">    - ISI fano factor</span>
+<span class="sd">    - ISI AP fano factor</span>
+<span class="sd">    - ISI CV</span>
+<span class="sd">    - AP CV</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">feature</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">feature</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_select</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fts</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Select representative sweep and use its spiking features to represent the</span>
+<span class="sd">        entire sweepset.</span>
+
+<span class="sd">        description: Highest non wild trace (wildness == cell dying).&quot;&quot;&quot;</span>
+        <span class="n">num_spikes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_sweep_feature</span><span class="p">(</span><span class="s2">&quot;num_ap&quot;</span><span class="p">)</span>
+        <span class="n">wildness</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_sweep_feature</span><span class="p">(</span><span class="s2">&quot;wildness&quot;</span><span class="p">)</span>
+        <span class="n">is_non_wild</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">wildness</span><span class="p">)</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">num_spikes</span><span class="p">)[</span><span class="n">is_non_wild</span><span class="p">]</span><span class="o">.</span><span class="n">idxmax</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_diagnostics</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;selected_idx&quot;</span><span class="p">:</span> <span class="n">idx</span><span class="p">,</span>
+                <span class="s2">&quot;selection&quot;</span><span class="p">:</span> <span class="n">parse_desc</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_select</span><span class="p">),</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">fts</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_aggregate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fts</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_diagnostics</span><span class="p">(</span>
+            <span class="p">{</span><span class="s2">&quot;aggregation&quot;</span><span class="p">:</span> <span class="s2">&quot;not an aggregate features, only single index is selected.&quot;</span><span class="p">}</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">fts</span><span class="o">.</span><span class="n">item</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="MaxFeature"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.MaxFeature">[docs]</a><span class="k">class</span> <span class="nc">MaxFeature</span><span class="p">(</span><span class="n">SweepSetFeature</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Obtain sweepset level maximum feature.</span>
+
+<span class="sd">    This includes the following features:</span>
+<span class="sd">    - number of bursts</span>
+<span class="sd">    - wildness</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">feature</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">feature</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_select</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fts</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Select representative sweep and use its features to represent the</span>
+<span class="sd">        entire sweepset.</span>
+
+<span class="sd">        description: select arg max.&quot;&quot;&quot;</span>
+        <span class="n">fts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_sweep_feature</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">fts</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nanargmax</span><span class="p">(</span><span class="n">fts</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_diagnostics</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;selected_idx&quot;</span><span class="p">:</span> <span class="n">idx</span><span class="p">,</span>
+                <span class="s2">&quot;selection&quot;</span><span class="p">:</span> <span class="n">parse_desc</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_select</span><span class="p">),</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="nb">float</span><span class="p">(</span><span class="s2">&quot;nan&quot;</span><span class="p">)])</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">fts</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span> <span class="k">else</span> <span class="n">fts</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_aggregate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fts</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_diagnostics</span><span class="p">({</span><span class="s2">&quot;aggregation&quot;</span><span class="p">:</span> <span class="s2">&quot;select max feature.&quot;</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">fts</span><span class="o">.</span><span class="n">item</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="First5MedianFeature"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.First5MedianFeature">[docs]</a><span class="k">class</span> <span class="nc">First5MedianFeature</span><span class="p">(</span><span class="n">SweepSetFeature</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Obtain sweepset level median feature.</span>
+
+<span class="sd">    This includes the following features:</span>
+<span class="sd">    - burstiness</span>
+<span class="sd">    - ISI adaptation</span>
+<span class="sd">    - average ISI adaptation</span>
+<span class="sd">    - AP amplitude adaptation</span>
+<span class="sd">    - average AP amplitude adaptation</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">feature</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">feature</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_select</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fts</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Select representative sweep and use its features to represent the</span>
+<span class="sd">        entire sweepset.</span>
+
+<span class="sd">        description: select all features.&quot;&quot;&quot;</span>
+
+        <span class="n">na_fts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">fts</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">na_fts</span><span class="p">):</span>
+            <span class="n">first5</span> <span class="o">=</span> <span class="n">fts</span><span class="p">[</span><span class="o">~</span><span class="n">na_fts</span><span class="p">][:</span><span class="mi">5</span><span class="p">]</span>
+            <span class="n">where_value</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="o">~</span><span class="n">na_fts</span><span class="p">)[</span><span class="mi">0</span><span class="p">][:</span><span class="mi">5</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update_diagnostics</span><span class="p">({</span><span class="s2">&quot;first5_idx&quot;</span><span class="p">:</span> <span class="n">where_value</span><span class="p">})</span>
+            <span class="k">return</span> <span class="n">first5</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_diagnostics</span><span class="p">({</span><span class="s2">&quot;first5_idx&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])})</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+
+    <span class="k">def</span> <span class="nf">_aggregate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fts</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_diagnostics</span><span class="p">({</span><span class="s2">&quot;aggregation&quot;</span><span class="p">:</span> <span class="s2">&quot;select median feature.&quot;</span><span class="p">})</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">fts</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">fts</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update_diagnostics</span><span class="p">({</span><span class="s2">&quot;selected_idx&quot;</span><span class="p">:</span> <span class="nb">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">)})</span>
+            <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;nan&quot;</span><span class="p">)</span>
+        <span class="n">first5_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">[</span><span class="s2">&quot;first5_idx&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_diagnostics</span><span class="p">({</span><span class="s2">&quot;selected_idx&quot;</span><span class="p">:</span> <span class="n">first5_idx</span><span class="p">[</span><span class="n">median_idx</span><span class="p">(</span><span class="n">fts</span><span class="p">)]})</span>
+        <span class="n">med</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;nan&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">fts</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmedian</span><span class="p">(</span><span class="n">fts</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">med</span></div>
+
+
+<div class="viewcode-block" id="HyperpolMedianFeature"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.HyperpolMedianFeature">[docs]</a><span class="k">class</span> <span class="nc">HyperpolMedianFeature</span><span class="p">(</span><span class="n">SweepSetFeature</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Obtain sweepset level hyperpolarization feature.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">feature</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">feature</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_select</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fts</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Select representative sweep and use its features to represent the</span>
+<span class="sd">        entire sweepset.</span>
+
+<span class="sd">        description: select all features.&quot;&quot;&quot;</span>
+        <span class="n">is_hyperpol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_sweep_feature</span><span class="p">(</span><span class="s2">&quot;stim_amp&quot;</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span>
+        <span class="n">where_value</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">is_hyperpol</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_diagnostics</span><span class="p">({</span><span class="s2">&quot;hyperpol_idx&quot;</span><span class="p">:</span> <span class="n">where_value</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">fts</span><span class="p">[</span><span class="n">is_hyperpol</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_aggregate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fts</span><span class="p">):</span>
+        <span class="n">hyperpol_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">[</span><span class="s2">&quot;hyperpol_idx&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_diagnostics</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;aggregation&quot;</span><span class="p">:</span> <span class="s2">&quot;select median feature.&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;selected_idx&quot;</span><span class="p">:</span> <span class="n">hyperpol_idx</span><span class="p">[</span><span class="n">median_idx</span><span class="p">(</span><span class="n">fts</span><span class="p">)],</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+        <span class="n">med</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;nan&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">fts</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmedian</span><span class="p">(</span><span class="n">fts</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">med</span></div>
+
+
+<div class="viewcode-block" id="SweepSet_AP_latency"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_AP_latency">[docs]</a><span class="k">class</span> <span class="nc">SweepSet_AP_latency</span><span class="p">(</span><span class="n">SweepSetFeature</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Obtain sweepset level AP latency feature.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">swft</span><span class="o">.</span><span class="n">Sweep_AP_latency</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_select</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fts</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Select representative sweep and use its sag features to represent the</span>
+<span class="sd">        entire sweepset.</span>
+
+<span class="sd">        description: first depolarization trace that has non-nan ap_latency.&quot;&quot;&quot;</span>
+        <span class="n">is_depol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_sweep_feature</span><span class="p">(</span><span class="s2">&quot;stim_amp&quot;</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+        <span class="n">ap_latency</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_sweep_feature</span><span class="p">(</span><span class="s2">&quot;ap_latency&quot;</span><span class="p">)</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">is_depol</span><span class="p">)</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="n">is_depol</span> <span class="o">&amp;</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">ap_latency</span><span class="p">)][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_diagnostics</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;selected_idx&quot;</span><span class="p">:</span> <span class="n">idx</span><span class="p">,</span>
+                <span class="s2">&quot;selection&quot;</span><span class="p">:</span> <span class="n">parse_desc</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_select</span><span class="p">),</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">fts</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_aggregate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fts</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_diagnostics</span><span class="p">(</span>
+            <span class="p">{</span><span class="s2">&quot;aggregation&quot;</span><span class="p">:</span> <span class="s2">&quot;not an aggregate features, only single index is selected.&quot;</span><span class="p">}</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">fts</span><span class="o">.</span><span class="n">item</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="SweepSet_dfdI"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_dfdI">[docs]</a><span class="k">class</span> <span class="nc">SweepSet_dfdI</span><span class="p">(</span><span class="n">SweepSetFeature</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Obtain sweepset level dfdI feature.&quot;&quot;&quot;</span>
+
+    <span class="c1"># TODO: Keep `feature` input arg around for API consistency?</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">swft</span><span class="o">.</span><span class="n">NullSweepFeature</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+            <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;dfdI&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_select</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fts</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">fts</span>
+
+    <span class="k">def</span> <span class="nf">_aggregate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fts</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">fts</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">store_diagnostics</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="n">is_depol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_sweep_feature</span><span class="p">(</span><span class="s2">&quot;stim_amp&quot;</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="n">recompute</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+        <span class="n">ap_freq</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_sweep_feature</span><span class="p">(</span><span class="s2">&quot;ap_freq&quot;</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="n">recompute</span><span class="p">)</span>
+        <span class="n">stim_amp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_sweep_feature</span><span class="p">(</span><span class="s2">&quot;stim_amp&quot;</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="n">recompute</span><span class="p">)</span>
+
+        <span class="n">f</span> <span class="o">=</span> <span class="n">ap_freq</span><span class="p">[</span><span class="n">is_depol</span><span class="p">]</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="n">stim_amp</span><span class="p">[</span><span class="n">is_depol</span><span class="p">]</span>
+
+        <span class="n">dfdi</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;nan&quot;</span><span class="p">)</span>
+        <span class="n">where_spikes</span> <span class="o">=</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+        <span class="c1"># TODO: Check if this is a sensible idea!!!</span>
+        <span class="c1"># (In case of 4 nans for example this will skip, even though sweep has spikes)</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">where_spikes</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">4</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">f</span><span class="p">[:</span><span class="mi">5</span><span class="p">]))</span> <span class="o">&gt;</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="n">i_s</span> <span class="o">=</span> <span class="n">i</span><span class="p">[</span><span class="n">where_spikes</span><span class="p">][:</span><span class="mi">5</span><span class="p">]</span>
+            <span class="n">f_s</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="n">where_spikes</span><span class="p">][:</span><span class="mi">5</span><span class="p">]</span>
+
+            <span class="n">ransac</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">i_s</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">f_s</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+            <span class="n">dfdi</span> <span class="o">=</span> <span class="n">ransac</span><span class="o">.</span><span class="n">coef_</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+            <span class="n">f_intercept</span> <span class="o">=</span> <span class="n">ransac</span><span class="o">.</span><span class="n">intercept_</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">store_diagnostics</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_update_diagnostics</span><span class="p">(</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;i_fit&quot;</span><span class="p">:</span> <span class="n">i_s</span><span class="p">,</span>
+                        <span class="s2">&quot;f_fit&quot;</span><span class="p">:</span> <span class="n">f_s</span><span class="p">,</span>
+                        <span class="s2">&quot;f&quot;</span><span class="p">:</span> <span class="n">f</span><span class="p">,</span>
+                        <span class="s2">&quot;i&quot;</span><span class="p">:</span> <span class="n">i</span><span class="p">,</span>
+                        <span class="s2">&quot;f_intercept&quot;</span><span class="p">:</span> <span class="n">f_intercept</span><span class="p">,</span>
+                    <span class="p">}</span>
+                <span class="p">)</span>
+        <span class="k">return</span> <span class="n">dfdi</span>
+
+<div class="viewcode-block" id="SweepSet_dfdI.plot"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_dfdI.plot">[docs]</a>    <span class="k">def</span> <span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">ax</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Axes</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Axes</span><span class="p">:</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span> <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">ax</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">ax</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_diagnostics</span><span class="p">(</span><span class="n">recompute</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">i_fit</span><span class="p">,</span> <span class="n">f_fit</span><span class="p">,</span> <span class="n">f_intercept</span> <span class="o">=</span> <span class="n">unpack</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;i_fit&quot;</span><span class="p">,</span> <span class="s2">&quot;f_fit&quot;</span><span class="p">,</span> <span class="s2">&quot;f_intercept&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">i_fit</span><span class="p">,</span> <span class="n">f_fit</span><span class="p">,</span> <span class="s2">&quot;o&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;f(I)&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+            <span class="n">i_fit</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">*</span> <span class="n">i_fit</span> <span class="o">+</span> <span class="n">f_intercept</span><span class="p">,</span>
+            <span class="n">label</span><span class="o">=</span><span class="s2">&quot;dfdi fit&quot;</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;I (pA)&quot;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;f (Hz)&quot;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">ax</span></div></div>
+
+
+<div class="viewcode-block" id="SweepSet_Rheobase"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_Rheobase">[docs]</a><span class="k">class</span> <span class="nc">SweepSet_Rheobase</span><span class="p">(</span><span class="n">SweepSetFeature</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Obtain sweepset level rheobase feature.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dc_offset</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dc_offset</span> <span class="o">=</span> <span class="n">dc_offset</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">swft</span><span class="o">.</span><span class="n">NullSweepFeature</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+            <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;rheobase&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_select</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fts</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">fts</span>
+
+    <span class="k">def</span> <span class="nf">_aggregate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fts</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">fts</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">store_diagnostics</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="n">dc_offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dc_offset</span>
+        <span class="n">rheobase</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;nan&quot;</span><span class="p">)</span>
+        <span class="n">is_depol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_sweep_feature</span><span class="p">(</span><span class="s2">&quot;stim_amp&quot;</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="n">recompute</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+        <span class="n">ap_freq</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_sweep_feature</span><span class="p">(</span><span class="s2">&quot;ap_freq&quot;</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="n">recompute</span><span class="p">)</span>
+        <span class="n">stim_amp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_sweep_feature</span><span class="p">(</span><span class="s2">&quot;stim_amp&quot;</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="n">recompute</span><span class="p">)</span>
+        <span class="n">dfdi</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_sweepset_feature</span><span class="p">(</span><span class="s2">&quot;dfdi&quot;</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="n">recompute</span><span class="p">)</span>
+
+        <span class="n">f</span> <span class="o">=</span> <span class="n">ap_freq</span><span class="p">[</span><span class="n">is_depol</span><span class="p">]</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="n">stim_amp</span><span class="p">[</span><span class="n">is_depol</span><span class="p">]</span>
+
+        <span class="n">has_spikes</span> <span class="o">=</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+        <span class="c1"># sometimes all depolarization traces spike</span>
+        <span class="n">i_sub</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="mi">0</span> <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">has_spikes</span><span class="p">)</span> <span class="k">else</span> <span class="n">i</span><span class="p">[</span><span class="o">~</span><span class="n">has_spikes</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="p">)</span>  <span class="c1"># last stim &lt; spike threshold</span>
+        <span class="n">i_sup</span> <span class="o">=</span> <span class="n">i</span><span class="p">[</span><span class="n">has_spikes</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># first stim &gt; spike threshold</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">dfdi</span><span class="p">):</span>
+            <span class="n">rheobase</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">ransac</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">0</span><span class="p">]])))</span> <span class="o">/</span> <span class="n">dfdi</span>
+
+            <span class="k">if</span> <span class="n">rheobase</span> <span class="o">&lt;</span> <span class="n">i_sub</span> <span class="ow">or</span> <span class="n">rheobase</span> <span class="o">&gt;</span> <span class="n">i_sup</span><span class="p">:</span>
+                <span class="n">rheobase</span> <span class="o">=</span> <span class="n">i_sup</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">rheobase</span> <span class="o">=</span> <span class="n">i_sup</span>
+        <span class="n">rheobase</span> <span class="o">-=</span> <span class="n">dc_offset</span>
+
+        <span class="k">if</span> <span class="n">store_diagnostics</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update_diagnostics</span><span class="p">(</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;i_sub&quot;</span><span class="p">:</span> <span class="n">i_sub</span><span class="p">,</span>
+                    <span class="s2">&quot;i_sup&quot;</span><span class="p">:</span> <span class="n">i_sup</span><span class="p">,</span>
+                    <span class="s2">&quot;f_sup&quot;</span><span class="p">:</span> <span class="n">f</span><span class="p">[</span><span class="n">has_spikes</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span>
+                    <span class="s2">&quot;dfdi&quot;</span><span class="p">:</span> <span class="n">dfdi</span><span class="p">,</span>
+                    <span class="s2">&quot;dc_offset&quot;</span><span class="p">:</span> <span class="n">dc_offset</span><span class="p">,</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">rheobase</span>
+
+<div class="viewcode-block" id="SweepSet_Rheobase.plot"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_Rheobase.plot">[docs]</a>    <span class="k">def</span> <span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">ax</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Axes</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Axes</span><span class="p">:</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span> <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">ax</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">ax</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_diagnostics</span><span class="p">(</span><span class="n">recompute</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">dfdi_ft</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_sweepset_feature</span><span class="p">(</span><span class="s2">&quot;dfdi&quot;</span><span class="p">,</span> <span class="n">return_value</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="n">i_sub</span><span class="p">,</span> <span class="n">i_sup</span><span class="p">,</span> <span class="n">f_sup</span><span class="p">,</span> <span class="n">dc_offset</span> <span class="o">=</span> <span class="n">unpack</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;i_sub&quot;</span><span class="p">,</span> <span class="s2">&quot;i_sup&quot;</span><span class="p">,</span> <span class="s2">&quot;f_sup&quot;</span><span class="p">,</span> <span class="s2">&quot;dc_offset&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="n">i_intercept</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span>
+        <span class="n">dfdi</span> <span class="o">=</span> <span class="n">dfdi_ft</span><span class="o">.</span><span class="n">value</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">dfdi</span><span class="p">):</span>
+            <span class="n">i</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">f_intercept</span> <span class="o">=</span> <span class="n">unpack</span><span class="p">(</span><span class="n">dfdi_ft</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;i&quot;</span><span class="p">,</span> <span class="s2">&quot;f&quot;</span><span class="p">,</span> <span class="s2">&quot;f_intercept&quot;</span><span class="p">])</span>
+            <span class="n">has_spikes</span> <span class="o">=</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+            <span class="n">n_no_spikes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="o">~</span><span class="n">has_spikes</span><span class="p">)</span>
+
+            <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">i</span><span class="p">[</span><span class="n">has_spikes</span><span class="p">][:</span><span class="mi">5</span><span class="p">],</span> <span class="n">f</span><span class="p">[</span><span class="n">has_spikes</span><span class="p">][:</span><span class="mi">5</span><span class="p">],</span> <span class="s2">&quot;o&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;f(I)&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+                <span class="n">i</span><span class="p">[:</span> <span class="n">n_no_spikes</span> <span class="o">+</span> <span class="mi">5</span><span class="p">],</span>
+                <span class="n">dfdi</span> <span class="o">*</span> <span class="n">i</span><span class="p">[:</span> <span class="n">n_no_spikes</span> <span class="o">+</span> <span class="mi">5</span><span class="p">]</span> <span class="o">+</span> <span class="n">f_intercept</span><span class="p">,</span>
+                <span class="n">label</span><span class="o">=</span><span class="s2">&quot;f(I) fit&quot;</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">i</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">5</span><span class="p">,</span> <span class="n">i</span><span class="p">[</span><span class="n">n_no_spikes</span> <span class="o">+</span> <span class="mi">5</span><span class="p">]</span> <span class="o">+</span> <span class="mi">5</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">i_sub</span> <span class="o">-</span> <span class="mi">5</span><span class="p">,</span> <span class="n">i_sup</span> <span class="o">+</span> <span class="mi">5</span><span class="p">)</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">i_sup</span><span class="p">,</span> <span class="n">f_sup</span><span class="p">,</span> <span class="s2">&quot;o&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;i_sup&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span>
+            <span class="n">i_intercept</span> <span class="o">+</span> <span class="n">dc_offset</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;rheobase</span><span class="se">\n</span><span class="s2">(w.o. dc)&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+        <span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="n">i_intercept</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;rheobase</span><span class="se">\n</span><span class="s2">(incl. dc)&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">i_sub</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;o&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;i_sub&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;I (pA)&quot;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;f (Hz)&quot;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">ax</span></div></div>
+
+
+<div class="viewcode-block" id="SweepSet_R_input"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_R_input">[docs]</a><span class="k">class</span> <span class="nc">SweepSet_R_input</span><span class="p">(</span><span class="n">SweepSetFeature</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Obtain sweepset level r_input feature.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">swft</span><span class="o">.</span><span class="n">Sweep_R_input</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+            <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_select</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fts</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">fts</span>
+
+    <span class="k">def</span> <span class="nf">_aggregate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fts</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">fts</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">store_diagnostics</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="n">r_input</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;nan&quot;</span><span class="p">)</span>
+        <span class="n">is_hyperpol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_sweep_feature</span><span class="p">(</span><span class="s2">&quot;stim_amp&quot;</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="n">recompute</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span>
+        <span class="n">v_deflect</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_sweep_feature</span><span class="p">(</span><span class="s2">&quot;v_deflect&quot;</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="n">recompute</span><span class="p">)</span>
+        <span class="n">v_deflect</span> <span class="o">=</span> <span class="n">v_deflect</span><span class="p">[</span><span class="n">is_hyperpol</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">i_amp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_sweep_feature</span><span class="p">(</span><span class="s2">&quot;stim_amp&quot;</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="n">recompute</span><span class="p">)</span>
+        <span class="n">i_amp</span> <span class="o">=</span> <span class="n">i_amp</span><span class="p">[</span><span class="n">is_hyperpol</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">v_deflect</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="n">ransac</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">i_amp</span><span class="p">,</span> <span class="n">v_deflect</span><span class="p">)</span>
+            <span class="n">r_input</span> <span class="o">=</span> <span class="n">ransac</span><span class="o">.</span><span class="n">coef_</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="mi">1000</span>
+            <span class="n">v_intercept</span> <span class="o">=</span> <span class="n">ransac</span><span class="o">.</span><span class="n">intercept_</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">store_diagnostics</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_update_diagnostics</span><span class="p">(</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;raw_slope&quot;</span><span class="p">:</span> <span class="n">r_input</span> <span class="o">/</span> <span class="mi">1000</span><span class="p">,</span>
+                        <span class="s2">&quot;v_intercept&quot;</span><span class="p">:</span> <span class="n">v_intercept</span><span class="p">,</span>
+                        <span class="s2">&quot;i_amp&quot;</span><span class="p">:</span> <span class="n">i_amp</span><span class="p">,</span>
+                        <span class="s2">&quot;v_deflect&quot;</span><span class="p">:</span> <span class="n">v_deflect</span><span class="p">,</span>
+                    <span class="p">}</span>
+                <span class="p">)</span>
+        <span class="k">return</span> <span class="n">r_input</span>
+
+<div class="viewcode-block" id="SweepSet_R_input.plot"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_R_input.plot">[docs]</a>    <span class="k">def</span> <span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">ax</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Axes</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Axes</span><span class="p">:</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span> <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">ax</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">ax</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_diagnostics</span><span class="p">(</span><span class="n">recompute</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">):</span>
+            <span class="n">i</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">slope</span><span class="p">,</span> <span class="n">intercept</span> <span class="o">=</span> <span class="n">unpack</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;i_amp&quot;</span><span class="p">,</span> <span class="s2">&quot;v_deflect&quot;</span><span class="p">,</span> <span class="s2">&quot;raw_slope&quot;</span><span class="p">,</span> <span class="s2">&quot;v_intercept&quot;</span><span class="p">]</span>
+            <span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="s2">&quot;o&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;V(I)&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">slope</span> <span class="o">*</span> <span class="n">i</span> <span class="o">+</span> <span class="n">intercept</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;r_input fit&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">-</span> <span class="mi">5</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">+</span> <span class="mi">5</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;I (pA)&quot;</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;V (mV)&quot;</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">ax</span></div></div>
+
+
+<div class="viewcode-block" id="SweepSet_Slow_hyperpolarization"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_Slow_hyperpolarization">[docs]</a><span class="k">class</span> <span class="nc">SweepSet_Slow_hyperpolarization</span><span class="p">(</span><span class="n">SweepSetFeature</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Obtain sweepset level slow_hyperpolarization feature.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">swft</span><span class="o">.</span><span class="n">NullSweepFeature</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+            <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;slow_hyperpolarization&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_select</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fts</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">fts</span>
+
+    <span class="k">def</span> <span class="nf">_aggregate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fts</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">fts</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">store_diagnostics</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="c1"># is_hyperpol = self.lookup_sweep_feature(&quot;stim_amp&quot;, recompute=recompute) &lt; 0</span>
+        <span class="c1"># TODO: ASK IF THIS IS ONLY TAKEN FOR HYPERPOLARIZING TRACES (I THINK NOT)</span>
+        <span class="n">v_baseline</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_sweep_feature</span><span class="p">(</span><span class="s2">&quot;v_baseline&quot;</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="n">recompute</span><span class="p">)</span>
+
+        <span class="n">slow_hyperpolarization</span> <span class="o">=</span> <span class="n">v_baseline</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">-</span> <span class="n">v_baseline</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">store_diagnostics</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update_diagnostics</span><span class="p">(</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;v_baseline&quot;</span><span class="p">:</span> <span class="n">v_baseline</span><span class="p">,</span>
+                    <span class="s2">&quot;v_baseline_max&quot;</span><span class="p">:</span> <span class="n">v_baseline</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span>
+                    <span class="s2">&quot;v_baseline_min&quot;</span><span class="p">:</span> <span class="n">v_baseline</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">slow_hyperpolarization</span>
+
+    <span class="k">def</span> <span class="nf">_plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Axes</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Axes</span><span class="p">:</span>
+        <span class="n">v_max</span><span class="p">,</span> <span class="n">v_min</span> <span class="o">=</span> <span class="n">unpack</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;v_baseline_max&quot;</span><span class="p">,</span> <span class="s2">&quot;v_baseline_min&quot;</span><span class="p">])</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">vlines</span><span class="p">(</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">v_min</span><span class="p">,</span> <span class="n">v_max</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ax</span></div>
+
+
+<div class="viewcode-block" id="SweepSet_Tau"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_Tau">[docs]</a><span class="k">class</span> <span class="nc">SweepSet_Tau</span><span class="p">(</span><span class="n">HyperpolMedianFeature</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">swft</span><span class="o">.</span><span class="n">Sweep_Tau</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SweepSet_V_rest"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_V_rest">[docs]</a><span class="k">class</span> <span class="nc">SweepSet_V_rest</span><span class="p">(</span><span class="n">HyperpolMedianFeature</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">swft</span><span class="o">.</span><span class="n">Sweep_V_rest</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SweepSet_V_baseline"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_V_baseline">[docs]</a><span class="k">class</span> <span class="nc">SweepSet_V_baseline</span><span class="p">(</span><span class="n">HyperpolMedianFeature</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">swft</span><span class="o">.</span><span class="n">Sweep_V_baseline</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SweepSet_Sag"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_Sag">[docs]</a><span class="k">class</span> <span class="nc">SweepSet_Sag</span><span class="p">(</span><span class="n">SagFeature</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">swft</span><span class="o">.</span><span class="n">Sweep_Sag</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SweepSet_Sag_ratio"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_Sag_ratio">[docs]</a><span class="k">class</span> <span class="nc">SweepSet_Sag_ratio</span><span class="p">(</span><span class="n">SagFeature</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">swft</span><span class="o">.</span><span class="n">Sweep_Sag_ratio</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SweepSet_Sag_fraction"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_Sag_fraction">[docs]</a><span class="k">class</span> <span class="nc">SweepSet_Sag_fraction</span><span class="p">(</span><span class="n">SagFeature</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">swft</span><span class="o">.</span><span class="n">Sweep_Sag_fraction</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SweepSet_Sag_area"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_Sag_area">[docs]</a><span class="k">class</span> <span class="nc">SweepSet_Sag_area</span><span class="p">(</span><span class="n">SagFeature</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">swft</span><span class="o">.</span><span class="n">Sweep_Sag_area</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SweepSet_Sag_time"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_Sag_time">[docs]</a><span class="k">class</span> <span class="nc">SweepSet_Sag_time</span><span class="p">(</span><span class="n">SagFeature</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">swft</span><span class="o">.</span><span class="n">Sweep_Sag_time</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SweepSet_Rebound"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_Rebound">[docs]</a><span class="k">class</span> <span class="nc">SweepSet_Rebound</span><span class="p">(</span><span class="n">ReboundFeature</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">swft</span><span class="o">.</span><span class="n">Sweep_Rebound</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SweepSet_Rebound_APs"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_Rebound_APs">[docs]</a><span class="k">class</span> <span class="nc">SweepSet_Rebound_APs</span><span class="p">(</span><span class="n">SweepSetFeature</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Obtain sweepset level rebound APs feature.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">swft</span><span class="o">.</span><span class="n">Sweep_Rebound_APs</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_select</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fts</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Select representative sweep and use its rebound features to represent the</span>
+<span class="sd">        entire sweepset.</span>
+
+<span class="sd">        description: Max rebound of the 3 lowest sweeps hyperpolarization sweeps.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">num_rebound</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookup_sweep_feature</span><span class="p">(</span><span class="s2">&quot;rebound_aps&quot;</span><span class="p">)</span>
+        <span class="n">nan_rebounds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">num_rebound</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">nan_rebounds</span><span class="p">[:</span><span class="mi">3</span><span class="p">]):</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanargmax</span><span class="p">(</span><span class="n">num_rebound</span><span class="p">[:</span><span class="mi">3</span><span class="p">])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_diagnostics</span><span class="p">(</span>
+            <span class="p">{</span><span class="s2">&quot;selected_idx&quot;</span><span class="p">:</span> <span class="n">idx</span><span class="p">,</span> <span class="s2">&quot;selection&quot;</span><span class="p">:</span> <span class="n">parse_desc</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_select</span><span class="p">)}</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">fts</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_aggregate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fts</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_diagnostics</span><span class="p">(</span>
+            <span class="p">{</span><span class="s2">&quot;aggregation&quot;</span><span class="p">:</span> <span class="s2">&quot;not an aggregate features, only single index is selected.&quot;</span><span class="p">}</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">fts</span><span class="o">.</span><span class="n">item</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="SweepSet_Rebound_area"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_Rebound_area">[docs]</a><span class="k">class</span> <span class="nc">SweepSet_Rebound_area</span><span class="p">(</span><span class="n">ReboundFeature</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">swft</span><span class="o">.</span><span class="n">Sweep_Rebound_area</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SweepSet_Rebound_latency"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_Rebound_latency">[docs]</a><span class="k">class</span> <span class="nc">SweepSet_Rebound_latency</span><span class="p">(</span><span class="n">ReboundFeature</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">swft</span><span class="o">.</span><span class="n">Sweep_Rebound_latency</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SweepSet_Rebound_avg"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_Rebound_avg">[docs]</a><span class="k">class</span> <span class="nc">SweepSet_Rebound_avg</span><span class="p">(</span><span class="n">ReboundFeature</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">swft</span><span class="o">.</span><span class="n">Sweep_Rebound_avg</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SweepSet_Num_AP"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_Num_AP">[docs]</a><span class="k">class</span> <span class="nc">SweepSet_Num_AP</span><span class="p">(</span><span class="n">APsFeature</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">swft</span><span class="o">.</span><span class="n">Sweep_Num_AP</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SweepSet_AP_freq"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_AP_freq">[docs]</a><span class="k">class</span> <span class="nc">SweepSet_AP_freq</span><span class="p">(</span><span class="n">APsFeature</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">swft</span><span class="o">.</span><span class="n">Sweep_AP_freq</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SweepSet_AP_freq_adapt"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_AP_freq_adapt">[docs]</a><span class="k">class</span> <span class="nc">SweepSet_AP_freq_adapt</span><span class="p">(</span><span class="n">APsFeature</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">swft</span><span class="o">.</span><span class="n">Sweep_AP_freq_adapt</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SweepSet_AP_amp_slope"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_AP_amp_slope">[docs]</a><span class="k">class</span> <span class="nc">SweepSet_AP_amp_slope</span><span class="p">(</span><span class="n">APsFeature</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">swft</span><span class="o">.</span><span class="n">Sweep_AP_amp_slope</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SweepSet_ISI_FF"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_ISI_FF">[docs]</a><span class="k">class</span> <span class="nc">SweepSet_ISI_FF</span><span class="p">(</span><span class="n">APsFeature</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">swft</span><span class="o">.</span><span class="n">Sweep_ISI_FF</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SweepSet_AP_FF"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_AP_FF">[docs]</a><span class="k">class</span> <span class="nc">SweepSet_AP_FF</span><span class="p">(</span><span class="n">APsFeature</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">swft</span><span class="o">.</span><span class="n">Sweep_AP_FF</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SweepSet_ISI_CV"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_ISI_CV">[docs]</a><span class="k">class</span> <span class="nc">SweepSet_ISI_CV</span><span class="p">(</span><span class="n">APsFeature</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">swft</span><span class="o">.</span><span class="n">Sweep_ISI_CV</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SweepSet_AP_CV"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_AP_CV">[docs]</a><span class="k">class</span> <span class="nc">SweepSet_AP_CV</span><span class="p">(</span><span class="n">APsFeature</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">swft</span><span class="o">.</span><span class="n">Sweep_AP_CV</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SweepSet_ISI"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_ISI">[docs]</a><span class="k">class</span> <span class="nc">SweepSet_ISI</span><span class="p">(</span><span class="n">APsFeature</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">swft</span><span class="o">.</span><span class="n">Sweep_ISI</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SweepSet_Burstiness"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_Burstiness">[docs]</a><span class="k">class</span> <span class="nc">SweepSet_Burstiness</span><span class="p">(</span><span class="n">First5MedianFeature</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">swft</span><span class="o">.</span><span class="n">Sweep_Burstiness</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SweepSet_Num_bursts"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_Num_bursts">[docs]</a><span class="k">class</span> <span class="nc">SweepSet_Num_bursts</span><span class="p">(</span><span class="n">First5MedianFeature</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">swft</span><span class="o">.</span><span class="n">Sweep_Num_bursts</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SweepSet_ISI_adapt"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_ISI_adapt">[docs]</a><span class="k">class</span> <span class="nc">SweepSet_ISI_adapt</span><span class="p">(</span><span class="n">First5MedianFeature</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">swft</span><span class="o">.</span><span class="n">Sweep_ISI_adapt</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SweepSet_ISI_adapt_avg"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_ISI_adapt_avg">[docs]</a><span class="k">class</span> <span class="nc">SweepSet_ISI_adapt_avg</span><span class="p">(</span><span class="n">First5MedianFeature</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">swft</span><span class="o">.</span><span class="n">Sweep_ISI_adapt_avg</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SweepSet_AP_amp_adapt"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_AP_amp_adapt">[docs]</a><span class="k">class</span> <span class="nc">SweepSet_AP_amp_adapt</span><span class="p">(</span><span class="n">First5MedianFeature</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">swft</span><span class="o">.</span><span class="n">Sweep_AP_amp_adapt</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SweepSet_AP_amp_adapt_avg"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_AP_amp_adapt_avg">[docs]</a><span class="k">class</span> <span class="nc">SweepSet_AP_amp_adapt_avg</span><span class="p">(</span><span class="n">First5MedianFeature</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">swft</span><span class="o">.</span><span class="n">Sweep_AP_amp_adapt_avg</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SweepSet_AP_AHP"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_AP_AHP">[docs]</a><span class="k">class</span> <span class="nc">SweepSet_AP_AHP</span><span class="p">(</span><span class="n">APFeature</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">swft</span><span class="o">.</span><span class="n">Sweep_AP_AHP</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SweepSet_AP_ADP"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_AP_ADP">[docs]</a><span class="k">class</span> <span class="nc">SweepSet_AP_ADP</span><span class="p">(</span><span class="n">APFeature</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">swft</span><span class="o">.</span><span class="n">Sweep_AP_ADP</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SweepSet_AP_thresh"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_AP_thresh">[docs]</a><span class="k">class</span> <span class="nc">SweepSet_AP_thresh</span><span class="p">(</span><span class="n">APFeature</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">swft</span><span class="o">.</span><span class="n">Sweep_AP_thresh</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SweepSet_AP_amp"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_AP_amp">[docs]</a><span class="k">class</span> <span class="nc">SweepSet_AP_amp</span><span class="p">(</span><span class="n">APFeature</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">swft</span><span class="o">.</span><span class="n">Sweep_AP_amp</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SweepSet_AP_width"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_AP_width">[docs]</a><span class="k">class</span> <span class="nc">SweepSet_AP_width</span><span class="p">(</span><span class="n">APFeature</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">swft</span><span class="o">.</span><span class="n">Sweep_AP_width</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SweepSet_AP_peak"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_AP_peak">[docs]</a><span class="k">class</span> <span class="nc">SweepSet_AP_peak</span><span class="p">(</span><span class="n">APFeature</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">swft</span><span class="o">.</span><span class="n">Sweep_AP_peak</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SweepSet_AP_trough"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_AP_trough">[docs]</a><span class="k">class</span> <span class="nc">SweepSet_AP_trough</span><span class="p">(</span><span class="n">APFeature</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">swft</span><span class="o">.</span><span class="n">Sweep_AP_trough</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SweepSet_AP_UDR"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_AP_UDR">[docs]</a><span class="k">class</span> <span class="nc">SweepSet_AP_UDR</span><span class="p">(</span><span class="n">APFeature</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">swft</span><span class="o">.</span><span class="n">Sweep_AP_UDR</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SweepSet_Wildness"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.SweepSet_Wildness">[docs]</a><span class="k">class</span> <span class="nc">SweepSet_Wildness</span><span class="p">(</span><span class="n">MaxFeature</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">swft</span><span class="o">.</span><span class="n">Sweep_Wildness</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NullSweepSetFeature"><a class="viewcode-back" href="../../../ephyspy.features.html#ephyspy.features.sweepset_features.NullSweepSetFeature">[docs]</a><span class="k">class</span> <span class="nc">NullSweepSetFeature</span><span class="p">(</span><span class="n">SweepSetFeature</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">swft</span><span class="o">.</span><span class="n">NullSweepFeature</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+            <span class="n">compute_at_init</span><span class="o">=</span><span class="n">compute_at_init</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;null_sweepset_feature&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_select</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fts</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">fts</span>
+
+    <span class="k">def</span> <span class="nf">_aggregate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fts</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">fts</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">recompute</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">store_diagnostics</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">_plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Axes</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Axes</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ax</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Jonas Beck.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

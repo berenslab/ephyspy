@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ephyspy.sweeps &mdash; EphysPy 0.0.05 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js?v=ecdf1fa4"></script>
+        <script src="../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            EphysPy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">ephyspy</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">EphysPy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">ephyspy.sweeps</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for ephyspy.sweeps</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Copyright 2023 Jonas Beck</span>
+
+<span class="c1"># This program is free software: you can redistribute it and/or modify</span>
+<span class="c1"># it under the terms of the GNU General Public License as published by</span>
+<span class="c1"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c1"># (at your option) any later version.</span>
+
+<span class="c1"># This program is distributed in the hope that it will be useful,</span>
+<span class="c1"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c1"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c1"># GNU General Public License for more details.</span>
+
+<span class="c1"># You should have received a copy of the GNU General Public License</span>
+<span class="c1"># along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">import</span> <span class="n">Axes</span>
+<span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">ndarray</span>
+
+<span class="kn">import</span> <span class="nn">ephyspy.allen_sdk.ephys_extractor</span> <span class="k">as</span> <span class="nn">efex</span>
+<span class="kn">from</span> <span class="nn">ephyspy.allen_sdk.ephys_extractor</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">EphysSweepFeatureExtractor</span><span class="p">,</span>
+    <span class="n">EphysSweepSetFeatureExtractor</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">ephyspy.utils</span> <span class="kn">import</span> <span class="n">is_spike_feature</span><span class="p">,</span> <span class="n">is_sweep_feature</span><span class="p">,</span> <span class="n">is_sweepset_feature</span>
+
+
+<div class="viewcode-block" id="EphysSweep"><a class="viewcode-back" href="../../ephyspy.html#ephyspy.sweeps.EphysSweep">[docs]</a><span class="k">class</span> <span class="nc">EphysSweep</span><span class="p">(</span><span class="n">EphysSweepFeatureExtractor</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Wrapper around EphysSweepFeatureExtractor from the AllenSDK to</span>
+<span class="sd">    support additional functionality.</span>
+
+<span class="sd">    Mainly it supports the addition of new spike features and metadata.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        metadata (dict): Metadata for the sweep.</span>
+<span class="sd">        added_spike_features (dict): Dictionary of added spike features.</span>
+<span class="sd">        features (dict): Dictionary of sweep features. These should be</span>
+<span class="sd">            `SweepFeature` instances.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="p">{},</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Args:</span>
+<span class="sd">            metadata (dict, optional): Metadata for the sweep. Defaults to None.</span>
+<span class="sd">                The metadata can be used to set hyperparameters for features or</span>
+<span class="sd">                store identifying information, such as cell id etc..</span>
+<span class="sd">            *args: Additional arguments for EphysSweepFeatureExtractor.</span>
+<span class="sd">            **kwargs: Additional keyword arguments for EphysSweepFeatureExtractor.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span> <span class="o">=</span> <span class="n">metadata</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">added_spike_features</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">features</span> <span class="o">=</span> <span class="p">{}</span>
+
+<div class="viewcode-block" id="EphysSweep.add_spike_feature"><a class="viewcode-back" href="../../ephyspy.html#ephyspy.sweeps.EphysSweep.add_spike_feature">[docs]</a>    <span class="k">def</span> <span class="nf">add_spike_feature</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">feature_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">feature_func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a new spike feature to the extractor.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            feature_name (str): Name of the new feature.</span>
+<span class="sd">            feature_func (Callable): Function to calculate the new feature.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">added_spike_features</span><span class="p">[</span><span class="n">feature_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">feature_func</span></div>
+
+<div class="viewcode-block" id="EphysSweep.add_features"><a class="viewcode-back" href="../../ephyspy.html#ephyspy.sweeps.EphysSweep.add_features">[docs]</a>    <span class="k">def</span> <span class="nf">add_features</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">features</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Add features to the `EphysSweep` instance.</span>
+
+<span class="sd">        This function can be used to add spike or sweep features to an `EphysSweep`</span>
+<span class="sd">        object. The added features can then be accessed via `self.features` or</span>
+<span class="sd">        collectively computed via `self.get_features()`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            features (Union[List[Any], Dict[str, Any]]): List of features to add.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            TypeError: If feature is not of a known type.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">features</span><span class="p">,</span> <span class="n">Dict</span><span class="p">):</span>
+            <span class="n">features</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">features</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+
+        <span class="k">for</span> <span class="n">ft</span> <span class="ow">in</span> <span class="n">features</span><span class="p">:</span>
+            <span class="n">feature</span> <span class="o">=</span> <span class="n">ft</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">is_spike_feature</span><span class="p">(</span><span class="n">ft</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_spike_feature</span><span class="p">(</span><span class="n">feature</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">feature</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">is_sweep_feature</span><span class="p">(</span><span class="n">ft</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">features</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">feature</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">feature</span><span class="p">})</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Feature is not of a known type.&quot;</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_process_added_spike_features</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Process added spike features.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">feature_name</span><span class="p">,</span> <span class="n">feature_func</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">added_spike_features</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">process_new_spike_feature</span><span class="p">(</span><span class="n">feature_name</span><span class="p">,</span> <span class="n">feature_func</span><span class="p">)</span>
+
+<div class="viewcode-block" id="EphysSweep.process_spikes"><a class="viewcode-back" href="../../ephyspy.html#ephyspy.sweeps.EphysSweep.process_spikes">[docs]</a>    <span class="k">def</span> <span class="nf">process_spikes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Perform spike-related feature analysis, which includes added spike</span>
+<span class="sd">        features not part of the original AllenSDK implementation.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_process_individual_spikes</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_process_spike_related_features</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_process_added_spike_features</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="EphysSweep.get_features"><a class="viewcode-back" href="../../ephyspy.html#ephyspy.sweeps.EphysSweep.get_features">[docs]</a>    <span class="k">def</span> <span class="nf">get_features</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">recompute</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute all features that have been added to the `EphysSweep` instance.</span>
+
+<span class="sd">        Includes all features that can be found in `self.features`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            recompute (bool, optional): Whether to force recomputation of the</span>
+<span class="sd">                features. Defaults to False.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Dict[str, float]: Dictionary of features and values.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;features&quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">features</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">{</span>
+                    <span class="n">k</span><span class="p">:</span> <span class="n">ft</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">recompute</span><span class="o">=</span><span class="n">recompute</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">ft</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">features</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                <span class="p">}</span></div>
+
+<div class="viewcode-block" id="EphysSweep.clear_features"><a class="viewcode-back" href="../../ephyspy.html#ephyspy.sweeps.EphysSweep.clear_features">[docs]</a>    <span class="k">def</span> <span class="nf">clear_features</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Clear all features.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spikes_df</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">features</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">features</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="EphysSweep.plot"><a class="viewcode-back" href="../../ephyspy.html#ephyspy.sweeps.EphysSweep.plot">[docs]</a>    <span class="k">def</span> <span class="nf">plot</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Axes</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">show_stimulus</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Axes</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Plot the sweep.</span>
+
+<span class="sd">        If no axes object is provided, one will be created. It will have one or</span>
+<span class="sd">        two subplots, depending on whether the stimulus is shown.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            ax (Axes, optional): Matplotlib axes to plot on.</span>
+<span class="sd">            show_stimulus (bool, optional): Whether to plot the stimulus. Defaults to False.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Axes: Matplotlib axes object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">show_stimulus</span><span class="p">:</span>
+            <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span>
+                <span class="mi">2</span><span class="p">,</span>
+                <span class="mi">1</span><span class="p">,</span>
+                <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">gridspec_kw</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;height_ratios&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">]},</span>
+                <span class="n">constrained_layout</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">v_ax</span><span class="p">,</span> <span class="n">i_ax</span> <span class="o">=</span> <span class="n">ax</span>
+        <span class="k">elif</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">show_stimulus</span><span class="p">:</span>
+            <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+            <span class="n">v_ax</span> <span class="o">=</span> <span class="n">ax</span>
+        <span class="k">elif</span> <span class="n">ax</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">show_stimulus</span><span class="p">:</span>
+            <span class="n">v_ax</span><span class="p">,</span> <span class="n">i_ax</span> <span class="o">=</span> <span class="n">ax</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">v_ax</span> <span class="o">=</span> <span class="n">ax</span>
+
+        <span class="n">v_ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">v_ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Time (s)&quot;</span><span class="p">)</span>
+        <span class="n">v_ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Voltage (mV)&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">show_stimulus</span><span class="p">:</span>
+            <span class="n">i_ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">i</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">i_ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Current (pA)&quot;</span><span class="p">)</span>
+            <span class="n">i_ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Time (s)&quot;</span><span class="p">)</span>
+            <span class="n">v_ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ax</span></div>
+
+<div class="viewcode-block" id="EphysSweep.plot_feature"><a class="viewcode-back" href="../../ephyspy.html#ephyspy.sweeps.EphysSweep.plot_feature">[docs]</a>    <span class="k">def</span> <span class="nf">plot_feature</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">ft</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">ax</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Axes</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">show_sweep</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Axes</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Plot any feature of the sweep by specifying its name.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            ft (str): Name of the feature to plot. (all lower case)</span>
+<span class="sd">            ax (Axes, optional): Matplotlib axes to plot on.</span>
+<span class="sd">            show_sweep (bool, optional): Whether to plot V(t).</span>
+<span class="sd">                Defaults to True.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Axes: Matplotlib axes object.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">show_sweep</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;k&quot;</span><span class="p">)</span>
+
+        <span class="c1"># sweep feature</span>
+        <span class="k">if</span> <span class="n">ft</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">features</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">features</span><span class="p">[</span><span class="n">ft</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># spike feature</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spikes_df</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">ft</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">added_spike_features</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">added_spike_features</span><span class="p">[</span><span class="n">ft</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Feature </span><span class="si">{</span><span class="n">ft</span><span class="si">}</span><span class="s2"> not found.&quot;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">ax</span></div>
+
+<div class="viewcode-block" id="EphysSweep.plot_features"><a class="viewcode-back" href="../../ephyspy.html#ephyspy.sweeps.EphysSweep.plot_features">[docs]</a>    <span class="k">def</span> <span class="nf">plot_features</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">fts</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">ax</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Axes</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">show_sweep</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Axes</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Plot multiple features of the sweep by specifying their names.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            fts (List[str]): Names of the features to plot. (all lower case)</span>
+<span class="sd">            ax (Axes, optional): Matplotlib axes to plot on.</span>
+<span class="sd">            show_sweep (bool, optional): Whether to plot V(t).</span>
+<span class="sd">                Defaults to True.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Axes: Matplotlib axes object.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">show_sweep</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;k&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">ft</span> <span class="ow">in</span> <span class="n">fts</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">plot_feature</span><span class="p">(</span><span class="n">ft</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">show_sweep</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ax</span></div></div>
+
+
+<span class="c1"># overwrite AllenSDK EphysSweepFeatureExtractor with wrapper</span>
+<span class="c1"># this is needed to EphysSweepSet is uses EphysSweep to initialize the individual sweeps</span>
+<span class="c1"># instead of using the AllenSDK EphysSweepFeatureExtractor</span>
+<span class="n">efex</span><span class="o">.</span><span class="n">EphysSweepFeatureExtractor</span> <span class="o">=</span> <span class="n">EphysSweep</span>
+
+
+<div class="viewcode-block" id="EphysSweepSet"><a class="viewcode-back" href="../../ephyspy.html#ephyspy.sweeps.EphysSweepSet">[docs]</a><span class="k">class</span> <span class="nc">EphysSweepSet</span><span class="p">(</span><span class="n">EphysSweepSetFeatureExtractor</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Wrapper around EphysSweepSetFeatureExtractor from the AllenSDK to</span>
+<span class="sd">    support additional functionality.</span>
+
+<span class="sd">    t_set, v_set and i_set are optional and `EphysSweepSet` can also be initialized</span>
+<span class="sd">    using an iterable of sweeps via the `from_sweeps` method. In this case all the</span>
+<span class="sd">    metadata already needs to be contained in the sweeps.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        t_set (ndarray): Time array for set of sweeps.</span>
+<span class="sd">        v_set (ndarray): Voltage array for set of sweeps.</span>
+<span class="sd">        i_set (ndarray): Current array for set of sweeps.</span>
+<span class="sd">        metadata (dict, optional): Metadata for the sweep set. Defaults to None.</span>
+<span class="sd">        The metadata can be used to set hyperparameters for features or</span>
+<span class="sd">            store identifying information, such as cell id etc..</span>
+
+<span class="sd">        *args: Additional arguments for EphysSweepSetFeatureExtractor.</span>
+<span class="sd">        **kwargs: Additional keyword arguments for EphysSweepSetFeatureExtractor.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        metadata (dict): Metadata for the sweep set.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">t_set</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">,</span> <span class="n">ndarray</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">v_set</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">,</span> <span class="n">ndarray</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">i_set</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">,</span> <span class="n">ndarray</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">t_start</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">,</span> <span class="n">ndarray</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">t_end</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">,</span> <span class="n">ndarray</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">metadata</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="p">{},</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Args:</span>
+<span class="sd">            t_set (ndarray, optional): Time array for set of sweeps.</span>
+<span class="sd">            v_set (ndarray, optional): Voltage array for set of sweeps.</span>
+<span class="sd">            i_set (ndarray, optional): Current array for set of sweeps.</span>
+<span class="sd">            t_start (ndarray, optional): Start time for each sweep.</span>
+<span class="sd">            t_end (ndarray, optional): End time for each sweep.</span>
+<span class="sd">            metadata (dict, optional): Metadata for the sweep set.</span>
+<span class="sd">            *args: Additional arguments for EphysSweepSetFeatureExtractor.</span>
+<span class="sd">            **kwargs: Additional keyword arguments for EphysSweepSetFeatureExtractor.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">is_array</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">ndarray</span><span class="p">)</span> <span class="ow">and</span> <span class="n">x</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="n">is_float</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span> <span class="ow">and</span> <span class="n">x</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="n">t_set</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">t_set</span><span class="p">)</span> <span class="k">if</span> <span class="n">is_array</span><span class="p">(</span><span class="n">t_set</span><span class="p">)</span> <span class="k">else</span> <span class="n">t_set</span>
+        <span class="n">v_set</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">v_set</span><span class="p">)</span> <span class="k">if</span> <span class="n">is_array</span><span class="p">(</span><span class="n">v_set</span><span class="p">)</span> <span class="k">else</span> <span class="n">v_set</span>
+        <span class="n">i_set</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">i_set</span><span class="p">)</span> <span class="k">if</span> <span class="n">is_array</span><span class="p">(</span><span class="n">i_set</span><span class="p">)</span> <span class="k">else</span> <span class="n">i_set</span>
+        <span class="k">if</span> <span class="n">t_start</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">v_set</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">t_start</span><span class="p">,</span> <span class="n">t_end</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">t_set</span><span class="p">)[:,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]]</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">is_float</span><span class="p">(</span><span class="n">t_start</span><span class="p">):</span>
+            <span class="n">t_start</span><span class="p">,</span> <span class="n">t_end</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">t_start</span><span class="p">,</span> <span class="n">t_end</span><span class="p">]]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">t_set</span><span class="p">))</span><span class="o">.</span><span class="n">T</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">t_set</span><span class="p">,</span> <span class="n">v_set</span><span class="p">,</span> <span class="n">i_set</span><span class="p">,</span> <span class="n">t_start</span><span class="p">,</span> <span class="n">t_end</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span> <span class="o">=</span> <span class="n">metadata</span>
+        <span class="k">for</span> <span class="n">sweep</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">sweeps</span><span class="p">():</span>
+            <span class="n">sweep</span><span class="o">.</span><span class="n">metadata</span> <span class="o">=</span> <span class="n">metadata</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">features</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">t</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ndarray</span><span class="p">:</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sweeps</span><span class="p">()),</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sweeps</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">t</span><span class="p">)))</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">swp</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sweeps</span><span class="p">()):</span>
+            <span class="n">t</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">swp</span><span class="o">.</span><span class="n">t</span>
+        <span class="k">return</span> <span class="n">t</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">v</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ndarray</span><span class="p">:</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sweeps</span><span class="p">()),</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sweeps</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">v</span><span class="p">)))</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">swp</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sweeps</span><span class="p">()):</span>
+            <span class="n">v</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">swp</span><span class="o">.</span><span class="n">v</span>
+        <span class="k">return</span> <span class="n">v</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">i</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ndarray</span><span class="p">:</span>
+        <span class="n">stim</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sweeps</span><span class="p">()),</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sweeps</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">i</span><span class="p">)))</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">swp</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sweeps</span><span class="p">()):</span>
+            <span class="n">stim</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">swp</span><span class="o">.</span><span class="n">i</span>
+        <span class="k">return</span> <span class="n">stim</span>
+
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sweeps</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">EphysSweep</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sweeps</span><span class="p">()[</span><span class="n">idx</span><span class="p">]</span>
+
+<div class="viewcode-block" id="EphysSweepSet.add_spike_feature"><a class="viewcode-back" href="../../ephyspy.html#ephyspy.sweeps.EphysSweepSet.add_spike_feature">[docs]</a>    <span class="k">def</span> <span class="nf">add_spike_feature</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">feature_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">feature_func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a new spike feature to the extractor.</span>
+
+<span class="sd">        Adds new spike feature to each `EphysSweep` instance.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            feature_name (str): Name of the new feature.</span>
+<span class="sd">            feature_func (Callable): Function to calculate the new feature.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            TypeError: If feature is not of a known type.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">sweep</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">sweeps</span><span class="p">():</span>
+            <span class="n">sweep</span><span class="o">.</span><span class="n">add_spike_feature</span><span class="p">(</span><span class="n">feature_name</span><span class="p">,</span> <span class="n">feature_func</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="EphysSweepSet.add_features"><a class="viewcode-back" href="../../ephyspy.html#ephyspy.sweeps.EphysSweepSet.add_features">[docs]</a>    <span class="k">def</span> <span class="nf">add_features</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">features</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Add features to the `EphysSweepSet` instance.</span>
+
+<span class="sd">        This function can be used to add spike sweep or sweepset features to an</span>
+<span class="sd">        `EphysSweepSet` object. The added features can then be accessed via</span>
+<span class="sd">        `self.features` or collectively computed via `self.get_features()`.</span>
+
+<span class="sd">        Sweep features are passed to each sweep in the set and added there.</span>
+<span class="sd">        Any sweep features needed in their computation are automatically added</span>
+<span class="sd">        and handled by `SweepSetFeature` instances. This means they don&#39;t</span>
+<span class="sd">        necessarily need to be added manually.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            features (Union[List[Any], Dict[str, Any]]): List of features to add.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            TypeError: If feature is not of a known type.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">features</span><span class="p">,</span> <span class="n">Dict</span><span class="p">):</span>
+            <span class="n">features</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">features</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+
+        <span class="k">for</span> <span class="n">ft</span> <span class="ow">in</span> <span class="n">features</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">is_spike_feature</span><span class="p">(</span><span class="n">ft</span><span class="p">)</span> <span class="ow">or</span> <span class="n">is_sweep_feature</span><span class="p">(</span><span class="n">ft</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">sweep</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+                    <span class="n">sweep</span><span class="o">.</span><span class="n">add_features</span><span class="p">([</span><span class="n">ft</span><span class="p">])</span>
+            <span class="k">elif</span> <span class="n">is_sweepset_feature</span><span class="p">(</span><span class="n">ft</span><span class="p">):</span>
+                <span class="n">feature</span> <span class="o">=</span> <span class="n">ft</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">compute_at_init</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">features</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">feature</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">feature</span><span class="p">})</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Feature is not of a known type.&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="EphysSweepSet.clear_features"><a class="viewcode-back" href="../../ephyspy.html#ephyspy.sweeps.EphysSweepSet.clear_features">[docs]</a>    <span class="k">def</span> <span class="nf">clear_features</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Clear all features.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">features</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">features</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">sweep</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">sweeps</span><span class="p">():</span>
+            <span class="n">sweep</span><span class="o">.</span><span class="n">clear_features</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="EphysSweepSet.set_stimulus_amplitude_calculator"><a class="viewcode-back" href="../../ephyspy.html#ephyspy.sweeps.EphysSweepSet.set_stimulus_amplitude_calculator">[docs]</a>    <span class="k">def</span> <span class="nf">set_stimulus_amplitude_calculator</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set stimulus amplitude calculator for each sweep.</span>
+
+<span class="sd">        This is potentially only relevant for working with the AllenSDK and should</span>
+<span class="sd">        not be needed for using `ephyspy` on its own.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            func (Callable): Function to calculate stimulus amplitude.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">sweep</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">sweeps</span><span class="p">():</span>
+            <span class="n">sweep</span><span class="o">.</span><span class="n">set_stimulus_amplitude_calculator</span><span class="p">(</span><span class="n">func</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="EphysSweepSet.get_features"><a class="viewcode-back" href="../../ephyspy.html#ephyspy.sweeps.EphysSweepSet.get_features">[docs]</a>    <span class="k">def</span> <span class="nf">get_features</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">recompute</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute all features that have been added to the `EphysSweepSet` instance.</span>
+
+<span class="sd">        Includes all features that can be found in `self.features`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            recompute (bool, optional): Whether to force recomputation of the</span>
+<span class="sd">                features. Defaults to False.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Dict[str, float]: Dictionary of features and values.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;features&quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">features</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">{</span>
+                    <span class="n">k</span><span class="p">:</span> <span class="n">ft</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">recompute</span><span class="o">=</span><span class="n">recompute</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">ft</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">features</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                <span class="p">}</span></div>
+
+<div class="viewcode-block" id="EphysSweepSet.get_sweep_features"><a class="viewcode-back" href="../../ephyspy.html#ephyspy.sweeps.EphysSweepSet.get_sweep_features">[docs]</a>    <span class="k">def</span> <span class="nf">get_sweep_features</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">recompute</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Collect features on a sweep level.</span>
+
+<span class="sd">        This computes / looks up all features that have been computed at the</span>
+<span class="sd">        sweep level and returns them as a dictionary of lists. Each list contains</span>
+<span class="sd">        the values for the respective feature for each sweep, i.e.</span>
+<span class="sd">        `get_sweep_features()[feature_name][sweep_idx]` returns the value of</span>
+<span class="sd">        `feature_name` for the `sweep_idx`-th sweep.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            recompute (bool, optional): Whether to force recomputation of the</span>
+<span class="sd">                features. Defaults to False.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Dict[str, List[float]]: Dictionary of features and values.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;features&quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">features</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">LD</span> <span class="o">=</span> <span class="p">[</span><span class="n">sw</span><span class="o">.</span><span class="n">get_features</span><span class="p">(</span><span class="n">recompute</span><span class="o">=</span><span class="n">recompute</span><span class="p">)</span> <span class="k">for</span> <span class="n">sw</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">sweeps</span><span class="p">()]</span>
+                <span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="p">[</span><span class="n">dic</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">dic</span> <span class="ow">in</span> <span class="n">LD</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">LD</span><span class="p">[</span><span class="mi">0</span><span class="p">]}</span></div>
+
+<div class="viewcode-block" id="EphysSweepSet.plot"><a class="viewcode-back" href="../../ephyspy.html#ephyspy.sweeps.EphysSweepSet.plot">[docs]</a>    <span class="k">def</span> <span class="nf">plot</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Axes</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">show_stimulus</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Axes</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Plot all sweeps in the set.</span>
+
+<span class="sd">        If no axes object is provided, one will be created. It will have one or</span>
+<span class="sd">        two subplots, depending on whether the stimulus is shown.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            ax (Axes, optional): Matplotlib axes to plot on.</span>
+<span class="sd">            show_stimulus (bool, optional): Whether to plot the stimulus. Defaults to False.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Axes: Matplotlib axes object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">show_stimulus</span><span class="p">:</span>
+                <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span>
+                    <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">gridspec_kw</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;height_ratios&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">]}</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">sweep</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">sweeps</span><span class="p">():</span>
+            <span class="n">sweep</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">show_stimulus</span><span class="o">=</span><span class="n">show_stimulus</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ax</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Jonas Beck.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
