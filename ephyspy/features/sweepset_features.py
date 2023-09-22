@@ -94,10 +94,7 @@ class APFeature(SweepSetFeature):
         """Select representative sweep and use its AP features to represent the
         entire sweepset.
 
-        description: 2nd AP (if only 1 AP -> select first) during stimulus that has
-        no NaNs in relevant spike features. If all APs have NaNs, return the AP during
-        stimulus that has the least amount of NaNs in the relevant features. This
-        avoids bad threshold detection at onset of stimulus.
+        description: sweep where the least amount of AP features are NaNs.
         """
         # TODO: Consult if this is sensible!
         relevant_ap_fts = [
@@ -386,7 +383,7 @@ class SweepSet_AP_latency(SweepSetFeature):
 class SweepSet_dfdI(SweepSetFeature):
     """Obtain sweepset level dfdI feature."""
 
-    # TODO: Keep `feature` around as input for API consistency?
+    # TODO: Keep `feature` input arg around for API consistency?
     def __init__(self, data=None, compute_at_init=True):
         super().__init__(
             swft.NullSweepFeature,
@@ -410,12 +407,12 @@ class SweepSet_dfdI(SweepSetFeature):
         i = stim_amp[is_depol]
 
         dfdi = float("nan")
-        has_spikes = ~np.isnan(f)
+        sweep_w_spikes = ~np.isnan(f)
         # TODO: Check if this is a sensible idea!!!
         # (In case of 4 nans for example this will skip, even though sweep has spikes)
-        if np.sum(has_spikes) > 4 and len(np.unique(f[:5])) > 3:
-            i_s = i[has_spikes][:5]
-            f_s = f[has_spikes][:5]
+        if np.sum(sweep_w_spikes) > 4 and len(np.unique(f[:5])) > 3:
+            i_s = i[sweep_w_spikes][:5]
+            f_s = f[sweep_w_spikes][:5]
 
             ransac.fit(i_s.reshape(-1, 1), f_s.reshape(-1, 1))
             dfdi = ransac.coef_[0, 0]

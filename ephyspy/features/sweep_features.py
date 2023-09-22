@@ -1666,10 +1666,14 @@ class APSweepFeature(SweepFeature):
         returns indices for the selected aps.
 
         description: Select a representative ap or set of aps based on a
-        given criterion. If none is provided, falls back to selecting all aps."""
+        given criterion. If none is provided, falls back to selecting all aps during stimulus.
+        """
         if self.ap_selector is None:
-            feature = self.lookup_spike_feature(self.name)
-            return np.arange(len(feature))
+            peak_t = self.lookup_spike_feature("peak_t")
+            onset = self.lookup_sweep_feature("stim_onset")
+            end = self.lookup_sweep_feature("stim_end")
+            stim_window = where_between(peak_t, onset, end)
+            return stim_window
         else:
             return self.ap_selector(data)
 
