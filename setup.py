@@ -11,16 +11,13 @@ EXTRAS = {
         "flake8",
         "autoflake",
         "pre-commit",
+        "pytest",
+        "pytest-cov",
     ]
 }
 
-REQUIRES = [
-    "pandas>=1.5.3",
-    "numpy>=1.23.5",
-    "matplotlib>=3.4.2",
-    "scipy>=1.9.1",
-    "scikit-learn>=1.1.1",  # might get rid of this in the future.
-]
+with open("requirements.txt", "r") as f:
+    REQUIRES = f.read().splitlines()
 
 here = os.path.abspath(os.path.dirname(__file__))
 
