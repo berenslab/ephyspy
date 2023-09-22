@@ -18,3 +18,6 @@ Alternatively, clone the package with `https://github.com/berenslab/ephyspy.git`
 
 ### Getting started
 To get started see [`example.ipynb`](https://github.com/berenslab/ephyspy/blob/main/example.ipynb).
+
+### Documentation
+All documentation can be found ["here](https://ephyspy.readthedocs.io/en/latest).
