@@ -10,7 +10,6 @@ import sys
 
 sys.path.insert(0, os.path.abspath(".."))
 
-
 project = "EphysPy"
 copyright = "2023, Jonas Beck"
 author = "Jonas Beck"
