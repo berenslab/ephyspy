@@ -4,7 +4,7 @@
 [![Tests](https://github.com/berenslab/ephyspy/workflows/Tests/badge.svg?branch=main)](https://github.com/berenslab/ephyspy/actions)
 [![codecov](https://codecov.io/gh/berenslab/ephyspy/branch/main/graph/badge.svg)](https://codecov.io/gh/berenslab/ephyspy)
 [![GitHub license](https://img.shields.io/github/license/berenslab/ephyspy)](https://github.com/berenslab/ephyspy/blob/main/LICENSE.txt)
-[![Docs](https://readthedocs.org/projects/ephyspy)](https://ephyspy.readthedocs.io)
+[![Documentation Status](https://readthedocs.org/projects/ephyspy/badge/?version=latest)](https://ephyspy.readthedocs.io/en/latest/?badge=latest)
 
 # EphysPy
 
