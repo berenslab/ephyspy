@@ -66,14 +66,14 @@ class Spike_AP_upstroke(SpikeFeature):
 
     depends on: /.
     description: upstroke of AP.
-    units: mV.
+    units: mV/s.
     """
 
     def __init__(self, data=None, compute_at_init=True):
         super().__init__(data, compute_at_init)
 
     def _compute(self, recompute=False, store_diagnostics=True):
-        upstroke = self.lookup_spike_feature("upstroke_v", recompute=recompute)
+        upstroke = self.lookup_spike_feature("upstroke", recompute=recompute)
         return upstroke
 
     def _plot(self, ax: Optional[Axes] = None, selected_idxs=None, **kwargs) -> Axes:
@@ -87,15 +87,15 @@ class Spike_AP_downstroke(SpikeFeature):
 
     depends on: /.
     description: downstroke of AP.
-    units: mV.
+    units: mV/s.
     """
 
     def __init__(self, data=None, compute_at_init=True):
         super().__init__(data, compute_at_init)
 
     def _compute(self, recompute=False, store_diagnostics=True):
-        upstroke = self.lookup_spike_feature("downstroke_v", recompute=recompute)
-        return upstroke
+        downstroke = self.lookup_spike_feature("downstroke", recompute=recompute)
+        return downstroke
 
     def _plot(self, ax: Optional[Axes] = None, selected_idxs=None, **kwargs) -> Axes:
         return scatter_spike_ft(

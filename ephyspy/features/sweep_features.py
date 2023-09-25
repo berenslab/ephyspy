@@ -1701,7 +1701,6 @@ class APSweepFeature(SweepFeature):
     def _compute(self, recompute=False, store_diagnostics=True):
         feature = self.lookup_spike_feature(self.name, recompute=recompute)
         ft_agg = float("nan")
-
         if len(feature) > 0:
             selected_idx = self._select(self.data)
             fts_selected = feature[selected_idx]
