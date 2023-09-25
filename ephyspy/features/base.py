@@ -72,6 +72,7 @@ class BaseFeature(ABC):
         data: Optional[EphysSweep] = None,
         compute_at_init: bool = True,
         name: Optional[str] = None,
+        store_with_data: bool = True,
     ):
         r"""
         Args:
@@ -84,6 +85,8 @@ class BaseFeature(ABC):
                 the features are actually needed.
             name: Custom name of the feature. If None, the name of the feature
                 class is used.
+            store_with_data: If True, store the feature in the `self.data.features`
+                dictionary.
         """
         self.name = self.__class__.__name__.lower() if name is None else name
         self.name = (
@@ -93,7 +96,8 @@ class BaseFeature(ABC):
         )
         self._value = None
         self._diagnostics = None
-        self._data_init(data)
+        self.store_with_data = store_with_data
+        self._data_init_incl_storage(data)
         if not data is None and compute_at_init:
             self.get_value()
 
@@ -105,6 +109,11 @@ class BaseFeature(ABC):
             self.depends_on = None if not "depends on" in attrs else attrs["depends on"]
             self.units = None if not "units" in attrs else attrs["units"]
             self.units = "" if self.units == "/" else self.units
+
+    def _data_init_incl_storage(self, data: Union[EphysSweep, EphysSweepSet]):
+        self._data_init(data)
+        if not self.store_with_data and not self.data is None:
+            self.data.features.pop(self.name)
 
     @abstractmethod
     def _data_init(self, data: Union[EphysSweep, EphysSweepSet]):
@@ -260,6 +269,7 @@ class BaseFeature(ABC):
         data: EphysSweep = None,
         compute: bool = False,
         store_diagnostics: bool = True,
+        store_with_data: bool = True,
         return_value: bool = False,
     ) -> Union[float, SweepFeature]:
         """Compute the feature for a given dataset.
@@ -273,13 +283,16 @@ class BaseFeature(ABC):
                 computed.
             store_diagnostics: If True, store any additional information about
                 the feature computation in the `_diagnostics` attribute.
+            store_with_data: If True, store the feature in the `self.data.features`
+                dictionary.
             return_value: If True, return the value of the feature, otherwise
                 return the feature object.
 
         Returns:
             The value of the feature.
         """
-        self._data_init(data)
+        self.store_with_data = store_with_data
+        self._data_init_incl_storage(data)
         if compute:
             self.get_value(
                 recompute=True,
@@ -633,6 +646,7 @@ class SweepFeature(BaseFeature):
         data: Optional[EphysSweep] = None,
         compute_at_init: bool = True,
         name: Optional[str] = None,
+        store_with_data: bool = True,
     ):
         r"""
         Args:
@@ -645,8 +659,10 @@ class SweepFeature(BaseFeature):
                 the features are actually needed.
             name: Custom name of the feature. If None, the name of the feature
                 class is used.
+            store_with_data: If True, store the feature in the `self.data.features`
+                dictionary.
         """
-        super().__init__(data, compute_at_init, name)
+        super().__init__(data, compute_at_init, name, store_with_data)
 
     def _data_init(self, data: EphysSweep):
         """Initialize the feature with a EphysSweep object.
@@ -843,6 +859,7 @@ class SweepSetFeature(SweepFeature):
         data: Optional[EphysSweepSet] = None,
         compute_at_init: bool = True,
         name: Optional[str] = None,
+        store_with_data: bool = True,
     ):
         """Initialize the SweepSetFeature.
 
@@ -858,6 +875,8 @@ class SweepSetFeature(SweepFeature):
             compute_at_init: If True, compute the feature at initialization.
             name: Custom name of the feature. If None, the name of the feature
                 class is used.
+            store_with_data: If True, store the feature in the `self.data.features`
+                dictionary.
         """
         self.SwFt = SwFt
         ft_cls = SwFt().__class__
@@ -865,7 +884,8 @@ class SweepSetFeature(SweepFeature):
         self.name = SwFt().name if name is None else name
         self._value = None
         self._diagnostics = None
-        self._data_init(data)
+        self.store_with_data = store_with_data
+        self._data_init_incl_storage(data)
         if not data is None and compute_at_init:
             self.get_value()
 
@@ -879,6 +899,11 @@ class SweepSetFeature(SweepFeature):
     def dataset(self):
         """Proxy for self.data at the sweepset level."""
         return np.array([ft for ft in self])
+
+    def _data_init_incl_storage(self, data: EphysSweepSet):
+        self._data_init(data)
+        if not self.store_with_data and not self.data is None:
+            self.data.features.pop(self.name)
 
     def _data_init(self, data: EphysSweepSet):
         """Initialize the feature with a EphysSweepSet object.
@@ -920,6 +945,7 @@ class SweepSetFeature(SweepFeature):
         data: EphysSweepSet = None,
         compute: bool = False,
         store_diagnostics: bool = True,
+        store_with_data: bool = True,
         return_value: bool = False,
     ) -> Union[SweepSetFeature, float]:
         """Compute the feature for a given dataset.
@@ -933,13 +959,16 @@ class SweepSetFeature(SweepFeature):
                 computed.
             store_diagnostics: If True, store any additional information about
                 the feature computation in the `_diagnostics` attribute.
+            store_with_data: If True, store the feature in the `self.data.features`
+                dictionary.
             return_value: If True, return the value of the feature, otherwise
                 return the feature object.
 
         Returns:
             The value of the feature.
         """
-        self._data_init(data)
+        self.store_with_data = store_with_data
+        self._data_init_incl_storage(data)
         if compute:
             self.get_value(
                 recompute=True,

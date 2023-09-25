@@ -94,7 +94,7 @@ class NullSweepFeature(SweepFeature):
     units: /."""
 
     def __init__(self, data=None, compute_at_init=True, name=None):
-        super().__init__(data, compute_at_init, name=name)
+        super().__init__(data, compute_at_init, name=name, store_with_data=False)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         return
