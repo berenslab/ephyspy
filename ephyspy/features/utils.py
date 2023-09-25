@@ -19,7 +19,7 @@ from __future__ import annotations
 import inspect
 import sys
 import warnings
-from typing import TYPE_CHECKING, Any, Callable, List, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, List, Tuple, Union, Dict
 
 import numpy as np
 from numpy import ndarray
@@ -126,15 +126,18 @@ def get_sweep_burst_metrics(
     return idx_burst, idx_burst_start.astype(int), idx_burst_end.astype(int)
 
 
-def get_sweep_sag_idxs(
-    sag_instance: Any, recompute: bool = False, store_diagnostics=False
-) -> ndarray:
+def sag_idxs(
+    sweep, v_steady, start, end, return_diagnostics: bool = True
+) -> Tuple[ndarray, Dict]:
     """determine idxs in a sweep that are part of the sag.
 
     description: all idxs below steady state and during stimulus.
 
     Args:
-        feature (EphysSweep): sag_feature object.
+        sweep (EphysSweep): Sweep to check for sag.
+        v_steady (float): Steady state voltage during hyperpolarization.
+        start (float): Start of stimulus.
+        end (float): End of stimulus.
 
     Returns:
         boolean array with length of sweep.t; where sag.
@@ -146,12 +149,8 @@ def get_sweep_sag_idxs(
     # set all True ones after to False
     # also if steady state is never reached again, sag will be massive
     # -> set all idxs to False ?
-    sweep = sag_instance.data
     v_deflect = sweep.voltage_deflection("min")[0]
-    v_steady = sag_instance.lookup_sweep_feature("v_deflect", recompute=recompute)
     if v_steady - v_deflect > 4:  # The sag should have a minimum depth of 4 mV
-        start = sag_instance.lookup_sweep_feature("stim_onset", recompute=recompute)
-        end = sag_instance.lookup_sweep_feature("stim_end", recompute=recompute)
         where_stimulus = np.logical_and(
             sweep.t > start, sweep.t < end
         )  # same as where_between (saves on import)
@@ -159,17 +158,35 @@ def get_sweep_sag_idxs(
     else:
         sag_idxs = np.zeros_like(sweep.t, dtype=bool)
 
-    if store_diagnostics:
-        sag_instance._update_diagnostics(
-            {
-                "sag_idxs": sag_idxs,
-                "v_deflect": v_deflect,
-                "v_steady": v_steady,
-                "t_sag": sweep.t[sag_idxs],
-                "v_sag": sweep.v[sag_idxs],
-            }
-        )
+    if return_diagnostics:
+        diagnostics = {
+            "sag_idxs": np.where(sag_idxs)[0],
+            "v_deflect": v_deflect,
+            "v_steady": v_steady,
+            "t_sag": sweep.t[sag_idxs],
+            "v_sag": sweep.v[sag_idxs],
+        }
+        return sag_idxs, diagnostics
     return sag_idxs
+
+
+def sag_period(sweep: EphysSweep, where_sag: ndarray) -> float:
+    """Calculate duration of sag.
+
+    Args:
+        sweep (EphysSweep): Sweep to calculate sag duration for.
+        where_sag (ndarray): Boolean array with length of sweep.t; True where
+            the voltage is below the deflection steady state.
+
+    Returns:
+        float: Duration of sag."""
+    if np.any(where_sag):
+        t = sweep.t
+        t_sag = t[where_sag]
+        return np.diff(t[where_sag][[0, -1]]).item()  # T of entire sag interval
+        # return np.sum(np.diff(t_sag))  # duration of sag
+    else:
+        return 0
 
 
 def where_stimulus(data: Union[EphysSweep, EphysSweepSet]) -> Union[bool, ndarray]:

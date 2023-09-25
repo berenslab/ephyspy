@@ -31,12 +31,13 @@ from ephyspy.features.utils import (
     FeatureError,
     fetch_available_fts,
     get_sweep_burst_metrics,
-    get_sweep_sag_idxs,
+    sag_idxs,
     has_rebound,
     has_spikes,
     has_stimulus,
     is_hyperpol,
     median_idx,
+    sag_period,
     where_stimulus,
 )
 from ephyspy.utils import (
@@ -756,8 +757,8 @@ class Sweep_V_sag(SweepFeature):
     def _compute(self, recompute=False, store_diagnostics=True):
         v_sag = float("nan")
         if is_hyperpol(self.data):
-            where_sag = get_sweep_sag_idxs(self, store_diagnostics=store_diagnostics)
-            if np.sum(where_sag) > 10:  # TODO: what should be min sag duration!?
+            T_sag = self.lookup_sweep_feature("sag_time", recompute=recompute)
+            if not np.isnan(T_sag):
                 # The following can also be found in sweep.estimate_sag()
                 v_deflect, idx_deflect = self.data.voltage_deflection("min")
 
@@ -789,7 +790,6 @@ class Sweep_V_sag(SweepFeature):
                     if store_diagnostics:
                         self._update_diagnostics(
                             {
-                                "where_sag": where_sag,
                                 "v_deflect": v_deflect,
                                 "idx_deflect": idx_deflect,
                                 "t_deflect": t_deflect,
@@ -821,8 +821,8 @@ class Sweep_Sag(SweepFeature):
     def _compute(self, recompute=False, store_diagnostics=True):
         sag = float("nan")
         if is_hyperpol(self.data):
-            where_sag = get_sweep_sag_idxs(self, store_diagnostics=store_diagnostics)
-            if np.sum(where_sag) > 10:  # TODO: what should be min sag duration!?
+            T_sag = self.lookup_sweep_feature("sag_time", recompute=recompute)
+            if not np.isnan(T_sag):
                 v_sag = self.lookup_sweep_feature("v_sag", recompute=recompute)
                 v_baseline = self.lookup_sweep_feature(
                     "v_baseline", recompute=recompute
@@ -833,7 +833,6 @@ class Sweep_Sag(SweepFeature):
                     self._update_diagnostics(
                         {
                             "v_sag": v_sag,
-                            "where_sag": where_sag,
                             "v_baseline": v_baseline,
                         }
                     )
@@ -897,8 +896,8 @@ class Sweep_Sag_fraction(SweepFeature):
     def _compute(self, recompute=False, store_diagnostics=True):
         sag_fraction = float("nan")
         if is_hyperpol(self.data):
-            where_sag = get_sweep_sag_idxs(self, store_diagnostics=store_diagnostics)
-            if np.sum(where_sag) > 10:  # TODO: what should be min sag duration!?
+            T_sag = self.lookup_sweep_feature("sag_time", recompute=recompute)
+            if not np.isnan(T_sag):
                 sag = self.lookup_sweep_feature("sag", recompute=recompute)
                 v_sag = self.lookup_sweep_feature("v_sag", recompute=recompute)
                 v_steady = self.lookup_sweep_feature("v_steady", recompute=recompute)
@@ -910,7 +909,6 @@ class Sweep_Sag_fraction(SweepFeature):
                         {
                             "sag": sag,
                             "v_sag": v_sag,
-                            "where_sag": where_sag,
                             "v_steady": v_steady,
                         }
                     )
@@ -941,8 +939,8 @@ class Sweep_Sag_ratio(SweepFeature):
     def _compute(self, recompute=False, store_diagnostics=True):
         sag_ratio = float("nan")
         if is_hyperpol(self.data):
-            where_sag = get_sweep_sag_idxs(self, store_diagnostics=store_diagnostics)
-            if np.sum(where_sag) > 10:  # TODO: what should be min sag duration!?
+            T_sag = self.lookup_sweep_feature("sag_time", recompute=recompute)
+            if not np.isnan(T_sag):
                 sag = self.lookup_sweep_feature("sag", recompute=recompute)
                 v_steady = self.lookup_sweep_feature("v_steady", recompute=recompute)
                 v_baseline = self.lookup_sweep_feature(
@@ -955,7 +953,6 @@ class Sweep_Sag_ratio(SweepFeature):
                     self._update_diagnostics(
                         {
                             "sag": sag,
-                            "where_sag": where_sag,
                             "v_baseline": v_baseline,
                             "v_steady": v_steady,
                         }
@@ -987,8 +984,11 @@ class Sweep_Sag_area(SweepFeature):
     def _compute(self, recompute=False, store_diagnostics=True):
         sag_area = float("nan")
         if is_hyperpol(self.data):
-            where_sag = get_sweep_sag_idxs(self, store_diagnostics=store_diagnostics)
-            if np.sum(where_sag) > 10:  # TODO: what should be min sag duration!?
+            T_sag = self.lookup_sweep_feature(
+                "sag_time", recompute=recompute, return_value=False
+            )
+            if not np.isnan(T_sag.value):
+                where_sag = unpack(T_sag.diagnostics, "where_sag")
                 v_sag = self.data.v[where_sag]
                 t_sag = self.data.t[where_sag]
                 v_sagline = v_sag[0]
@@ -998,7 +998,6 @@ class Sweep_Sag_area(SweepFeature):
                     if store_diagnostics:
                         self._update_diagnostics(
                             {
-                                "where_sag": where_sag,
                                 "v_sag": v_sag,
                                 "t_sag": t_sag,
                                 "v_sagline": v_sagline,
@@ -1023,17 +1022,24 @@ class Sweep_Sag_time(SweepFeature):
     description: duration of the sag.
     units: s."""
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, compute_at_init=True, min_T_sag=0.005):
+        self.min_T_sag = min_T_sag
+        super().__init__(data, compute_at_init=False)
+        if compute_at_init and data is not None:  # because of peak_width
+            self.get_value()
 
     def _compute(self, recompute=False, store_diagnostics=True):
         sag_time = float("nan")
         if is_hyperpol(self.data):
-            where_sag = get_sweep_sag_idxs(self, store_diagnostics=store_diagnostics)
-            if np.sum(where_sag) > 10:  # TODO: what should be min sag duration!?
+            v_steady = self.lookup_sweep_feature("v_deflect", recompute=recompute)
+            start = self.lookup_sweep_feature("stim_onset", recompute=recompute)
+            end = self.lookup_sweep_feature("stim_end", recompute=recompute)
+            where_sag, sag_diagnostics = sag_idxs(self.data, v_steady, start, end)
+            sag_time = sag_period(self.data, where_sag)
+            if sag_time >= self.min_T_sag:  # sensible min probably 5-10ms
                 sag_t_start, sag_t_end = self.data.t[where_sag][[0, -1]]
-                sag_time = sag_t_end - sag_t_start
                 if store_diagnostics:
+                    self._update_diagnostics(sag_diagnostics)
                     self._update_diagnostics(
                         {
                             "where_sag": where_sag,
@@ -1041,6 +1047,8 @@ class Sweep_Sag_time(SweepFeature):
                             "sag_t_end": sag_t_end,
                         }
                     )
+            else:
+                sag_time = float("nan")
         return sag_time
 
     def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
