@@ -10,7 +10,7 @@
 
 ### Package to extract electrophysiological features from current clamp experiments.
 
-This package provies an API to extract a multitude of features from voltage clamp recordings with the help of the [AllenSDK](https://allensdk.readthedocs.io/en/latest/allensdk.ephys.html). 
+This package provides an API to extract a multitude of features from voltage clamp recordings with the help of the [AllenSDK](https://allensdk.readthedocs.io/en/latest/allensdk.ephys.html). 
 
 ### Installation
 The package can be installed via `pip install ephyspy`.
@@ -21,3 +21,6 @@ To get started see [`example.ipynb`](https://github.com/berenslab/ephyspy/blob/m
 
 ### Documentation
 All documentation can be found [here](https://ephyspy.readthedocs.io/en/latest).
+
+### Acknowledgments
+This package builds on previous work by @ybernaerts which was part of the [Phenotypic variation of transcriptomic cell types in mouse motor cortex atlas](https://github.com/berenslab/mini-atlas), which itself was built around the [AllenSDK](https://allensdk.readthedocs.io/en/latest/allensdk.ephys.html).
