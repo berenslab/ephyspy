@@ -19,7 +19,7 @@ from __future__ import annotations
 import inspect
 import sys
 import warnings
-from typing import TYPE_CHECKING, Any, Callable, List, Tuple, Union, Dict
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Tuple, Union
 
 import numpy as np
 from numpy import ndarray

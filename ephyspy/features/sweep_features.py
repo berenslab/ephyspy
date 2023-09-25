@@ -31,12 +31,12 @@ from ephyspy.features.utils import (
     FeatureError,
     fetch_available_fts,
     get_sweep_burst_metrics,
-    sag_idxs,
     has_rebound,
     has_spikes,
     has_stimulus,
     is_hyperpol,
     median_idx,
+    sag_idxs,
     sag_period,
     where_stimulus,
 )
