@@ -23,4 +23,4 @@ To get started see [`example.ipynb`](https://github.com/berenslab/ephyspy/blob/m
 All documentation can be found [here](https://ephyspy.readthedocs.io/en/latest).
 
 ### Acknowledgments
-This package builds on previous work by @ybernaerts [Phenotypic variation of transcriptomic cell types in mouse motor cortex atlas](https://github.com/berenslab/mini-atlas) and the [AllenSDK](https://allensdk.readthedocs.io/en/latest/allensdk.ephys.html).
+This package builds on previous work by @ybernaerts, which was part of the [Phenotypic variation of transcriptomic cell types in mouse motor cortex atlas](https://github.com/berenslab/mini-atlas) and the [AllenSDK](https://allensdk.readthedocs.io/en/latest/allensdk.ephys.html).
