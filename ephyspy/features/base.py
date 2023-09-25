@@ -30,6 +30,7 @@ from ephyspy.utils import (
     is_sweep_feature,
     is_sweepset_feature,
     parse_deps,
+    parse_desc,
     parse_func_doc_attrs,
     unpack,
 )
@@ -101,6 +102,9 @@ class BaseFeature(ABC):
         if not data is None and compute_at_init:
             self.get_value()
 
+        self.parse_docstring()
+
+    def parse_docstring(self):
         if self.__class__.__doc__ is not None:
             attrs = parse_func_doc_attrs(self.__class__)
             self.description = (
@@ -891,7 +895,10 @@ class SweepSetFeature(SweepFeature):
 
         if ft_cls.__doc__ is not None:
             attrs = parse_func_doc_attrs(ft_cls)
-            self.description = attrs["description"]
+            select_desc = parse_desc(self._select)
+            agg_desc = parse_desc(self._aggregate)
+            ft_desc = parse_desc(ft_cls)
+            self.description = ft_desc + " " + select_desc + " " + agg_desc
             self.depends_on = parse_deps(attrs["depends on"])
             self.units = attrs["units"]
 

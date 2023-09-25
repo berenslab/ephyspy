@@ -123,6 +123,10 @@ class APFeature(SweepSetFeature):
         return fts[idx]
 
     def _aggregate(self, fts):
+        """Compute aggregate metrics on subset of sweeps.
+
+        description: /.
+        """
         self._update_diagnostics(
             {"aggregation": "not an aggregate features, only single index is selected."}
         )
@@ -148,7 +152,8 @@ class ReboundFeature(SweepSetFeature):
         entire sweepset.
 
         description: Lowest hyperpolarization sweep. If 3 lowest sweeps are NaN,
-        then the first sweep is selected, meaning the feature is set to NaN."""
+        then the first sweep is selected, meaning the feature is set to NaN.
+        """
         rebound = self.lookup_sweep_feature("rebound")
         nan_rebounds = np.isnan(rebound)
         if all(nan_rebounds[:3]):
@@ -162,6 +167,10 @@ class ReboundFeature(SweepSetFeature):
         return fts[idx]
 
     def _aggregate(self, fts):
+        """Compute aggregate metrics on subset of sweeps.
+
+        description: /.
+        """
         self._update_diagnostics(
             {"aggregation": "not an aggregate features, only single index is selected."}
         )
@@ -187,7 +196,8 @@ class SagFeature(SweepSetFeature):
 
         description: Lowest hyperpolarization sweep that is not NaN. If 3 lowest
         sweeps are NaN, then the first sweep is selected, meaning the feature is set
-        to NaN."""
+        to NaN.
+        """
         sag = self.lookup_sweep_feature("sag")
         nan_sags = np.isnan(sag)
         if all(nan_sags[:3]):
@@ -201,6 +211,10 @@ class SagFeature(SweepSetFeature):
         return fts[idx]
 
     def _aggregate(self, fts):
+        """Compute aggregate metrics on subset of sweeps.
+
+        description: /.
+        """
         self._update_diagnostics(
             {"aggregation": "not an aggregate features, only single index is selected."}
         )
@@ -228,7 +242,8 @@ class APsFeature(SweepSetFeature):
         """Select representative sweep and use its spiking features to represent the
         entire sweepset.
 
-        description: Highest non wild trace (wildness == cell dying)."""
+        description: Highest non wild trace (wildness == cell dying).
+        """
         num_spikes = self.lookup_sweep_feature("num_ap")
         wildness = self.lookup_sweep_feature("wildness")
         is_non_wild = np.isnan(wildness)
@@ -243,6 +258,10 @@ class APsFeature(SweepSetFeature):
         return fts[idx]
 
     def _aggregate(self, fts):
+        """Compute aggregate metrics on subset of sweeps.
+
+        description: /.
+        """
         self._update_diagnostics(
             {"aggregation": "not an aggregate features, only single index is selected."}
         )
@@ -264,7 +283,8 @@ class MaxFeature(SweepSetFeature):
         """Select representative sweep and use its features to represent the
         entire sweepset.
 
-        description: select arg max."""
+        description: select arg max.
+        """
         fts = self.lookup_sweep_feature(self.name)
         idx = slice(0) if np.isnan(fts).all() else np.nanargmax(fts)
         self._update_diagnostics(
@@ -276,6 +296,10 @@ class MaxFeature(SweepSetFeature):
         return np.array([float("nan")]) if np.isnan(fts).all() else fts[idx]
 
     def _aggregate(self, fts):
+        """Compute aggregate metrics on subset of sweeps.
+
+        description: /.
+        """
         self._update_diagnostics({"aggregation": "select max feature."})
         return fts.item()
 
@@ -298,8 +322,8 @@ class First5MedianFeature(SweepSetFeature):
         """Select representative sweep and use its features to represent the
         entire sweepset.
 
-        description: select all features."""
-
+        description: select first 5 none nan features.
+        """
         na_fts = np.isnan(fts)
         if not np.all(na_fts):
             first5 = fts[~na_fts][:5]
@@ -311,6 +335,10 @@ class First5MedianFeature(SweepSetFeature):
         return np.array([])
 
     def _aggregate(self, fts):
+        """Compute aggregate metric on subset of sweeps.
+
+        description: compute the median.
+        """
         self._update_diagnostics({"aggregation": "select median feature."})
         if np.isnan(fts).all() or len(fts) == 0:
             self._update_diagnostics({"selected_idx": slice(0)})
@@ -331,17 +359,22 @@ class HyperpolMedianFeature(SweepSetFeature):
         """Select representative sweep and use its features to represent the
         entire sweepset.
 
-        description: select all features."""
+        description: select all hyperpolarizing sweeps.
+        """
         is_hyperpol = self.lookup_sweep_feature("stim_amp") < 0
         where_value = np.where(is_hyperpol)[0]
         self._update_diagnostics({"hyperpol_idx": where_value})
         return fts[is_hyperpol]
 
     def _aggregate(self, fts):
+        """Compute aggregate metric on subset of sweeps.
+
+        description: compute the median.
+        """
         hyperpol_idx = self.diagnostics["hyperpol_idx"]
         self._update_diagnostics(
             {
-                "aggregation": "select median feature.",
+                "aggregation": "median.",
                 "selected_idx": hyperpol_idx[median_idx(fts)],
             }
         )
@@ -361,7 +394,8 @@ class SweepSet_AP_latency(SweepSetFeature):
         """Select representative sweep and use its sag features to represent the
         entire sweepset.
 
-        description: first depolarization trace that has non-nan ap_latency."""
+        description: first depolarization trace that has non-nan ap_latency.
+        """
         is_depol = self.lookup_sweep_feature("stim_amp") > 0
         ap_latency = self.lookup_sweep_feature("ap_latency")
         idx = pd.Series(is_depol).index[is_depol & ~np.isnan(ap_latency)][0]
@@ -374,6 +408,10 @@ class SweepSet_AP_latency(SweepSetFeature):
         return fts[idx]
 
     def _aggregate(self, fts):
+        """Compute aggregate metrics on subset of sweeps.
+
+        description: /.
+        """
         self._update_diagnostics(
             {"aggregation": "not an aggregate features, only single index is selected."}
         )
@@ -381,7 +419,13 @@ class SweepSet_AP_latency(SweepSetFeature):
 
 
 class SweepSet_dfdI(SweepSetFeature):
-    """Obtain sweepset level dfdI feature."""
+    """Obtain sweepset level dfdI feature.
+
+    description: The slope of the linear fit of the first 5 depolarizing current
+    injections. It is computed by fitting a line to the first 5 depolarizing
+    current injections and finding the slope.
+    depends on: Sweep_AP_freq, Sweep_Stim_amp.
+    units: Hz/pA."""
 
     # TODO: Keep `feature` input arg around for API consistency?
     def __init__(self, data=None, compute_at_init=True):
@@ -391,11 +435,21 @@ class SweepSet_dfdI(SweepSetFeature):
             compute_at_init=compute_at_init,
             name="dfdI",
         )
+        self.parse_docstring()
 
     def _select(self, fts):
+        """Select representative sweep and use its features to represent the
+        entire sweepset.
+
+        description: /.
+        """
         return fts
 
     def _aggregate(self, fts):
+        """Compute aggregate metrics on subset of sweeps.
+
+        description: /.
+        """
         return fts.item()
 
     def _compute(self, recompute=False, store_diagnostics=False):
@@ -456,7 +510,14 @@ class SweepSet_dfdI(SweepSetFeature):
 
 
 class SweepSet_Rheobase(SweepSetFeature):
-    """Obtain sweepset level rheobase feature."""
+    """Obtain sweepset level rheobase feature.
+
+    description: The minimum current amplitude required to elicit an action
+    potential. It is computed by fitting a line to the first 5 depolarizing
+    current injections and finding the intercept with the x-axis.
+    depends on: SweepSet_dfdI, Sweep_AP_freq, Sweep_Stim_amp.
+    units: pA.
+    """
 
     def __init__(self, data=None, compute_at_init=True, dc_offset=0):
         self.dc_offset = dc_offset
@@ -466,11 +527,21 @@ class SweepSet_Rheobase(SweepSetFeature):
             compute_at_init=compute_at_init,
             name="rheobase",
         )
+        self.parse_docstring()
 
     def _select(self, fts):
+        """Select representative sweep and use its features to represent the
+        entire sweepset.
+
+        description: /.
+        """
         return fts
 
     def _aggregate(self, fts):
+        """Compute aggregate metrics on subset of sweeps.
+
+        description: /.
+        """
         return fts.item()
 
     def _compute(self, recompute=False, store_diagnostics=False):
@@ -558,7 +629,13 @@ class SweepSet_Rheobase(SweepSetFeature):
 
 
 class SweepSet_R_input(SweepSetFeature):
-    """Obtain sweepset level r_input feature."""
+    """Obtain sweepset level r_input feature.
+
+    description: The slope of the linear fit of the voltage deflection vs. the
+    stimulus amplitude for hyperpolarizing current injections.
+    depends on: Sweep_V_deflect, Sweep_Stim_amp.
+    units: MOhm.
+    """
 
     def __init__(self, data=None, compute_at_init=True):
         super().__init__(
@@ -566,19 +643,29 @@ class SweepSet_R_input(SweepSetFeature):
             data=data,
             compute_at_init=compute_at_init,
         )
+        self.parse_docstring()
 
     def _select(self, fts):
+        """Select representative sweep and use its features to represent the
+        entire sweepset.
+
+        description: /.
+        """
         return fts
 
     def _aggregate(self, fts):
+        """Compute aggregate metrics on subset of sweeps.
+
+        description: /.
+        """
         return fts.item()
 
     def _compute(self, recompute=False, store_diagnostics=False):
         r_input = float("nan")
-        is_hyperpol = self.lookup_sweep_feature("stim_amp", recompute=recompute) < 0
-        v_deflect = self.lookup_sweep_feature("v_deflect", recompute=recompute)
-        v_deflect = v_deflect[is_hyperpol].reshape(-1, 1)
         i_amp = self.lookup_sweep_feature("stim_amp", recompute=recompute)
+        v_deflect = self.lookup_sweep_feature("v_deflect", recompute=recompute)
+        is_hyperpol = i_amp < 0
+        v_deflect = v_deflect[is_hyperpol].reshape(-1, 1)
         i_amp = i_amp[is_hyperpol].reshape(-1, 1)
 
         if len(v_deflect) >= 3:
@@ -618,7 +705,15 @@ class SweepSet_R_input(SweepSetFeature):
 
 
 class SweepSet_Slow_hyperpolarization(SweepSetFeature):
-    """Obtain sweepset level slow_hyperpolarization feature."""
+    """Obtain sweepset level slow_hyperpolarization feature.
+
+    description: The maximum hyperpolarization voltage across the resting state
+    taking the first sweep that has an action potential "0".
+    Drop in resting state potential is due to autoinhibition and recruitment
+    of calcium-activated currents.
+    depends on: Sweep_Num_AP, Sweep_V_baseline.
+    units: mV.
+    """
 
     def __init__(self, data=None, compute_at_init=True):
         super().__init__(
@@ -627,17 +722,27 @@ class SweepSet_Slow_hyperpolarization(SweepSetFeature):
             compute_at_init=compute_at_init,
             name="slow_hyperpolarization",
         )
+        self.parse_docstring()
 
     def _select(self, fts):
+        """Select representative sweep and use its features to represent the
+        entire sweepset.
+
+        description: /.
+        """
         return fts
 
     def _aggregate(self, fts):
+        """Compute aggregate metrics on subset of sweeps.
+
+        description: /.
+        """
         return fts.item()
 
     def _compute(self, recompute=False, store_diagnostics=False):
-        # is_hyperpol = self.lookup_sweep_feature("stim_amp", recompute=recompute) < 0
-        # TODO: ASK IF THIS IS ONLY TAKEN FOR HYPERPOLARIZING TRACES (I THINK NOT)
+        has_aps = self.lookup_sweep_feature("num_ap", recompute=recompute) > 0
         v_baseline = self.lookup_sweep_feature("v_baseline", recompute=recompute)
+        v_baseline = v_baseline[has_aps]
 
         slow_hyperpolarization = v_baseline.max() - v_baseline.min()
 
@@ -713,18 +818,23 @@ class SweepSet_Rebound(ReboundFeature):
 
 
 class SweepSet_Rebound_APs(SweepSetFeature):
-    """Obtain sweepset level rebound APs feature."""
+    """Obtain sweepset level rebound APs feature.
+
+    description: Number of rebound APs.
+    depends on: Sweep_Rebound_APs.
+    units: /."""
 
     def __init__(self, data=None, compute_at_init=True):
         super().__init__(
             swft.Sweep_Rebound_APs, data=data, compute_at_init=compute_at_init
         )
+        self.parse_docstring()
 
     def _select(self, fts):
         """Select representative sweep and use its rebound features to represent the
         entire sweepset.
 
-        description: Max rebound of the 3 lowest sweeps hyperpolarization sweeps.
+        description: 3 lowest hyperpolarization sweeps.
         """
         num_rebound = self.lookup_sweep_feature("rebound_aps")
         nan_rebounds = np.isnan(num_rebound)
@@ -739,6 +849,10 @@ class SweepSet_Rebound_APs(SweepSetFeature):
         return fts[idx]
 
     def _aggregate(self, fts):
+        """Compute aggregate metrics on subset of sweeps.
+
+        description: maximum.
+        """
         self._update_diagnostics(
             {"aggregation": "not an aggregate features, only single index is selected."}
         )
@@ -911,6 +1025,13 @@ class SweepSet_Wildness(MaxFeature):
 
 
 class NullSweepSetFeature(SweepSetFeature):
+    """Obtain sweepset level null feature.
+
+    description: This feature acts as a placeholder or null feature.
+    depends on: /.
+    units: /.
+    """
+
     def __init__(self, data=None, compute_at_init=True):
         super().__init__(
             swft.NullSweepFeature,
@@ -918,11 +1039,21 @@ class NullSweepSetFeature(SweepSetFeature):
             compute_at_init=compute_at_init,
             name="null_sweepset_feature",
         )
+        self.parse_docstring()
 
     def _select(self, fts):
+        """Select representative sweep and use its features to represent the
+        entire sweepset.
+
+        description: /.
+        """
         return fts
 
     def _aggregate(self, fts):
+        """Compute aggregate metrics on subset of sweeps.
+
+        description: /.
+        """
         return fts.item()
 
     def _compute(self, recompute=False, store_diagnostics=False):

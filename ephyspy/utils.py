@@ -152,6 +152,7 @@ def scatter_spike_ft(
     return ax
 
 
+# TODO: FIX ISSUES WITH DOCSTRING PARSING: trailing ' and parsing despite line breaks
 def parse_func_doc_attrs(func: Callable) -> Dict:
     """Parses docstrings for attributes.
 
@@ -210,6 +211,8 @@ def parse_desc(func: Callable) -> str:
         str: Description of function."""
     dct = parse_func_doc_attrs(func)
     if "description" in dct:
+        if "/." in dct["description"]:
+            return ""
         return dct["description"]
     return ""
 
