@@ -89,11 +89,27 @@ class SweepTestFeature(SweepFeature):
 
 
 class SweepSetTestFeature(SweepSetFeature):
+    """Extract sweep set level V(t_thresh0) feature.
+
+    depends on: SweepTestFeature.
+    description: V(t=t_thresh0).
+    units: mV.
+    """
+
     def __init__(self, data=None, compute_at_init=True):
         super().__init__(SweepTestFeature, data=data, compute_at_init=compute_at_init)
 
     def _select(self, fts):
+        """Select representative sweep and use its features to represent the
+        entire sweepset.
+
+        description: /.
+        """
         return fts
 
     def _aggregate(self, fts):
+        """Compute aggregate metrics on subset of sweeps.
+
+        description: take the mean.
+        """
         return np.nanmean(fts).item()
