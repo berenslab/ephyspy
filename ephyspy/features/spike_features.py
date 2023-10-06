@@ -244,6 +244,38 @@ class Spike_AP_ADP(SpikeFeature):
         return ax
 
 
+class Spike_AP_ADP_trough(SpikeFeature):
+    """Extract spike level after depolarization feature.
+
+    depends on: adp_v.
+    description: |v_adp|.
+    units: mV.
+    """
+
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(data, compute_at_init)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        v_adp = self.lookup_spike_feature("adp_v", recompute=recompute)
+        return np.abs(v_adp)
+
+    def _plot(self, ax: Optional[Axes] = None, selected_idxs=None, **kwargs) -> Axes:
+        if has_spike_feature(self.data, "ap_adp"):
+            idxs = slice(None) if selected_idxs is None else selected_idxs
+            adp_t = self.lookup_spike_feature("adp_t")[idxs]
+            adp_v = self.lookup_spike_feature("adp_v")[idxs]
+            ax.vlines(
+                adp_t,
+                adp_v,
+                0,
+                ls="--",
+                lw=1,
+                label="adp trough",
+                **kwargs,
+            )
+        return ax
+
+
 class Spike_AP_peak(SpikeFeature):
     """Extract spike level peak feature.
 
@@ -262,6 +294,28 @@ class Spike_AP_peak(SpikeFeature):
     def _plot(self, ax: Optional[Axes] = None, selected_idxs=None, **kwargs) -> Axes:
         return scatter_spike_ft(
             "peak", self.data, ax=ax, selected_idxs=selected_idxs, **kwargs
+        )
+
+
+class Spike_AP_overshoot(SpikeFeature):
+    """Extract spike level overshoot feature.
+
+    depends on: peak_v.
+    description: max voltage of AP above 0 mV.
+    units: mV.
+    """
+
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(data, compute_at_init)
+
+    def _compute(self, recompute=False, store_diagnostics=True):
+        v_peak = self.lookup_spike_feature("peak_v", recompute=recompute)
+        v_peak[v_peak < 0] = float("nan")
+        return v_peak
+
+    def _plot(self, ax: Optional[Axes] = None, selected_idxs=None, **kwargs) -> Axes:
+        return scatter_spike_ft(
+            "overshoot", self.data, ax=ax, selected_idxs=selected_idxs, **kwargs
         )
 
 
