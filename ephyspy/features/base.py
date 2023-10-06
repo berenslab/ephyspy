@@ -1095,7 +1095,7 @@ class SweepSetFeature(SweepFeature):
             return ft.get_value(recompute=recompute)
         return ft
 
-    @abstractmethod
+    # @abstractmethod
     def _select(self, fts: ndarray) -> ndarray:
         """Select a subset of the feature values.
 
@@ -1113,9 +1113,9 @@ class SweepSetFeature(SweepFeature):
         """
         make_selection = lambda fts: fts
         self._update_diagnostics({})
-        return float(make_selection(fts))
+        return make_selection(fts)
 
-    @abstractmethod
+    # @abstractmethod
     def _aggregate(self, fts: ndarray) -> float:
         """Aggregate the feature values.
 
@@ -1130,9 +1130,9 @@ class SweepSetFeature(SweepFeature):
 
         Returns:
             Aggregated feature value."""
-        aggregate = np.nanmean
+        aggregate = lambda fts: fts
         self._update_diagnostics({})
-        return float(aggregate(fts))
+        return aggregate(fts).item()
 
     def _compute(
         self, recompute: bool = False, store_diagnostics: bool = False
