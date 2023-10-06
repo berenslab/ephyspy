@@ -1481,6 +1481,51 @@ class Sweep_Burstiness(SweepFeature):
         return ax
 
 
+# class Sweep_ISI_Burstiness(SweepFeature):
+#     """Extract sweep ISI bursiness feature.
+
+#     depends on: /.
+#     description: ISI burstiness as defined in https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3473113/.
+#     units: /."""
+
+#     def __init__(self, data=None, compute_at_init=True):
+#         super().__init__(data, compute_at_init)
+
+#     def _compute(self, recompute=False, store_diagnostics=True):
+#         isi_burstiness = float("nan")
+#         if has_spikes(self.data):
+#             isis = self.lookup_spike_feature("isi")[1:]
+#             log_isis = np.log(isis)
+#             # mu = np.mean(log_isis)
+
+#             p = 0.05
+#             e_center = 1 / 2 * (np.quantile(log_isis, p) + np.quantile(log_isis, 1 - p))
+#             MAD = np.median(np.abs(log_isis - np.median(log_isis)))
+#             central_set = log_isis[np.abs(log_isis - e_center) <= 1.64 * MAD]
+#             c1_center = np.median(central_set)
+#             c1_set = log_isis[np.abs(log_isis - c1_center) <= 1.64 * MAD]
+#             mu = np.median(c1_set)
+
+#             nlisi = log_isis - mu
+#             ec = np.exp(mu)
+#             isi_burstiness = np.mean(isis) / ec
+
+#             if store_diagnostics:
+#                 self._update_diagnostics(
+#                     {
+#                         "MAD": MAD,
+#                         "log_isis": log_isis,
+#                         "e_center": e_center,
+#                         "c1_center": c1_center,
+#                         "mu": mu,
+#                         "nlisi": nlisi,
+#                         "ec": ec,
+#                     }
+#                 )
+
+#         return isi_burstiness
+
+
 class Sweep_ISI_adapt(SweepFeature):
     """Extract sweep level inter-spike-interval (ISI) adaptation index feature.
 
@@ -1674,14 +1719,27 @@ class APSweepFeature(SweepFeature):
         returns indices for the selected aps.
 
         description: Select a representative ap or set of aps based on a
-        given criterion. If none is provided, falls back to selecting all aps during stimulus.
+        given criterion. If none is provided, falls back to selecting first AP
+        during stimulus window.
         """
         if self.ap_selector is None:
             peak_t = self.lookup_spike_feature("peak_t")
             onset = self.lookup_sweep_feature("stim_onset")
             end = self.lookup_sweep_feature("stim_end")
             stim_window = where_between(peak_t, onset, end)
-            return stim_window
+
+            # include sanity check?
+            # first = np.array([], dtype=int)
+            # if np.any(stim_window):
+            #     ap_ft = self.lookup_spike_feature(self.name)[stim_window]
+            #     mu = np.nanmean(ap_ft)
+            #     bound = 5 * np.nanstd(ap_ft)
+            #     is_ok = np.logical_and((mu - bound) < ap_ft, ap_ft < (mu + bound))
+            #     if np.any(is_ok):
+            #         first = np.where(stim_window)[0][is_ok][0]
+
+            #     return first
+            return np.where(stim_window)[0][0]
         else:
             return self.ap_selector(data)
 
@@ -1690,7 +1748,10 @@ class APSweepFeature(SweepFeature):
 
         description: Aggregate a list of feature values into a single value. If none is provided, falls back
         to `np.nanmedian` (equates to pass through for single sweeps)."""
-        if np.isnan(X).all():
+        if np.empty(X):
+            return float("nan")
+        elif np.isnan(X).all():
+            self._update_diagnostics({"aggregate_idx": np.array([], dtype=int)})
             return float("nan")
         elif self.ft_aggregator is None:
             self._update_diagnostics({"aggregate_idx": median_idx(X)})
@@ -1706,6 +1767,7 @@ class APSweepFeature(SweepFeature):
             fts_selected = feature[selected_idx]
 
             if isinstance(fts_selected, (float, int, np.float64, np.int64)):
+                self._update_diagnostics({"aggregate_idx": np.array([], dtype=int)})
                 ft_agg = fts_selected
             elif isinstance(fts_selected, ndarray):
                 if len(fts_selected.flat) == 0:
@@ -1781,6 +1843,44 @@ class Sweep_AP_thresh(APSweepFeature):
         ft_aggregator: Optional[Callable] = None,
     ):
         super().__init__(data, compute_at_init, "ap_thresh", ap_selector, ft_aggregator)
+
+
+class Sweep_AP_overshoot(APSweepFeature):
+    """Extract sweep level AP overshoot feature.
+
+    depends on: /.
+    description: AP overshoot for representative AP.
+    units: mV."""
+
+    def __init__(
+        self,
+        data=None,
+        compute_at_init=True,
+        ap_selector: Optional[Callable] = None,
+        ft_aggregator: Optional[Callable] = None,
+    ):
+        super().__init__(
+            data, compute_at_init, "ap_overshoot", ap_selector, ft_aggregator
+        )
+
+
+class Sweep_AP_ADP_trough(APSweepFeature):
+    """Extract sweep level AP adp trough feature.
+
+    depends on: /.
+    description: Absolute value of the adp voltage reached.
+    units: mV."""
+
+    def __init__(
+        self,
+        data=None,
+        compute_at_init=True,
+        ap_selector: Optional[Callable] = None,
+        ft_aggregator: Optional[Callable] = None,
+    ):
+        super().__init__(
+            data, compute_at_init, "ap_adp_trough", ap_selector, ft_aggregator
+        )
 
 
 class Sweep_AP_amp(APSweepFeature):
