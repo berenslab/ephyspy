@@ -94,28 +94,17 @@ class APFeature(SweepSetFeature):
         """Select representative sweep and use its AP features to represent the
         entire sweepset.
 
-        description: sweep where the least amount of AP features are NaNs.
+        description: first sweep depolarization sweep with aps.
         """
-        # TODO: Consult if this is sensible!
-        relevant_ap_fts = [
-            "ap_thresh",
-            "ap_amp",
-            "ap_width",
-            "ap_peak",
-            "ap_trough",
-            "ap_ahp",
-            "ap_adp",
-            "ap_udr",
-        ]
 
         is_depol = self.lookup_sweep_feature("stim_amp") > 0
         has_spikes = self.lookup_sweep_feature("num_ap") > 0
-        ft_is_na = np.zeros((len(relevant_ap_fts), len(self.dataset)), dtype=bool)
-        for i, ft in enumerate(relevant_ap_fts):
-            ft_is_na[i] = np.isnan(self.lookup_sweep_feature(ft))
+        peaks_to_low = np.all(self.lookup_sweep_feature("ap_peak") < -30)
 
-        num_nans = pd.Series(ft_is_na.sum(axis=0))
-        idx = num_nans[is_depol & has_spikes].idxmin()
+        if not peaks_to_low:
+            idx = np.where(is_depol & has_spikes)[0][0]
+        else:
+            idx = np.array([])
 
         self._update_diagnostics(
             {"selected_idx": idx, "selection": parse_desc(self._select)}
@@ -437,21 +426,6 @@ class SweepSet_dfdI(SweepSetFeature):
         )
         self.parse_docstring()
 
-    def _select(self, fts):
-        """Select representative sweep and use its features to represent the
-        entire sweepset.
-
-        description: /.
-        """
-        return fts
-
-    def _aggregate(self, fts):
-        """Compute aggregate metrics on subset of sweeps.
-
-        description: /.
-        """
-        return fts.item()
-
     def _compute(self, recompute=False, store_diagnostics=False):
         is_depol = self.lookup_sweep_feature("stim_amp", recompute=recompute) > 0
         ap_freq = self.lookup_sweep_feature("ap_freq", recompute=recompute)
@@ -528,21 +502,6 @@ class SweepSet_Rheobase(SweepSetFeature):
             name="rheobase",
         )
         self.parse_docstring()
-
-    def _select(self, fts):
-        """Select representative sweep and use its features to represent the
-        entire sweepset.
-
-        description: /.
-        """
-        return fts
-
-    def _aggregate(self, fts):
-        """Compute aggregate metrics on subset of sweeps.
-
-        description: /.
-        """
-        return fts.item()
 
     def _compute(self, recompute=False, store_diagnostics=False):
         dc_offset = self.dc_offset
@@ -645,21 +604,6 @@ class SweepSet_R_input(SweepSetFeature):
         )
         self.parse_docstring()
 
-    def _select(self, fts):
-        """Select representative sweep and use its features to represent the
-        entire sweepset.
-
-        description: /.
-        """
-        return fts
-
-    def _aggregate(self, fts):
-        """Compute aggregate metrics on subset of sweeps.
-
-        description: /.
-        """
-        return fts.item()
-
     def _compute(self, recompute=False, store_diagnostics=False):
         r_input = float("nan")
         i_amp = self.lookup_sweep_feature("stim_amp", recompute=recompute)
@@ -724,21 +668,6 @@ class SweepSet_Slow_hyperpolarization(SweepSetFeature):
         )
         self.parse_docstring()
 
-    def _select(self, fts):
-        """Select representative sweep and use its features to represent the
-        entire sweepset.
-
-        description: /.
-        """
-        return fts
-
-    def _aggregate(self, fts):
-        """Compute aggregate metrics on subset of sweeps.
-
-        description: /.
-        """
-        return fts.item()
-
     def _compute(self, recompute=False, store_diagnostics=False):
         has_aps = self.lookup_sweep_feature("num_ap", recompute=recompute) > 0
         v_baseline = self.lookup_sweep_feature("v_baseline", recompute=recompute)
@@ -762,9 +691,118 @@ class SweepSet_Slow_hyperpolarization(SweepSetFeature):
         return ax
 
 
+class SweepSet_Slow_hyperpolarization_slope(SweepSetFeature):
+    """Obtain sweepset level slow_hyperpolarization slope feature.
+
+    description: The slope of the hyperpolarization voltage across the resting state
+    taking the first sweep that has an action potential "0".
+    Drop in resting state potential is due to autoinhibition and recruitment
+    of calcium-activated currents.
+    depends on: Sweep_Num_AP, Sweep_V_baseline.
+    units: mV.
+    """
+
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(
+            swft.NullSweepFeature,
+            data=data,
+            compute_at_init=compute_at_init,
+            name="slow_hyperpolarization_slope",
+        )
+        self.parse_docstring()
+
+    def _compute(self, recompute=False, store_diagnostics=False):
+        slow_hyperpolarization_slope = float("nan")
+        has_aps = self.lookup_sweep_feature("num_ap", recompute=recompute) > 0
+        v_baseline = self.lookup_sweep_feature("v_baseline", recompute=recompute)
+        v_baseline = v_baseline[has_aps]
+
+        v_baseline = v_baseline.reshape(-1, 1)
+        sweep_idx = np.arange(len(v_baseline)).reshape(-1, 1)
+
+        if len(v_baseline) >= 3:
+            ransac.fit(sweep_idx, v_baseline)
+            slope = ransac.coef_[0, 0] * 1000
+            intercept = ransac.intercept_[0]
+            slow_hyperpolarization_slope = slope
+
+        if store_diagnostics:
+            self._update_diagnostics(
+                {
+                    "v_baseline": v_baseline,
+                    "sweep_idx": sweep_idx,
+                    "v_intercept": intercept,
+                }
+            )
+        return slow_hyperpolarization_slope
+
+    def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
+        ax = plt.gca() if ax is None else ax
+        if np.isnan(self.value):
+            return ax
+
+        if self.diagnostics is None:
+            self.get_diagnostics(recompute=True)
+
+        if not np.isnan(self.value):
+            slope = self.value
+            i, v, intercept = unpack(
+                self.diagnostics, ["sweep_idx", "v_baseline", "v_intercept"]
+            )
+
+            ax.plot(i, v, "o", label="V(idx)", **kwargs)
+            ax.plot(i, slope * i + intercept, label="V_baseline(idx) fit", **kwargs)
+            ax.set_xlim(np.min(i) - 5, np.max(i) + 5)
+            ax.set_xlabel("index")
+            ax.set_ylabel("V (mV)")
+            ax.legend()
+        return ax
+
+
 class SweepSet_Tau(HyperpolMedianFeature):
     def __init__(self, data=None, compute_at_init=True):
         super().__init__(swft.Sweep_Tau, data=data, compute_at_init=compute_at_init)
+
+
+# class SweepSet_V_rest(SweepSetFeature):
+#     """Obtain sweepset level membrane resting potential feature.
+
+#     description: Average of 100ms pre stimulus voltages aggregated across all
+#     hyperpolarization sweeps.
+#     depends on: SweepSet_R_input, Sweep_V_baseline.
+#     units: mV.
+#     """
+
+#     def __init__(self, data=None, compute_at_init=True, dc_offset=0):
+#         self.dc_offset = dc_offset
+#         super().__init__(
+#             swft.NullSweepFeature,
+#             data=data,
+#             compute_at_init=False,
+#             name="v_rest",
+#         )
+#         if compute_at_init and data is not None:  # because of dc_offset
+#             self.get_value()
+#         self.parse_docstring()
+
+#     def _compute(self, recompute=False, store_diagnostics=False):
+#         r_input = self.lookup_sweepset_feature("r_input", recompute=recompute)
+#         v_baseline = self.lookup_sweepset_feature("v_baseline", recompute=recompute)
+
+#         v_rest = v_baseline - r_input * 1e-3 * self.dc_offset
+
+#         if store_diagnostics:
+#             self._update_diagnostics(
+#                 {
+#                     "v_baseline": v_baseline,
+#                     "r_input": r_input,
+#                     "dc_offset": self.dc_offset,
+#                 }
+#             )
+#         return v_rest
+
+#     def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
+#         return ax
 
 
 class SweepSet_V_rest(HyperpolMedianFeature):
@@ -1012,6 +1050,20 @@ class SweepSet_AP_trough(APFeature):
         )
 
 
+class SweepSet_AP_overshoot(APFeature):
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(
+            swft.Sweep_AP_overshoot, data=data, compute_at_init=compute_at_init
+        )
+
+
+class SweepSet_AP_ADP_trough(APFeature):
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(
+            swft.Sweep_AP_ADP_trough, data=data, compute_at_init=compute_at_init
+        )
+
+
 class SweepSet_AP_UDR(APFeature):
     def __init__(self, data=None, compute_at_init=True):
         super().__init__(swft.Sweep_AP_UDR, data=data, compute_at_init=compute_at_init)
@@ -1032,29 +1084,16 @@ class NullSweepSetFeature(SweepSetFeature):
     units: /.
     """
 
-    def __init__(self, data=None, compute_at_init=True):
+    def __init__(
+        self, data=None, compute_at_init=True, name: str = "null_sweepset_feature"
+    ):
         super().__init__(
             swft.NullSweepFeature,
             data=data,
             compute_at_init=compute_at_init,
-            name="null_sweepset_feature",
+            name=name,
         )
         self.parse_docstring()
-
-    def _select(self, fts):
-        """Select representative sweep and use its features to represent the
-        entire sweepset.
-
-        description: /.
-        """
-        return fts
-
-    def _aggregate(self, fts):
-        """Compute aggregate metrics on subset of sweeps.
-
-        description: /.
-        """
-        return fts.item()
 
     def _compute(self, recompute=False, store_diagnostics=False):
         return None
