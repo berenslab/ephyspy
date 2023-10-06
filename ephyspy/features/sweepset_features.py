@@ -140,15 +140,9 @@ class ReboundFeature(SweepSetFeature):
         """Select representative sweep and use its rebound features to represent the
         entire sweepset.
 
-        description: Lowest hyperpolarization sweep. If 3 lowest sweeps are NaN,
-        then the first sweep is selected, meaning the feature is set to NaN.
+        description: Lowest hyperpolarization sweep.
         """
-        rebound = self.lookup_sweep_feature("rebound")
-        nan_rebounds = np.isnan(rebound)
-        if all(nan_rebounds[:3]):
-            idx = 0
-        else:
-            idx = np.arange(len(rebound))[~nan_rebounds][0]
+        idx = 0  # always return lowest hyperpolarization sweep
 
         self._update_diagnostics(
             {"selected_idx": idx, "selection": parse_desc(self._select)}
