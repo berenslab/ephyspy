@@ -111,16 +111,6 @@ class APFeature(SweepSetFeature):
         )
         return fts[idx]
 
-    def _aggregate(self, fts):
-        """Compute aggregate metrics on subset of sweeps.
-
-        description: /.
-        """
-        self._update_diagnostics(
-            {"aggregation": "not an aggregate features, only single index is selected."}
-        )
-        return fts.item()
-
 
 class ReboundFeature(SweepSetFeature):
     """Obtain sweepset level rebound related feature.
@@ -149,16 +139,6 @@ class ReboundFeature(SweepSetFeature):
         )
         return fts[idx]
 
-    def _aggregate(self, fts):
-        """Compute aggregate metrics on subset of sweeps.
-
-        description: /.
-        """
-        self._update_diagnostics(
-            {"aggregation": "not an aggregate features, only single index is selected."}
-        )
-        return fts.item()
-
 
 class SagFeature(SweepSetFeature):
     """Obtain sweepset level sag related feature.
@@ -177,31 +157,14 @@ class SagFeature(SweepSetFeature):
         """Select representative sweep and use its sag features to represent the
         entire sweepset.
 
-        description: Lowest hyperpolarization sweep that is not NaN. If 3 lowest
-        sweeps are NaN, then the first sweep is selected, meaning the feature is set
-        to NaN.
+        description: Lowest hyperpolarization sweep.
         """
-        sag = self.lookup_sweep_feature("sag")
-        nan_sags = np.isnan(sag)
-        if all(nan_sags[:3]):
-            idx = 0
-        else:
-            idx = np.arange(len(sag))[~nan_sags][0]
+        idx = 0
 
         self._update_diagnostics(
             {"selected_idx": idx, "selection": parse_desc(self._select)}
         )
         return fts[idx]
-
-    def _aggregate(self, fts):
-        """Compute aggregate metrics on subset of sweeps.
-
-        description: /.
-        """
-        self._update_diagnostics(
-            {"aggregation": "not an aggregate features, only single index is selected."}
-        )
-        return fts.item()
 
 
 class APsFeature(SweepSetFeature):
@@ -239,16 +202,6 @@ class APsFeature(SweepSetFeature):
             }
         )
         return fts[idx]
-
-    def _aggregate(self, fts):
-        """Compute aggregate metrics on subset of sweeps.
-
-        description: /.
-        """
-        self._update_diagnostics(
-            {"aggregation": "not an aggregate features, only single index is selected."}
-        )
-        return fts.item()
 
 
 class MaxFeature(SweepSetFeature):
@@ -390,15 +343,31 @@ class SweepSet_AP_latency(SweepSetFeature):
         )
         return fts[idx]
 
-    def _aggregate(self, fts):
-        """Compute aggregate metrics on subset of sweeps.
 
-        description: /.
-        """
-        self._update_diagnostics(
-            {"aggregation": "not an aggregate features, only single index is selected."}
+class SweepSet_AP_latency_20pA(SweepSetFeature):
+    """Obtain sweepset level AP latency feature at 20pA stimulus amplitude."""
+
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(
+            swft.Sweep_AP_latency, data=data, compute_at_init=compute_at_init
         )
-        return fts.item()
+
+    def _select(self, fts):
+        """Select representative sweep and use its sag features to represent the
+        entire sweepset.
+
+        description: first depolarization trace that has non-nan ap_latency.
+        """
+        is_depol = self.lookup_sweep_feature("stim_amp") > 0
+        ap_latency = self.lookup_sweep_feature("ap_latency")
+        idx = pd.Series(is_depol).index[is_depol & ~np.isnan(ap_latency)][1]
+        self._update_diagnostics(
+            {
+                "selected_idx": idx,
+                "selection": parse_desc(self._select),
+            }
+        )
+        return fts[idx]
 
 
 class SweepSet_dfdI(SweepSetFeature):
@@ -879,16 +848,6 @@ class SweepSet_Rebound_APs(SweepSetFeature):
             {"selected_idx": idx, "selection": parse_desc(self._select)}
         )
         return fts[idx]
-
-    def _aggregate(self, fts):
-        """Compute aggregate metrics on subset of sweeps.
-
-        description: maximum.
-        """
-        self._update_diagnostics(
-            {"aggregation": "not an aggregate features, only single index is selected."}
-        )
-        return fts.item()
 
 
 class SweepSet_Rebound_area(ReboundFeature):
