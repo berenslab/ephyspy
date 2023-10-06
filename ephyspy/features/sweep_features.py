@@ -1751,7 +1751,7 @@ class APSweepFeature(SweepFeature):
         if np.empty(X):
             return float("nan")
         elif np.isnan(X).all():
-            self._update_diagnostics({"aggregate_idx": np.array([], dtype=int)})
+            self._update_diagnostics({"aggregate_idx": np.array([0], dtype=int)})
             return float("nan")
         elif self.ft_aggregator is None:
             self._update_diagnostics({"aggregate_idx": median_idx(X)})
@@ -1767,7 +1767,7 @@ class APSweepFeature(SweepFeature):
             fts_selected = feature[selected_idx]
 
             if isinstance(fts_selected, (float, int, np.float64, np.int64)):
-                self._update_diagnostics({"aggregate_idx": np.array([], dtype=int)})
+                self._update_diagnostics({"aggregate_idx": np.array([0], dtype=int)})
                 ft_agg = fts_selected
             elif isinstance(fts_selected, ndarray):
                 if len(fts_selected.flat) == 0:
