@@ -204,42 +204,6 @@ class APsFeature(SweepSetFeature):
         return fts[idx]
 
 
-class MaxFeature(SweepSetFeature):
-    """Obtain sweepset level maximum feature.
-
-    This includes the following features:
-    - number of bursts
-    - wildness
-    """
-
-    def __init__(self, feature, data=None, compute_at_init=True):
-        super().__init__(feature, data=data, compute_at_init=compute_at_init)
-
-    def _select(self, fts):
-        """Select representative sweep and use its features to represent the
-        entire sweepset.
-
-        description: select arg max.
-        """
-        fts = self.lookup_sweep_feature(self.name)
-        idx = slice(0) if np.isnan(fts).all() else np.nanargmax(fts)
-        self._update_diagnostics(
-            {
-                "selected_idx": idx,
-                "selection": parse_desc(self._select),
-            }
-        )
-        return np.array([float("nan")]) if np.isnan(fts).all() else fts[idx]
-
-    def _aggregate(self, fts):
-        """Compute aggregate metrics on subset of sweeps.
-
-        description: /.
-        """
-        self._update_diagnostics({"aggregation": "select max feature."})
-        return fts.item()
-
-
 class First5MedianFeature(SweepSetFeature):
     """Obtain sweepset level median feature.
 
@@ -1022,11 +986,35 @@ class SweepSet_AP_UDR(APFeature):
         super().__init__(swft.Sweep_AP_UDR, data=data, compute_at_init=compute_at_init)
 
 
-class SweepSet_Wildness(MaxFeature):
+class SweepSet_Wildness(SweepSetFeature):
+    """Obtain sweepset level wildness feature.
+
+    description: Difference in the number of APs between the highest firing
+    trace (possibly showing APs before or after the stimulation window) and the
+    highest firing trace as defined above (without any APs outside the
+    stimulation window)
+    depends on: Sweep_Num_AP.
+    units: mV.
+    """
+
     def __init__(self, data=None, compute_at_init=True):
         super().__init__(
-            swft.Sweep_Wildness, data=data, compute_at_init=compute_at_init
+            swft.Sweep_Wildness,
+            data=data,
+            compute_at_init=compute_at_init,
         )
+        self.parse_docstring()
+
+    def _compute(self, recompute=False, store_diagnostics=False):
+        num_ap = self.lookup_sweep_feature("num_ap", recompute=recompute)
+        wildness = self.lookup_sweep_feature("wildness", recompute=recompute)
+        is_wild = ~np.isnan(wildness)
+
+        if np.any(is_wild):
+            wildness = num_ap[is_wild].max() - num_ap[~is_wild].max()
+        else:
+            wildness = float("nan")
+        return wildness
 
 
 class NullSweepSetFeature(SweepSetFeature):
