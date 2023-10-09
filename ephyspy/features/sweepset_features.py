@@ -21,9 +21,9 @@ from typing import Dict, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
-from numpy import ndarray
 import pandas as pd
 from matplotlib.axes import Axes
+from numpy import ndarray
 from sklearn import linear_model
 
 import ephyspy.features.sweep_features as swft
