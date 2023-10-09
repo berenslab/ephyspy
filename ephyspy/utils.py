@@ -151,6 +151,8 @@ def stimulus_type(sweep_or_sweepset: Union[EphysSweep, EphysSweepSet]) -> str:
     sweep = sweep_or_sweepset
     if cls_name == "EphysSweepSet":  # test for sweepset without using isinstance
         sweep = sweep_or_sweepset[0]
+        if np.all(sweep.i == 0) and len(sweep_or_sweepset.sweeps()) > 1:
+            sweep = sweep_or_sweepset[1]
 
     stim_window = sweep.i != 0
     stim = sweep.i[stim_window]
@@ -164,10 +166,11 @@ def stimulus_type(sweep_or_sweepset: Union[EphysSweep, EphysSweepSet]) -> str:
         return "short_square"
 
     slope = np.diff(stim[1:-2])
-    rel_slope_change = np.abs(slope - slope[0]) / slope[0]
     if np.all(slope == 0):
         return "long_square"
-    elif np.all(rel_slope_change < 0.001) and np.all(slope > 0):  # same slope
+
+    rel_slope_change = np.abs(slope - slope[0]) / slope[0]
+    if np.all(rel_slope_change < 0.001) and np.all(slope > 0):  # same slope
         return "ramp"
     else:
         return "unknown"
