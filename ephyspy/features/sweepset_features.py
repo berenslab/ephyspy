@@ -21,6 +21,7 @@ from typing import Dict, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
+from numpy import ndarray
 import pandas as pd
 from matplotlib.axes import Axes
 from sklearn import linear_model
@@ -105,14 +106,16 @@ class APFeature(SweepSetFeature):
             if not peaks_to_low:
                 idx = np.where(is_depol & has_spikes)[0][0]
             else:
-                idx = np.array([])
-        if stimulus_type(self.data) == "ramp":
+                idx = np.array([], dtype=int)
+        elif stimulus_type(self.data) == "ramp":
             ap_peak = self.lookup_sweep_feature("ap_peak")
             where_peak = ~np.isnan(ap_peak)
             if np.any(where_peak):
                 idx = np.where(where_peak)[0][0]
             else:
-                idx = np.array([])
+                idx = np.array([], dtype=int)
+        else:
+            idx = np.array([], dtype=int)
 
         self._update_diagnostics(
             {"selected_idx": idx, "selection": parse_desc(self._select)}
@@ -202,6 +205,7 @@ class APsFeature(SweepSetFeature):
         wildness = self.lookup_sweep_feature("wildness")
         is_non_wild = np.isnan(wildness)
         idx = pd.Series(num_spikes)[is_non_wild].idxmax()
+        idx = np.array([], dtype=int) if np.isnan(idx) else idx
 
         self._update_diagnostics(
             {
@@ -239,8 +243,8 @@ class First5MedianFeature(SweepSetFeature):
             self._update_diagnostics({"first5_idx": where_value})
             return first5
 
-        self._update_diagnostics({"first5_idx": np.array([])})
-        return np.array([])
+        self._update_diagnostics({"first5_idx": np.array([], dtype=int)})
+        return np.array([], dtype=int)
 
     def _aggregate(self, fts):
         """Compute aggregate metric on subset of sweeps.
@@ -306,7 +310,11 @@ class SweepSet_AP_latency(SweepSetFeature):
         """
         is_depol = self.lookup_sweep_feature("stim_amp") > 0
         ap_latency = self.lookup_sweep_feature("ap_latency")
-        idx = pd.Series(is_depol).index[is_depol & ~np.isnan(ap_latency)][0]
+        idxs = pd.Series(is_depol).index[is_depol & ~np.isnan(ap_latency)]
+        if len(idxs) > 0:
+            idx = idxs[0]
+        else:
+            idx = np.array([], dtype=int)
         self._update_diagnostics(
             {
                 "selected_idx": idx,
@@ -1084,6 +1092,34 @@ class SweepSet_AP_UDR(APFeature):
         super().__init__(swft.Sweep_AP_UDR, data=data, compute_at_init=compute_at_init)
 
 
+class SweepSet_Num_wild_APs(SweepSetFeature):
+    """Obtain sweepset level number of wild APs feature.
+
+    description: Max number of APs outside of stimulus window.
+    depends on: /.
+    units: /.
+    """
+
+    def __init__(self, data=None, compute_at_init=True):
+        super().__init__(
+            swft.Sweep_Wildness,
+            data=data,
+            compute_at_init=compute_at_init,
+            name="num_wild_aps",
+        )
+        self.parse_docstring()
+
+    def _select(self, fts: ndarray) -> ndarray:
+        """Select representative sweep and use its wildness feature to represent
+        the entire sweepset.
+
+        description: argmax.
+        """
+        if np.any(~np.isnan(fts)):
+            return np.nanargmax(fts)
+        return np.array([], dtype=int)
+
+
 class SweepSet_Wildness(SweepSetFeature):
     """Obtain sweepset level wildness feature.
 
@@ -1092,7 +1128,7 @@ class SweepSet_Wildness(SweepSetFeature):
     highest firing trace as defined above (without any APs outside the
     stimulation window)
     depends on: Sweep_Num_AP.
-    units: mV.
+    units: /.
     """
 
     def __init__(self, data=None, compute_at_init=True):
@@ -1107,9 +1143,10 @@ class SweepSet_Wildness(SweepSetFeature):
         num_ap = self.lookup_sweep_feature("num_ap", recompute=recompute)
         wildness = self.lookup_sweep_feature("wildness", recompute=recompute)
         is_wild = ~np.isnan(wildness)
+        not_nan = ~np.isnan(num_ap)
 
-        if np.any(is_wild):
-            wildness = num_ap[is_wild].max() - num_ap[~is_wild].max()
+        if np.any(is_wild) and np.any(not_nan):
+            wildness = num_ap[is_wild].max() - num_ap[~is_wild & not_nan].max()
         else:
             wildness = float("nan")
         return wildness

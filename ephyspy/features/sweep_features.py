@@ -559,6 +559,9 @@ class Sweep_AP_amp_slope(SweepFeature):
 
         peak_t = peak_t[stim_window]
         peak_v = peak_v[stim_window]
+        valid = ~np.isnan(peak_v)
+        peak_v = peak_v[valid]
+        peak_t = peak_t[valid]
 
         if len(peak_v) > 5:
             y = lambda x, m, b: m * x + b
@@ -1670,15 +1673,15 @@ class Sweep_Wildness(SweepFeature):
             peak_v = self.lookup_spike_feature("peak_v", recompute=recompute)
             stim_window = where_between(peak_t, onset, end)
 
-            i_wild_spikes = peak_idx[~stim_window]
+            idx_wild_spikes = peak_idx[~stim_window]
             t_wild_spikes = peak_t[~stim_window]
             v_wild_spikes = peak_v[~stim_window]
-            if len(i_wild_spikes) > 0:
-                num_wild_spikes = len(i_wild_spikes)
+            if len(idx_wild_spikes) > 0:
+                num_wild_spikes = len(idx_wild_spikes)
                 if store_diagnostics:
                     self._update_diagnostics(
                         {
-                            "i_wild_spikes": i_wild_spikes,
+                            "idx_wild_spikes": idx_wild_spikes,
                             "t_wild_spikes": t_wild_spikes,
                             "v_wild_spikes": v_wild_spikes,
                         }
@@ -1738,16 +1741,17 @@ class APSweepFeature(SweepFeature):
 
             # include sanity check?
             # first = np.array([], dtype=int)
-            # if np.any(stim_window):
-            #     ap_ft = self.lookup_spike_feature(self.name)[stim_window]
-            #     mu = np.nanmean(ap_ft)
-            #     bound = 5 * np.nanstd(ap_ft)
-            #     is_ok = np.logical_and((mu - bound) < ap_ft, ap_ft < (mu + bound))
-            #     if np.any(is_ok):
-            #         first = np.where(stim_window)[0][is_ok][0]
+            if np.any(stim_window):
+                #     ap_ft = self.lookup_spike_feature(self.name)[stim_window]
+                #     mu = np.nanmean(ap_ft)
+                #     bound = 5 * np.nanstd(ap_ft)
+                #     is_ok = np.logical_and((mu - bound) < ap_ft, ap_ft < (mu + bound))
+                #     if np.any(is_ok):
+                #         first = np.where(stim_window)[0][is_ok][0]
 
-            #     return first
-            return np.where(stim_window)[0][0]
+                #     return first
+                return np.where(stim_window)[0][0]
+            return np.array([], dtype=int)
         else:
             return self.ap_selector(data)
 
@@ -2003,4 +2007,11 @@ class Sweep_ISI(APSweepFeature):
         # ISI_{i} = t_{i} - t_{i-1}
         # therefore ISI_{1} = t_1 - t_0 = t_1 - NaN -> defined as 0
         # first actual ISI is from 1st to 2nd spike, hence the +1
-        return super()._select(data) + 1
+        isi = self.lookup_spike_feature("isi")
+        threshold_t = self.lookup_spike_feature("threshold_t")
+        onset = self.lookup_sweep_feature("stim_onset")
+        end = self.lookup_sweep_feature("stim_end")
+        stim_window = where_between(threshold_t, onset, end)
+        if np.sum(stim_window) > 1:
+            return super()._select(data) + 1
+        return np.array([], dtype=int)

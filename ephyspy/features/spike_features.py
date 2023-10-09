@@ -160,7 +160,7 @@ class Spike_AP_amp(SpikeFeature):
         v_peak = self.lookup_spike_feature("peak_v", recompute=recompute)
         threshold_v = self.lookup_spike_feature("threshold_v", recompute=recompute)
         peak_height = v_peak - threshold_v
-        return peak_height if len(v_peak) > 0 else np.array([])
+        return peak_height if len(v_peak) > 0 else np.array([], dtype=int)
 
     def _plot(self, ax: Optional[Axes] = None, selected_idxs=None, **kwargs) -> Axes:
         if has_spike_feature(self.data, "threshold_v"):
@@ -468,7 +468,7 @@ class Spike_ISI(SpikeFeature):
         elif len(spike_times) == 1:
             return np.array([float("nan")])
         else:
-            return np.array([])
+            return np.array([], dtype=int)
 
     def _plot(self, ax: Optional[Axes] = None, selected_idxs=None, **kwargs) -> Axes:
         if has_spike_feature(self.data, "isi"):
