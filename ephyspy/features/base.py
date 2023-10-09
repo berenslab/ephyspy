@@ -883,9 +883,11 @@ class SweepSetFeature(SweepFeature):
                 dictionary.
         """
         self.SwFt = SwFt
-        ft_cls = SwFt().__class__
+        swft = SwFt()
+        ft_cls = swft.__class__
 
-        self.name = SwFt().name if name is None else name
+        self.name = swft.name if name is None else name
+        self.baseft_name = swft.name if swft.name != "nullsweepfeature" else self.name
         self._value = None
         self._diagnostics = None
         self.store_with_data = store_with_data
@@ -931,13 +933,13 @@ class SweepSetFeature(SweepFeature):
             self.type = type(data).__name__
             self.ensure_correct_hyperparams()
             for sw in self.data:
-                if not self.name in sw.features:
+                if not self.baseft_name in sw.features:
                     ft = self.SwFt(sw, compute_at_init=False)
                 else:
-                    ft = sw.features[self.name]
+                    ft = sw.features[self.baseft_name]
                 if not "features" in ft.data.__dict__:
                     ft.data.features = {}
-                ft.data.features.update({self.name: ft})
+                ft.data.features.update({self.baseft_name: ft})
             if not "features" in self.data.__dict__:
                 self.data.features = {}
             if not self.name in self.data.features:
@@ -995,7 +997,7 @@ class SweepSetFeature(SweepFeature):
             return f"{self.name} = ? {self.units}"
 
     def __getitem__(self, idx):
-        return self.data[idx].features[self.name]
+        return self.data[idx].features[self.baseft_name]
 
     def __getattr__(self, name: str):
         """Hands off all functionality to the sweep level feature objects and
@@ -1140,7 +1142,7 @@ class SweepSetFeature(SweepFeature):
         """Copmutes representative feature value by aggregating over a selected
         subset of sweep level feature values.
 
-        This method chains together `self.lookup_sweep_feature(self.name)`,
+        This method chains together `self.lookup_sweep_feature(self.baseft_name)`,
         `self._select` and `self._aggregate` to yield a representative feature
         value for the entire sweepset.
 
@@ -1154,7 +1156,7 @@ class SweepSetFeature(SweepFeature):
         Returns:
             Feature value.
         """
-        fts = self.lookup_sweep_feature(self.name, recompute=recompute)
+        fts = self.lookup_sweep_feature(self.baseft_name, recompute=recompute)
 
         subset = self._select(fts)
         ft = self._aggregate(subset)
@@ -1194,5 +1196,5 @@ class SweepSetFeature(SweepFeature):
         for idx in idxs:
             data = self.data[idx]
             data.plot(ax=ax, **kwargs)
-            ax = data.features[self.name].plot(ax=ax, **kwargs)
+            ax = data.features[self.baseft_name].plot(ax=ax, **kwargs)
         return ax
