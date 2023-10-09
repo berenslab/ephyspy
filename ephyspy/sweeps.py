@@ -28,7 +28,12 @@ from ephyspy.allen_sdk.ephys_extractor import (
     EphysSweepFeatureExtractor,
     EphysSweepSetFeatureExtractor,
 )
-from ephyspy.utils import is_spike_feature, is_sweep_feature, is_sweepset_feature
+from ephyspy.utils import (
+    is_spike_feature,
+    is_sweep_feature,
+    is_sweepset_feature,
+    stimulus_type,
+)
 
 
 class EphysSweep(EphysSweepFeatureExtractor):
@@ -44,7 +49,16 @@ class EphysSweep(EphysSweepFeatureExtractor):
             `SweepFeature` instances.
     """
 
-    def __init__(self, *args, metadata: Dict = {}, **kwargs):
+    def __init__(
+        self,
+        t: Optional[Union[List, ndarray]] = None,
+        v: Optional[Union[List, ndarray]] = None,
+        i: Optional[Union[List, ndarray]] = None,
+        start: Optional[float] = None,
+        end: Optional[float] = None,
+        metadata: Dict = {},
+        **kwargs,
+    ):
         """
         Args:
             metadata (dict, optional): Metadata for the sweep. Defaults to None.
@@ -53,10 +67,26 @@ class EphysSweep(EphysSweepFeatureExtractor):
             *args: Additional arguments for EphysSweepFeatureExtractor.
             **kwargs: Additional keyword arguments for EphysSweepFeatureExtractor.
         """
-        super().__init__(*args, **kwargs)
+        super().__init__(t=t, v=v, i=i, start=start, end=end, **kwargs)
         self.metadata = metadata
         self.added_spike_features = {}
         self.features = {}
+        self._init_sweep()
+
+    def _init_sweep(self):
+        if stimulus_type(self) == "ramp":
+            stim_end_idx = np.where(np.diff(self.i) < 0)[0][0]
+            end_idx = np.where(np.diff(self.v[stim_end_idx:], 2) > 1)[0]
+            if len(end_idx) > 0:
+                end_idx = end_idx[0]
+            else:
+                end_idx = len(self.v) - stim_end_idx
+            idx_end = stim_end_idx + end_idx
+            self.t = self.t[:idx_end]
+            self.v = self.v[:idx_end]
+            self.i = self.i[:idx_end]
+            self.start = self.t[0]
+            self.end = self.t[-1]
 
     def add_spike_feature(self, feature_name: str, feature_func: Callable):
         """Add a new spike feature to the extractor.
@@ -295,23 +325,29 @@ class EphysSweepSet(EphysSweepSetFeatureExtractor):
 
     @property
     def t(self) -> ndarray:
-        t = np.empty((len(self.sweeps()), len(self.sweeps()[0].t)))
+        num_sweeps = len(self.sweeps())
+        num_samples = len(self.sweeps()[-1].t)  # last sweep longest for ramps
+        t = np.ones((num_sweeps, num_samples)) * float("nan")
         for i, swp in enumerate(self.sweeps()):
-            t[i] = swp.t
+            t[i, : len(swp.t)] = swp.t
         return t
 
     @property
     def v(self) -> ndarray:
-        v = np.empty((len(self.sweeps()), len(self.sweeps()[0].v)))
+        num_sweeps = len(self.sweeps())
+        num_samples = len(self.sweeps()[-1].v)  # last sweep longest for ramps
+        v = np.ones((num_sweeps, num_samples)) * float("nan")
         for i, swp in enumerate(self.sweeps()):
-            v[i] = swp.v
+            v[i, : len(swp.v)] = swp.v
         return v
 
     @property
     def i(self) -> ndarray:
-        stim = np.empty((len(self.sweeps()), len(self.sweeps()[0].i)))
+        num_sweeps = len(self.sweeps())
+        num_samples = len(self.sweeps()[-1].i)  # last sweep longest for ramps
+        stim = np.ones((num_sweeps, num_samples)) * float("nan")
         for i, swp in enumerate(self.sweeps()):
-            stim[i] = swp.i
+            stim[i, : len(swp.i)] = swp.i
         return stim
 
     def __len__(self) -> int:

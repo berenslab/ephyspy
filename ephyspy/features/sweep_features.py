@@ -44,6 +44,7 @@ from ephyspy.utils import (
     is_sweep_feature,
     parse_desc,
     relabel_line,
+    stimulus_type,
     unpack,
     where_between,
 )
@@ -177,10 +178,12 @@ class Sweep_Stim_end(SweepFeature):
     def _compute(self, recompute=False, store_diagnostics=True):
         stim_end = float("nan")
         if has_stimulus(self.data):
+            stim_type = stimulus_type(self.data)
             where_stim = where_stimulus(self.data)
             stim_end = self.data.t[where_stim][-1]
             i_end = self.data.i[where_stim][-1]
             idx_end = np.arange(len(where_stim))[where_stim][-1]
+
             if store_diagnostics:
                 self._update_diagnostics(
                     {"i_end": i_end, "where_stim": where_stim, "idx_end": idx_end}
@@ -365,24 +368,25 @@ class Sweep_V_deflect(SweepFeature):
 
     def _compute(self, recompute=False, store_diagnostics=True):
         v_deflect_avg = float("nan")
-        if has_stimulus(self.data) and is_hyperpol(self.data):
-            # v_deflect_avg = self.data.voltage_deflection()[0]
-            end = self.lookup_sweep_feature("stim_end", recompute=recompute)
-            v_deflect_avg = ft.average_voltage(
-                self.data.v, self.data.t, start=end - 0.1, end=end
-            )
-            idx_deflect = np.where(where_between(self.data.t, end - 0.1, end))[0]
-            t_deflect = self.data.t[idx_deflect]
-            v_deflect = self.data.v[idx_deflect]
-
-            if store_diagnostics:
-                self._update_diagnostics(
-                    {
-                        "idx_deflect": idx_deflect,
-                        "t_deflect": t_deflect,
-                        "v_deflect": v_deflect,
-                    }
+        if stimulus_type(self.data) == "long_square":
+            if has_stimulus(self.data) and is_hyperpol(self.data):
+                # v_deflect_avg = self.data.voltage_deflection()[0]
+                end = self.lookup_sweep_feature("stim_end", recompute=recompute)
+                v_deflect_avg = ft.average_voltage(
+                    self.data.v, self.data.t, start=end - 0.1, end=end
                 )
+                idx_deflect = np.where(where_between(self.data.t, end - 0.1, end))[0]
+                t_deflect = self.data.t[idx_deflect]
+                v_deflect = self.data.v[idx_deflect]
+
+                if store_diagnostics:
+                    self._update_diagnostics(
+                        {
+                            "idx_deflect": idx_deflect,
+                            "t_deflect": t_deflect,
+                            "v_deflect": v_deflect,
+                        }
+                    )
         return v_deflect_avg
 
     def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
@@ -486,7 +490,11 @@ class Sweep_AP_freq_adapt(SweepFeature):
     def _compute(self, recompute=False, store_diagnostics=True):
         ap_freq_adapt = float("nan")
         num_ap = self.lookup_sweep_feature("num_ap", recompute=recompute)
-        if num_ap > 5 and has_stimulus(self.data):
+        if (
+            num_ap > 5
+            and has_stimulus(self.data)
+            and stimulus_type(self.data) == "long_square"
+        ):
             onset = self.lookup_sweep_feature("stim_onset", recompute=recompute)
             end = self.lookup_sweep_feature("stim_end", recompute=recompute)
             t_half = (end - onset) / 2 + onset
@@ -720,7 +728,7 @@ class Sweep_R_input(SweepFeature):
 
     def _compute(self, recompute=False, store_diagnostics=True):
         r_input = float("nan")
-        if is_hyperpol(self.data):
+        if is_hyperpol(self.data) and stimulus_type(self.data) == "long_square":
             stim_amp = self.lookup_sweep_feature("stim_amp", recompute=recompute)
             v_deflect = self.lookup_sweep_feature("v_deflect", recompute=recompute)
             v_baseline = self.lookup_sweep_feature("v_baseline", recompute=recompute)
@@ -1983,3 +1991,16 @@ class Sweep_ISI(APSweepFeature):
         ft_aggregator: Optional[Callable] = None,
     ):
         super().__init__(data, compute_at_init, "isi", ap_selector, ft_aggregator)
+
+    def _select(self, data):
+        """Function expects a EphysSweepSetFeatureExtractor object as input and
+        returns indices for the selected aps.
+
+        description: Select a representative ap or set of aps based on a
+        given criterion. If none is provided, falls back to selecting first AP
+        during stimulus window.
+        """
+        # ISI_{i} = t_{i} - t_{i-1}
+        # therefore ISI_{1} = t_1 - t_0 = t_1 - NaN -> defined as 0
+        # first actual ISI is from 1st to 2nd spike, hence the +1
+        return super()._select(data) + 1

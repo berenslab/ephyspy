@@ -129,6 +129,50 @@ def has_spike_feature(sweep: EphysSweep, ft: str) -> bool:
     return False
 
 
+def stimulus_type(sweep_or_sweepset: Union[EphysSweep, EphysSweepSet]) -> str:
+    """Detects stimulus type of sweep.
+
+    Stimulus can be:
+    - long_square
+    - short_square
+    - ramp
+    - null
+    - unknown
+
+    Args:
+        sweep_or_sweepset (Union[EphysSweep, EphysSweepSet]): Sweep or sweepset to
+            detect stimulus type of.
+
+    Returns:
+        str: Stimulus type.
+    """
+    cls_name = sweep_or_sweepset.__class__.__name__
+
+    sweep = sweep_or_sweepset
+    if cls_name == "EphysSweepSet":  # test for sweepset without using isinstance
+        sweep = sweep_or_sweepset[0]
+
+    stim_window = sweep.i != 0
+    stim = sweep.i[stim_window]
+    t = sweep.t[stim_window]
+
+    if not np.any(stim_window):
+        return "null"
+
+    onset, end = t[[0, -1]]
+    if end - onset < 0.005:
+        return "short_square"
+
+    slope = np.diff(stim[1:-2])
+    rel_slope_change = np.abs(slope - slope[0]) / slope[0]
+    if np.all(slope == 0):
+        return "long_square"
+    elif np.all(rel_slope_change < 0.001) and np.all(slope > 0):  # same slope
+        return "ramp"
+    else:
+        return "unknown"
+
+
 def scatter_spike_ft(
     ft, sweep: EphysSweep, ax: Axes = None, selected_idxs=None, **kwargs
 ) -> Axes:

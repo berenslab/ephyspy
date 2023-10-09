@@ -26,7 +26,7 @@ from matplotlib.axes import Axes
 from sklearn import linear_model
 
 import ephyspy.features.sweep_features as swft
-from ephyspy.utils import parse_desc, unpack
+from ephyspy.utils import parse_desc, stimulus_type, unpack, where_between
 
 ransac = linear_model.LinearRegression()
 
@@ -97,14 +97,22 @@ class APFeature(SweepSetFeature):
         description: first sweep depolarization sweep with aps.
         """
 
-        is_depol = self.lookup_sweep_feature("stim_amp") > 0
-        has_spikes = self.lookup_sweep_feature("num_ap") > 0
-        peaks_to_low = np.all(self.lookup_sweep_feature("ap_peak") < -30)
+        if stimulus_type(self.data) == "long_square":
+            is_depol = self.lookup_sweep_feature("stim_amp") > 0
+            has_spikes = self.lookup_sweep_feature("num_ap") > 0
+            peaks_to_low = np.all(self.lookup_sweep_feature("ap_peak") < -30)
 
-        if not peaks_to_low:
-            idx = np.where(is_depol & has_spikes)[0][0]
-        else:
-            idx = np.array([])
+            if not peaks_to_low:
+                idx = np.where(is_depol & has_spikes)[0][0]
+            else:
+                idx = np.array([])
+        if stimulus_type(self.data) == "ramp":
+            ap_peak = self.lookup_sweep_feature("ap_peak")
+            where_peak = ~np.isnan(ap_peak)
+            if np.any(where_peak):
+                idx = np.where(where_peak)[0][0]
+            else:
+                idx = np.array([])
 
         self._update_diagnostics(
             {"selected_idx": idx, "selection": parse_desc(self._select)}
@@ -294,7 +302,7 @@ class SweepSet_AP_latency(SweepSetFeature):
         """Select representative sweep and use its sag features to represent the
         entire sweepset.
 
-        description: first depolarization trace that has non-nan ap_latency.
+        description: first depolarization trace that has spikes.
         """
         is_depol = self.lookup_sweep_feature("stim_amp") > 0
         ap_latency = self.lookup_sweep_feature("ap_latency")
@@ -309,22 +317,30 @@ class SweepSet_AP_latency(SweepSetFeature):
 
 
 class SweepSet_AP_latency_20pA(SweepSetFeature):
-    """Obtain sweepset level AP latency feature at 20pA stimulus amplitude."""
+    """Obtain sweepset level AP latency feature at one stimulus above the first
+    one that spikes."""
 
     def __init__(self, data=None, compute_at_init=True):
         super().__init__(
-            swft.Sweep_AP_latency, data=data, compute_at_init=compute_at_init
+            swft.Sweep_AP_latency,
+            data=data,
+            compute_at_init=compute_at_init,
+            name="ap_latency_20pA",
         )
 
     def _select(self, fts):
         """Select representative sweep and use its sag features to represent the
         entire sweepset.
 
-        description: first depolarization trace that has non-nan ap_latency.
+        description: 2nd depolarization trace that has spikes.
         """
         is_depol = self.lookup_sweep_feature("stim_amp") > 0
         ap_latency = self.lookup_sweep_feature("ap_latency")
-        idx = pd.Series(is_depol).index[is_depol & ~np.isnan(ap_latency)][1]
+        idxs = pd.Series(is_depol).index[is_depol & ~np.isnan(ap_latency)]
+        if len(idxs) > 1:
+            idx = idxs[1]
+        else:
+            idx = np.array([], dtype=int)
         self._update_diagnostics(
             {
                 "selected_idx": idx,
@@ -354,35 +370,37 @@ class SweepSet_dfdI(SweepSetFeature):
         self.parse_docstring()
 
     def _compute(self, recompute=False, store_diagnostics=False):
-        is_depol = self.lookup_sweep_feature("stim_amp", recompute=recompute) > 0
-        ap_freq = self.lookup_sweep_feature("ap_freq", recompute=recompute)
-        stim_amp = self.lookup_sweep_feature("stim_amp", recompute=recompute)
-
-        f = ap_freq[is_depol]
-        i = stim_amp[is_depol]
-
         dfdi = float("nan")
-        sweep_w_spikes = ~np.isnan(f)
-        # TODO: Check if this is a sensible idea!!!
-        # (In case of 4 nans for example this will skip, even though sweep has spikes)
-        if np.sum(sweep_w_spikes) > 4 and len(np.unique(f[:5])) > 3:
-            i_s = i[sweep_w_spikes][:5]
-            f_s = f[sweep_w_spikes][:5]
 
-            ransac.fit(i_s.reshape(-1, 1), f_s.reshape(-1, 1))
-            dfdi = ransac.coef_[0, 0]
-            f_intercept = ransac.intercept_[0]
+        if stimulus_type(self.data) == "long_square":
+            is_depol = self.lookup_sweep_feature("stim_amp", recompute=recompute) > 0
+            ap_freq = self.lookup_sweep_feature("ap_freq", recompute=recompute)
+            stim_amp = self.lookup_sweep_feature("stim_amp", recompute=recompute)
 
-            if store_diagnostics:
-                self._update_diagnostics(
-                    {
-                        "i_fit": i_s,
-                        "f_fit": f_s,
-                        "f": f,
-                        "i": i,
-                        "f_intercept": f_intercept,
-                    }
-                )
+            f = ap_freq[is_depol]
+            i = stim_amp[is_depol]
+
+            sweep_w_spikes = ~np.isnan(f)
+            # TODO: Check if this is a sensible idea!!!
+            # (In case of 4 nans for example this will skip, even though sweep has spikes)
+            if np.sum(sweep_w_spikes) > 4 and len(np.unique(f[:5])) > 3:
+                i_s = i[sweep_w_spikes][:5]
+                f_s = f[sweep_w_spikes][:5]
+
+                ransac.fit(i_s.reshape(-1, 1), f_s.reshape(-1, 1))
+                dfdi = ransac.coef_[0, 0]
+                f_intercept = ransac.intercept_[0]
+
+                if store_diagnostics:
+                    self._update_diagnostics(
+                        {
+                            "i_fit": i_s,
+                            "f_fit": f_s,
+                            "f": f,
+                            "i": i,
+                            "f_intercept": f_intercept,
+                        }
+                    )
         return dfdi
 
     def plot(self, *args, ax: Optional[Axes] = None, **kwargs) -> Axes:
@@ -433,40 +451,73 @@ class SweepSet_Rheobase(SweepSetFeature):
     def _compute(self, recompute=False, store_diagnostics=False):
         dc_offset = self.dc_offset
         rheobase = float("nan")
-        is_depol = self.lookup_sweep_feature("stim_amp", recompute=recompute) > 0
-        ap_freq = self.lookup_sweep_feature("ap_freq", recompute=recompute)
-        stim_amp = self.lookup_sweep_feature("stim_amp", recompute=recompute)
-        dfdi = self.lookup_sweepset_feature("dfdi", recompute=recompute)
 
-        f = ap_freq[is_depol]
-        i = stim_amp[is_depol]
+        if stimulus_type(self.data) == "long_square":
+            is_depol = self.lookup_sweep_feature("stim_amp", recompute=recompute) > 0
+            ap_freq = self.lookup_sweep_feature("ap_freq", recompute=recompute)
+            stim_amp = self.lookup_sweep_feature("stim_amp", recompute=recompute)
+            dfdi = self.lookup_sweepset_feature("dfdi", recompute=recompute)
 
-        has_spikes = ~np.isnan(f)
-        # sometimes all depolarization traces spike
-        i_sub = (
-            0 if all(has_spikes) else i[~has_spikes][0]
-        )  # last stim < spike threshold
-        i_sup = i[has_spikes][0]  # first stim > spike threshold
+            f = ap_freq[is_depol]
+            i = stim_amp[is_depol]
 
-        if not np.isnan(dfdi):
-            rheobase = float(ransac.predict(np.array([[0]]))) / dfdi
+            has_spikes = ~np.isnan(f)
+            # sometimes all depolarization traces spike
+            i_sub = (
+                0 if all(has_spikes) else i[~has_spikes][0]
+            )  # last stim < spike threshold
+            i_sup = i[has_spikes][0]  # first stim > spike threshold
 
-            if rheobase < i_sub or rheobase > i_sup:
+            if not np.isnan(dfdi):
+                rheobase = float(ransac.predict(np.array([[0]]))) / dfdi
+
+                if rheobase < i_sub or rheobase > i_sup:
+                    rheobase = i_sup
+            else:
                 rheobase = i_sup
-        else:
-            rheobase = i_sup
-        rheobase -= dc_offset
+            rheobase -= dc_offset
 
-        if store_diagnostics:
-            self._update_diagnostics(
-                {
-                    "i_sub": i_sub,
-                    "i_sup": i_sup,
-                    "f_sup": f[has_spikes][0],
-                    "dfdi": dfdi,
-                    "dc_offset": dc_offset,
-                }
-            )
+            if store_diagnostics:
+                self._update_diagnostics(
+                    {
+                        "i_sub": i_sub,
+                        "i_sup": i_sup,
+                        "f_sup": f[has_spikes][0],
+                        "dfdi": dfdi,
+                        "dc_offset": dc_offset,
+                    }
+                )
+        if stimulus_type(self.data) == "ramp":
+            has_ap = self.lookup_sweep_feature("num_ap", recompute=recompute) > 0
+            if np.any(has_ap):
+                sweep_idx = np.where(has_ap)[0][0]
+
+                spike_df = self.data[sweep_idx]._spikes_df
+                threshold_t = spike_df["threshold_t"]
+
+                # sweep has ap during stimulus
+                onset = self.lookup_sweep_feature("stim_onset")[sweep_idx]
+                end = self.lookup_sweep_feature("stim_end")[sweep_idx]
+                stim_window = where_between(threshold_t.to_numpy(), onset, end)
+
+                if np.any(stim_window):
+                    first_spike = spike_df[stim_window].iloc[0]
+                    rheobase = first_spike["threshold_i"]
+                    rheobase_t = first_spike["threshold_t"]
+                    rheobase_idx = first_spike["threshold_index"]
+                    rheobase -= dc_offset
+
+                if store_diagnostics:
+                    self._update_diagnostics(
+                        {
+                            "sweep_idx": sweep_idx,
+                            "spike_idx": 0,
+                            "rheobase_t": rheobase_t,
+                            "rheobase_idx": rheobase_idx,
+                            "dc_offset": dc_offset,
+                        }
+                    )
+
         return rheobase
 
     def plot(self, *args, ax: Optional[Axes] = None, **kwargs) -> Axes:
@@ -479,38 +530,81 @@ class SweepSet_Rheobase(SweepSetFeature):
 
         dfdi_ft = self.lookup_sweepset_feature("dfdi", return_value=False)
 
-        i_sub, i_sup, f_sup, dc_offset = unpack(
-            self.diagnostics, ["i_sub", "i_sup", "f_sup", "dc_offset"]
-        )
-        i_intercept = self.value
-        dfdi = dfdi_ft.value
+        if stimulus_type(self.data) == "long_square":
+            i_sub, i_sup, f_sup, dc_offset = unpack(
+                self.diagnostics, ["i_sub", "i_sup", "f_sup", "dc_offset"]
+            )
+            i_intercept = self.value
+            dfdi = dfdi_ft.value
 
-        if not np.isnan(dfdi):
-            i, f, f_intercept = unpack(dfdi_ft.diagnostics, ["i", "f", "f_intercept"])
-            has_spikes = ~np.isnan(f)
-            n_no_spikes = np.sum(~has_spikes)
+            if not np.isnan(dfdi):
+                i, f, f_intercept = unpack(
+                    dfdi_ft.diagnostics, ["i", "f", "f_intercept"]
+                )
+                has_spikes = ~np.isnan(f)
+                n_no_spikes = np.sum(~has_spikes)
 
-            ax.plot(i[has_spikes][:5], f[has_spikes][:5], "o", label="f(I)", **kwargs)
-            ax.plot(
-                i[: n_no_spikes + 5],
-                dfdi * i[: n_no_spikes + 5] + f_intercept,
-                label="f(I) fit",
+                ax.plot(
+                    i[has_spikes][:5], f[has_spikes][:5], "o", label="f(I)", **kwargs
+                )
+                ax.plot(
+                    i[: n_no_spikes + 5],
+                    dfdi * i[: n_no_spikes + 5] + f_intercept,
+                    label="f(I) fit",
+                    **kwargs,
+                )
+                ax.set_xlim(i[0] - 5, i[n_no_spikes + 5] + 5)
+            else:
+                ax.set_xlim(i_sub - 5, i_sup + 5)
+
+            ax.plot(i_sup, f_sup, "o", label="i_sup", **kwargs)
+            ax.axvline(
+                i_intercept + dc_offset, ls="--", label="rheobase\n(w.o. dc)", **kwargs
+            )
+            ax.axvline(i_intercept, label="rheobase\n(incl. dc)", **kwargs)
+            ax.plot(i_sub, 0, "o", label="i_sub", **kwargs)
+            ax.set_xlabel("I (pA)")
+            ax.set_ylabel("f (Hz)")
+            ax.legend()
+
+        if stimulus_type(self.data) == "ramp":
+            dc_offset, rheobase_t, rheobase_idx, sweep_idx = unpack(
+                self.diagnostics,
+                ["dc_offset", "rheobase_t", "rheobase_idx", "sweep_idx"],
+            )
+            sweep = self.data[sweep_idx]
+            ax.scatter(
+                rheobase_t, sweep.v[rheobase_idx], label="ap threshold", **kwargs
+            )
+            ax.set_xlabel("t (s)")
+            ax.set_ylabel("V (mV)")
+
+            ax.plot(sweep.t, sweep.v, label="rheobase sweep", **kwargs)
+            ax.legend()
+
+            ax2 = ax.twinx()
+
+            ax2.plot(sweep.t, sweep.i, label="rheobase sweep", **kwargs)
+            ax2.vlines(rheobase_t, 0, sweep.i[rheobase_idx] - dc_offset)
+            ax2.hlines(
+                self.value + dc_offset,
+                0,
+                rheobase_t,
+                label="rheobase w.o. offset current",
                 **kwargs,
             )
-            ax.set_xlim(i[0] - 5, i[n_no_spikes + 5] + 5)
-        else:
-            ax.set_xlim(i_sub - 5, i_sup + 5)
+            ax2.hlines(
+                self.value, 0, rheobase_t, label="rheobase w. offset current", **kwargs
+            )
+            ax2.set_xlabel("t (s)")
+            ax2.set_ylabel("I (pA)")
 
-        ax.plot(i_sup, f_sup, "o", label="i_sup", **kwargs)
-        ax.axvline(
-            i_intercept + dc_offset, ls="--", label="rheobase\n(w.o. dc)", **kwargs
-        )
-        ax.axvline(i_intercept, label="rheobase\n(incl. dc)", **kwargs)
-        ax.plot(i_sub, 0, "o", label="i_sub", **kwargs)
+            ax2.set_ylim(
+                ax2.get_ylim()[0],
+                5 * ax2.get_ylim()[1],
+            )
+            ax2.legend()
 
-        ax.set_xlabel("I (pA)")
-        ax.set_ylabel("f (Hz)")
-        ax.legend()
         return ax
 
 
@@ -533,25 +627,26 @@ class SweepSet_R_input(SweepSetFeature):
 
     def _compute(self, recompute=False, store_diagnostics=False):
         r_input = float("nan")
-        i_amp = self.lookup_sweep_feature("stim_amp", recompute=recompute)
-        v_deflect = self.lookup_sweep_feature("v_deflect", recompute=recompute)
-        is_hyperpol = i_amp < 0
-        v_deflect = v_deflect[is_hyperpol].reshape(-1, 1)
-        i_amp = i_amp[is_hyperpol].reshape(-1, 1)
+        if stimulus_type(self.data) == "long_square":
+            i_amp = self.lookup_sweep_feature("stim_amp", recompute=recompute)
+            v_deflect = self.lookup_sweep_feature("v_deflect", recompute=recompute)
+            is_hyperpol = i_amp < 0
+            v_deflect = v_deflect[is_hyperpol].reshape(-1, 1)
+            i_amp = i_amp[is_hyperpol].reshape(-1, 1)
 
-        if len(v_deflect) >= 3:
-            ransac.fit(i_amp, v_deflect)
-            r_input = ransac.coef_[0, 0] * 1000
-            v_intercept = ransac.intercept_[0]
-            if store_diagnostics:
-                self._update_diagnostics(
-                    {
-                        "raw_slope": r_input / 1000,
-                        "v_intercept": v_intercept,
-                        "i_amp": i_amp,
-                        "v_deflect": v_deflect,
-                    }
-                )
+            if len(v_deflect) >= 3:
+                ransac.fit(i_amp, v_deflect)
+                r_input = ransac.coef_[0, 0] * 1000
+                v_intercept = ransac.intercept_[0]
+                if store_diagnostics:
+                    self._update_diagnostics(
+                        {
+                            "raw_slope": r_input / 1000,
+                            "v_intercept": v_intercept,
+                            "i_amp": i_amp,
+                            "v_deflect": v_deflect,
+                        }
+                    )
         return r_input
 
     def plot(self, *args, ax: Optional[Axes] = None, **kwargs) -> Axes:
@@ -596,20 +691,22 @@ class SweepSet_Slow_hyperpolarization(SweepSetFeature):
         self.parse_docstring()
 
     def _compute(self, recompute=False, store_diagnostics=False):
-        has_aps = self.lookup_sweep_feature("num_ap", recompute=recompute) > 0
-        v_baseline = self.lookup_sweep_feature("v_baseline", recompute=recompute)
-        v_baseline = v_baseline[has_aps]
+        slow_hyperpolarization = float("nan")
+        if stimulus_type(self.data) == "long_square":
+            has_aps = self.lookup_sweep_feature("num_ap", recompute=recompute) > 0
+            v_baseline = self.lookup_sweep_feature("v_baseline", recompute=recompute)
+            v_baseline = v_baseline[has_aps]
 
-        slow_hyperpolarization = v_baseline.max() - v_baseline.min()
+            slow_hyperpolarization = v_baseline.max() - v_baseline.min()
 
-        if store_diagnostics:
-            self._update_diagnostics(
-                {
-                    "v_baseline": v_baseline,
-                    "v_baseline_max": v_baseline.max(),
-                    "v_baseline_min": v_baseline.min(),
-                }
-            )
+            if store_diagnostics:
+                self._update_diagnostics(
+                    {
+                        "v_baseline": v_baseline,
+                        "v_baseline_max": v_baseline.max(),
+                        "v_baseline_min": v_baseline.min(),
+                    }
+                )
         return slow_hyperpolarization
 
     def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
@@ -640,27 +737,28 @@ class SweepSet_Slow_hyperpolarization_slope(SweepSetFeature):
 
     def _compute(self, recompute=False, store_diagnostics=False):
         slow_hyperpolarization_slope = float("nan")
-        has_aps = self.lookup_sweep_feature("num_ap", recompute=recompute) > 0
-        v_baseline = self.lookup_sweep_feature("v_baseline", recompute=recompute)
-        v_baseline = v_baseline[has_aps]
+        if stimulus_type(self.data) == "long_square":
+            has_aps = self.lookup_sweep_feature("num_ap", recompute=recompute) > 0
+            v_baseline = self.lookup_sweep_feature("v_baseline", recompute=recompute)
+            v_baseline = v_baseline[has_aps]
 
-        v_baseline = v_baseline.reshape(-1, 1)
-        sweep_idx = np.arange(len(v_baseline)).reshape(-1, 1)
+            v_baseline = v_baseline.reshape(-1, 1)
+            sweep_idx = np.arange(len(v_baseline)).reshape(-1, 1)
 
-        if len(v_baseline) >= 3:
-            ransac.fit(sweep_idx, v_baseline)
-            slope = ransac.coef_[0, 0] * 1000
-            intercept = ransac.intercept_[0]
-            slow_hyperpolarization_slope = slope
+            if len(v_baseline) >= 3:
+                ransac.fit(sweep_idx, v_baseline)
+                slope = ransac.coef_[0, 0] * 1000
+                intercept = ransac.intercept_[0]
+                slow_hyperpolarization_slope = slope
 
-        if store_diagnostics:
-            self._update_diagnostics(
-                {
-                    "v_baseline": v_baseline,
-                    "sweep_idx": sweep_idx,
-                    "v_intercept": intercept,
-                }
-            )
+            if store_diagnostics:
+                self._update_diagnostics(
+                    {
+                        "v_baseline": v_baseline,
+                        "sweep_idx": sweep_idx,
+                        "v_intercept": intercept,
+                    }
+                )
         return slow_hyperpolarization_slope
 
     def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
