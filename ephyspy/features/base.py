@@ -1159,8 +1159,7 @@ class SweepSetFeature(SweepFeature):
         fts = self.lookup_sweep_feature(self.baseft_name, recompute=recompute)
 
         subset = self._select(fts)
-        num = 0 if len(subset.shape) == 0 else subset.shape[0]
-        if num > 0:
+        if subset.size > 0:
             ft = self._aggregate(subset)
         else:
             ft = float("nan")
