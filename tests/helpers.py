@@ -58,8 +58,8 @@ class SweepTestDependency(SweepFeature):
     description: V(t=t_thresh0).
     units: mV."""
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, **kwargs):
+        super().__init__(data, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         test_value = float("nan")
@@ -79,8 +79,8 @@ class SweepTestFeature(SweepFeature):
     description: V(t=t_thresh0).
     units: mV."""
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, **kwargs):
+        super().__init__(data, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         num_ap = self.lookup_sweep_feature("num_ap")  # existing feature
@@ -96,8 +96,8 @@ class SweepSetTestFeature(SweepSetFeature):
     units: mV.
     """
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(SweepTestFeature, data=data, compute_at_init=compute_at_init)
+    def __init__(self, data=None, **kwargs):
+        super().__init__(SweepTestFeature, data=data, **kwargs)
 
     def _select(self, fts):
         """Select representative sweep and use its features to represent the
