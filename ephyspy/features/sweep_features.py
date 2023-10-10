@@ -50,20 +50,12 @@ from ephyspy.utils import (
 )
 
 
-def available_sweep_features(
-    compute_at_init: bool = False, store_diagnostics: bool = False
-) -> Dict[str, SweepFeature]:
+def available_sweep_features(**kwargs) -> Dict[str, SweepFeature]:
     """Return a dictionary of all implemented sweep features.
 
     Looks for all classes that inherit from SweepFeature and returns a dictionary
     of all available features. If compute_at_init is True, the features are
     computed at initialization.
-
-    Args:
-        compute_at_init (bool, optional): If True, the features are computed at
-            initialization. Defaults to False.
-        store_diagnostics (bool, optional): If True, the features are computed
-            with diagnostics. Defaults to False.
 
     Returns:
         dict[str, SweepFeature]: Dictionary of all available spike features.
@@ -71,12 +63,11 @@ def available_sweep_features(
     all_features = fetch_available_fts()
     features = {ft.__name__.lower(): ft for ft in all_features if is_sweep_feature(ft)}
     features = {k.replace("sweep_", ""): v for k, v in features.items()}
-    if any((compute_at_init, store_diagnostics)):
+    if len(kwargs):
         return {
-            k: lambda *args, **kwargs: v(
-                *args,
-                compute_at_init=compute_at_init,
-                store_diagnostics=store_diagnostics,
+            k: lambda *default_args, **default_kwargs: v(
+                *default_args,
+                **default_kwargs,
                 **kwargs,
             )
             for k, v in features.items()

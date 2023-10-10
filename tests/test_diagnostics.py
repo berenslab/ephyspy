@@ -70,7 +70,9 @@ hyperpol_test_sweep.add_features(available_spike_features())
 @pytest.mark.parametrize("show_sw", [True, False])
 @pytest.mark.parametrize("show_stim", [True, False])
 @pytest.mark.parametrize(
-    "Ft", available_sweep_features().values(), ids=available_sweep_features().keys()
+    "Ft",
+    available_sweep_features(store_with_data=False).values(),
+    ids=available_sweep_features(store_with_data=False).keys(),
 )
 @pytest.mark.parametrize(
     "sweep", [depol_test_sweep, hyperpol_test_sweep], ids=["depol", "hyperpol"]
@@ -116,3 +118,4 @@ def test_plot_sweepset_diagnostics(sweepset, with_precomputed):
         ), "Plot does not return an Axes object."
     else:
         assert isinstance(ax, plt.Axes), "Plot does not return an Axes object."
+    sweepset.clear_features()

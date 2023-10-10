@@ -37,20 +37,12 @@ from ephyspy.features.utils import fetch_available_fts, median_idx
 from ephyspy.utils import is_sweepset_feature
 
 
-def available_sweepset_features(
-    compute_at_init: bool = False, store_diagnostics: bool = False
-) -> Dict[str, SweepSetFeature]:
+def available_sweepset_features(**kwargs) -> Dict[str, SweepSetFeature]:
     """Return a dictionary of all implemented sweepset features.
 
     Looks for all classes that inherit from SweepSetFeature and returns a dictionary
     of all available features. If compute_at_init is True, the features are
     computed at initialization.
-
-    Args:
-        compute_at_init (bool, optional): If True, the features are computed at
-            initialization. Defaults to False.
-        store_diagnostics (bool, optional): If True, the features are computed
-            with diagnostics. Defaults to False.
 
     Returns:
         dict[str, SweepSetFeature]: Dictionary of all available spike features.
@@ -60,12 +52,11 @@ def available_sweepset_features(
         ft.__name__.lower(): ft for ft in all_features if is_sweepset_feature(ft)
     }
     features = {k.replace("sweepset_", ""): v for k, v in features.items()}
-    if any((compute_at_init, store_diagnostics)):
+    if len(kwargs) > 0:
         return {
-            k: lambda *args, **kwargs: v(
-                *args,
-                **kwargs,
-                store_diagnostics=store_diagnostics,
+            k: lambda *default_args, **default_kwargs: v(
+                *default_args,
+                **default_kwargs,
                 **kwargs,
             )
             for k, v in features.items()

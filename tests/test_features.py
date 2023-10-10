@@ -103,6 +103,7 @@ def test_sweep_pipe(sweep):
 ################################
 
 # test value, diagnostics etc.
+test_sweepset.clear_features()
 
 
 @pytest.mark.parametrize(
