@@ -95,8 +95,8 @@ class NullSweepFeature(SweepFeature):
     description: Only the corresponding sweepset level feature exsits.
     units: /."""
 
-    def __init__(self, data=None, compute_at_init=True, name=None):
-        super().__init__(data, compute_at_init, name=name, store_with_data=False)
+    def __init__(self, data=None, name=None, **kwargs):
+        super().__init__(data, name=name, store_with_data=False, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         return
@@ -108,8 +108,8 @@ class Sweep_Stim_amp(SweepFeature):
     description: maximum amplitude of stimulus.
     units: pA."""
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, compute_at_init=True, **kwargs):
+        super().__init__(data, compute_at_init, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         idx = np.argmax(abs(self.data.i).T, axis=0)
@@ -138,8 +138,8 @@ class Sweep_Stim_onset(SweepFeature):
     description: time of stimulus onset.
     units: s."""
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, compute_at_init=True, **kwargs):
+        super().__init__(data, compute_at_init, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         stim_onset = float("nan")
@@ -172,8 +172,8 @@ class Sweep_Stim_end(SweepFeature):
     description: time of stimulus end.
     units: s."""
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, compute_at_init=True, **kwargs):
+        super().__init__(data, compute_at_init, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         stim_end = float("nan")
@@ -204,8 +204,8 @@ class Sweep_Num_AP(SweepFeature):
     description: # peaks during stimulus.
     units: /."""
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, compute_at_init=True, **kwargs):
+        super().__init__(data, compute_at_init, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         peak_t = self.lookup_spike_feature("peak_t", recompute=recompute)
@@ -244,8 +244,8 @@ class Sweep_AP_freq(SweepFeature):
     description: # peaks during stimulus / stimulus duration.
     units: Hz."""
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, compute_at_init=True, **kwargs):
+        super().__init__(data, compute_at_init, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         num_ap = self.lookup_sweep_feature("num_ap", recompute=recompute)
@@ -273,8 +273,8 @@ class Sweep_AP_latency(SweepFeature):
     description: time of first spike after stimulus onset.
     units: s."""
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, compute_at_init=True, **kwargs):
+        super().__init__(data, compute_at_init, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         ap_latency = float("nan")
@@ -319,8 +319,8 @@ class Sweep_V_baseline(SweepFeature):
     description: average voltage in baseline_interval (in s) before stimulus onset.
     units: mV."""
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, compute_at_init=True, **kwargs):
+        super().__init__(data, compute_at_init, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         v_baseline_avg = float("nan")
@@ -363,8 +363,8 @@ class Sweep_V_deflect(SweepFeature):
     description: average voltage during last 100 ms of stimulus.
     units: mV."""
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, compute_at_init=True, **kwargs):
+        super().__init__(data, compute_at_init, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         v_deflect_avg = float("nan")
@@ -404,8 +404,8 @@ class Sweep_Tau(SweepFeature):
     description: time constant of exponential fit to voltage deflection.
     units: s."""
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, compute_at_init=True, **kwargs):
+        super().__init__(data, compute_at_init, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         tau = float("nan")
@@ -484,8 +484,8 @@ class Sweep_AP_freq_adapt(SweepFeature):
     description: ratio of spikes in second and first half half of stimulus interval, if there is at least 5 spikes in total.
     units: /."""
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, compute_at_init=True, **kwargs):
+        super().__init__(data, compute_at_init, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         ap_freq_adapt = float("nan")
@@ -546,8 +546,8 @@ class Sweep_AP_amp_slope(SweepFeature):
     during the stimulus interval.
     units: mV/s."""
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, compute_at_init=True, **kwargs):
+        super().__init__(data, compute_at_init, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         ap_amp_slope = float("nan")
@@ -597,8 +597,8 @@ class Sweep_ISI_FF(SweepFeature):
     description: Var(ISIs) / Mean(ISIs).
     units: s."""
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, compute_at_init=True, **kwargs):
+        super().__init__(data, compute_at_init, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         isi_ff = float("nan")
@@ -629,8 +629,8 @@ class Sweep_ISI_CV(SweepFeature):
     description: Std(ISIs) / Mean(ISIs).
     units: /."""
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, compute_at_init=True, **kwargs):
+        super().__init__(data, compute_at_init, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         isi_cv = float("nan")
@@ -661,8 +661,8 @@ class Sweep_AP_FF(SweepFeature):
     description: Var(ap_amp) / Mean(ap_amp).
     units: mV."""
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, compute_at_init=True, **kwargs):
+        super().__init__(data, compute_at_init, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         ap_ff = float("nan")
@@ -693,8 +693,8 @@ class Sweep_AP_CV(SweepFeature):
     description: Std(ap_amp) / Mean(ap_amp).
     units: /."""
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, compute_at_init=True, **kwargs):
+        super().__init__(data, compute_at_init, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         ap_cv = float("nan")
@@ -726,8 +726,8 @@ class Sweep_R_input(SweepFeature):
     Should not be used for cell level feature.
     units: MOhm."""
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, compute_at_init=True, **kwargs):
+        super().__init__(data, compute_at_init, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         r_input = float("nan")
@@ -759,11 +759,9 @@ class Sweep_V_sag(SweepFeature):
     description: Average voltage around max deflection.
     units: mV."""
 
-    def __init__(self, data=None, compute_at_init=True, peak_width=0.005):
-        super().__init__(data, compute_at_init=False)
+    def __init__(self, data=None, compute_at_init=True, peak_width=0.005, **kwargs):
         self.peak_width = peak_width
-        if compute_at_init and data is not None:  # because of peak_width
-            self.get_value()
+        super().__init__(data, compute_at_init, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         v_sag = float("nan")
@@ -823,11 +821,9 @@ class Sweep_Sag(SweepFeature):
     description: magnitude of the depolarization peak.
     units: mV."""
 
-    def __init__(self, data=None, compute_at_init=True, peak_width=0.005):
+    def __init__(self, data=None, compute_at_init=True, peak_width=0.005, **kwargs):
         self.peak_width = peak_width
-        super().__init__(data, compute_at_init=False)
-        if compute_at_init and data is not None:  # because of peak_width
-            self.get_value()
+        super().__init__(data, compute_at_init, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         sag = float("nan")
@@ -865,8 +861,8 @@ class Sweep_V_steady(SweepFeature):
     description: hyperpol steady state voltage.
     units: /."""
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, compute_at_init=True, **kwargs):
+        super().__init__(data, compute_at_init, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         v_steady = float("nan")
@@ -898,11 +894,9 @@ class Sweep_Sag_fraction(SweepFeature):
     description: fraction that membrane potential relaxes back to baseline.
     units: /."""
 
-    def __init__(self, data=None, compute_at_init=True, peak_width=0.005):
+    def __init__(self, data=None, compute_at_init=True, peak_width=0.005, **kwargs):
         self.peak_width = peak_width
-        super().__init__(data, compute_at_init=False)
-        if compute_at_init and data is not None:  # because of peak_width
-            self.get_value()
+        super().__init__(data, compute_at_init, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         sag_fraction = float("nan")
@@ -944,8 +938,8 @@ class Sweep_Sag_ratio(SweepFeature):
     description: ratio of steady state voltage decrease to the largest voltage decrease.
     units: /."""
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, compute_at_init=True, **kwargs):
+        super().__init__(data, compute_at_init, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         sag_ratio = float("nan")
@@ -989,8 +983,8 @@ class Sweep_Sag_area(SweepFeature):
     description: area under the sag.
     units: mV*s."""
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, compute_at_init=True, **kwargs):
+        super().__init__(data, compute_at_init, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         sag_area = float("nan")
@@ -1033,11 +1027,9 @@ class Sweep_Sag_time(SweepFeature):
     description: duration of the sag.
     units: s."""
 
-    def __init__(self, data=None, compute_at_init=True, min_T_sag=0.005):
+    def __init__(self, data=None, compute_at_init=True, min_T_sag=0.005, **kwargs):
         self.min_T_sag = min_T_sag
-        super().__init__(data, compute_at_init=False)
-        if compute_at_init and data is not None:  # because of peak_width
-            self.get_value()
+        super().__init__(data, compute_at_init, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         sag_time = float("nan")
@@ -1078,11 +1070,9 @@ class Sweep_V_plateau(SweepFeature):
     description: average voltage during the plateau.
     units: mV."""
 
-    def __init__(self, data=None, compute_at_init=True, T_plateau=0.1):
+    def __init__(self, data=None, compute_at_init=True, T_plateau=0.1, **kwargs):
         self.T_plateau = T_plateau
-        super().__init__(data, compute_at_init=False)
-        if compute_at_init and data is not None:  # because of T_plateau
-            self.get_value()
+        super().__init__(data, compute_at_init, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         v_avg_plateau = float("nan")
@@ -1117,11 +1107,9 @@ class Sweep_Rebound(SweepFeature):
     description: V_max during stimulus_end and stimulus_end + T_rebound - V_baseline.
     units: mV."""
 
-    def __init__(self, data=None, compute_at_init=True, T_rebound=0.3):
+    def __init__(self, data=None, compute_at_init=True, T_rebound=0.3, **kwargs):
         self.T_rebound = T_rebound
-        super().__init__(data, compute_at_init=False)
-        if compute_at_init and data is not None:  # because of T_rebound
-            self.get_value()
+        super().__init__(data, compute_at_init, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         rebound = float("nan")
@@ -1169,11 +1157,9 @@ class Sweep_Rebound_APs(SweepFeature):
     description: number of spikes during stimulus_end and stimulus_end + T_rebound.
     units: /."""
 
-    def __init__(self, data=None, compute_at_init=True, T_rebound=0.3):
+    def __init__(self, data=None, compute_at_init=True, T_rebound=0.3, **kwargs):
         self.T_rebound = T_rebound
-        super().__init__(data, compute_at_init=False)
-        if compute_at_init and data is not None:  # because of T_rebound
-            self.get_value()
+        super().__init__(data, compute_at_init, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         num_rebound_aps = float("nan")
@@ -1213,11 +1199,9 @@ class Sweep_Rebound_area(SweepFeature):
     to stimulus_end + T_rebound.
     units: mV*s."""
 
-    def __init__(self, data=None, compute_at_init=True, T_rebound=0.3):
+    def __init__(self, data=None, compute_at_init=True, T_rebound=0.3, **kwargs):
         self.T_rebound = T_rebound
-        super().__init__(data, compute_at_init=False)
-        if compute_at_init and data is not None:  # because of T_rebound
-            self.get_value()
+        super().__init__(data, compute_at_init, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         rebound_area = float("nan")
@@ -1262,11 +1246,9 @@ class Sweep_Rebound_latency(SweepFeature):
     baseline for the first time. t_rebound = t_off + rebound_latency.
     units: s."""
 
-    def __init__(self, data=None, compute_at_init=True, T_rebound=0.3):
+    def __init__(self, data=None, compute_at_init=True, T_rebound=0.3, **kwargs):
         self.T_rebound = T_rebound
-        super().__init__(data, compute_at_init=False)
-        if compute_at_init and data is not None:  # because of T_rebound
-            self.get_value()
+        super().__init__(data, compute_at_init, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         rebound_latency = float("nan")
@@ -1314,11 +1296,9 @@ class Sweep_Rebound_avg(SweepFeature):
     and stimulus_end + T_rebound - baseline voltage.
     units: mV."""
 
-    def __init__(self, data=None, compute_at_init=True, T_rebound=0.3):
+    def __init__(self, data=None, compute_at_init=True, T_rebound=0.3, **kwargs):
         self.T_rebound = T_rebound
-        super().__init__(data, compute_at_init=False)
-        if compute_at_init and data is not None:  # because of T_rebound
-            self.get_value()
+        super().__init__(data, compute_at_init, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         v_rebound_avg = float("nan")
@@ -1364,11 +1344,9 @@ class Sweep_V_rest(SweepFeature):
     description: v_rest = v_baseline - r_input*dc_offset.
     units: mV."""
 
-    def __init__(self, data=None, compute_at_init=True, dc_offset=0):
+    def __init__(self, data=None, compute_at_init=True, dc_offset=0, **kwargs):
         self.dc_offset = dc_offset
-        super().__init__(data, compute_at_init=False)
-        if compute_at_init and data is not None:  # because of dc_offset
-            self.get_value()
+        super().__init__(data, compute_at_init, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         v_rest = float("nan")
@@ -1404,8 +1382,8 @@ class Sweep_Num_bursts(SweepFeature):
     description: Number of detected bursts.
     units: /."""
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, compute_at_init=True, **kwargs):
+        super().__init__(data, compute_at_init, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         num_bursts = float("nan")
@@ -1454,8 +1432,8 @@ class Sweep_Burstiness(SweepFeature):
     description: max "burstiness" index across detected bursts.
     units: /."""
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, compute_at_init=True, **kwargs):
+        super().__init__(data, compute_at_init, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         max_burstiness = float("nan")
@@ -1499,8 +1477,8 @@ class Sweep_Burstiness(SweepFeature):
 #     description: ISI burstiness as defined in https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3473113/.
 #     units: /."""
 
-#     def __init__(self, data=None, compute_at_init=True):
-#         super().__init__(data, compute_at_init)
+#     def __init__(self, data=None, compute_at_init=True, **kwargs):
+#         super().__init__(data, compute_at_init, **kwargs)
 
 #     def _compute(self, recompute=False, store_diagnostics=True):
 #         isi_burstiness = float("nan")
@@ -1544,8 +1522,8 @@ class Sweep_ISI_adapt(SweepFeature):
     description: /.
     units: /."""
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, compute_at_init=True, **kwargs):
+        super().__init__(data, compute_at_init, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         isi_adapt = float("nan")
@@ -1572,8 +1550,8 @@ class Sweep_ISI_adapt_avg(SweepFeature):
     description: /.
     units: /."""
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, compute_at_init=True, **kwargs):
+        super().__init__(data, compute_at_init, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         isi_adapt_avg = float("nan")
@@ -1601,8 +1579,8 @@ class Sweep_AP_amp_adapt(SweepFeature):
     description: /.
     units: mV/s."""
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, compute_at_init=True, **kwargs):
+        super().__init__(data, compute_at_init, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         ap_amp_adapt = float("nan")
@@ -1630,8 +1608,8 @@ class Sweep_AP_amp_adapt_avg(SweepFeature):
     description: /.
     units: /."""
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, compute_at_init=True, **kwargs):
+        super().__init__(data, compute_at_init, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         ap_amp_adapt_avg = float("nan")
@@ -1660,8 +1638,8 @@ class Sweep_Wildness(SweepFeature):
     description: Wildness is the number of spikes that occur outside of the stimulus interval.
     units: /."""
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, compute_at_init=True, **kwargs):
+        super().__init__(data, compute_at_init, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         num_wild_spikes = float("nan")
@@ -1702,10 +1680,10 @@ class APSweepFeature(SweepFeature):
     def __init__(
         self,
         data=None,
-        compute_at_init=True,
-        ft_name: Optional[str] = None,
+        name: Optional[str] = None,
         ap_selector: Optional[Callable] = None,
         ft_aggregator: Optional[Callable] = None,
+        **kwargs,
     ):
         """
         Args:
@@ -1721,9 +1699,9 @@ class APSweepFeature(SweepFeature):
                 to `np.nanmedian` (equates to pass through for single sweeps)."""
         self.ap_selector = ap_selector
         self.ft_aggregator = ft_aggregator
-        super().__init__(data, compute_at_init)
-        if ft_name is not None:
-            self.name = ft_name
+        super().__init__(data, name=name, **kwargs)
+        if name is not None:
+            self.name = name
 
     def _select(self, data):
         """Function expects a EphysSweepSetFeatureExtractor object as input and
@@ -1816,11 +1794,9 @@ class Sweep_AP_AHP(APSweepFeature):
     def __init__(
         self,
         data=None,
-        compute_at_init=True,
-        ap_selector: Optional[Callable] = None,
-        ft_aggregator: Optional[Callable] = None,
+        **kwargs,
     ):
-        super().__init__(data, compute_at_init, "ap_ahp", ap_selector, ft_aggregator)
+        super().__init__(data, name="ap_ahp", **kwargs)
 
 
 class Sweep_AP_ADP(APSweepFeature):
@@ -1833,11 +1809,9 @@ class Sweep_AP_ADP(APSweepFeature):
     def __init__(
         self,
         data=None,
-        compute_at_init=True,
-        ap_selector: Optional[Callable] = None,
-        ft_aggregator: Optional[Callable] = None,
+        **kwargs,
     ):
-        super().__init__(data, compute_at_init, "ap_adp", ap_selector, ft_aggregator)
+        super().__init__(data, "ap_adp", **kwargs)
 
 
 class Sweep_AP_thresh(APSweepFeature):
@@ -1850,11 +1824,9 @@ class Sweep_AP_thresh(APSweepFeature):
     def __init__(
         self,
         data=None,
-        compute_at_init=True,
-        ap_selector: Optional[Callable] = None,
-        ft_aggregator: Optional[Callable] = None,
+        **kwargs,
     ):
-        super().__init__(data, compute_at_init, "ap_thresh", ap_selector, ft_aggregator)
+        super().__init__(data, name="ap_thresh", **kwargs)
 
 
 class Sweep_AP_overshoot(APSweepFeature):
@@ -1867,13 +1839,9 @@ class Sweep_AP_overshoot(APSweepFeature):
     def __init__(
         self,
         data=None,
-        compute_at_init=True,
-        ap_selector: Optional[Callable] = None,
-        ft_aggregator: Optional[Callable] = None,
+        **kwargs,
     ):
-        super().__init__(
-            data, compute_at_init, "ap_overshoot", ap_selector, ft_aggregator
-        )
+        super().__init__(data, "ap_overshoot", **kwargs)
 
 
 class Sweep_AP_ADP_trough(APSweepFeature):
@@ -1886,13 +1854,9 @@ class Sweep_AP_ADP_trough(APSweepFeature):
     def __init__(
         self,
         data=None,
-        compute_at_init=True,
-        ap_selector: Optional[Callable] = None,
-        ft_aggregator: Optional[Callable] = None,
+        **kwargs,
     ):
-        super().__init__(
-            data, compute_at_init, "ap_adp_trough", ap_selector, ft_aggregator
-        )
+        super().__init__(data, "ap_adp_trough", **kwargs)
 
 
 class Sweep_AP_amp(APSweepFeature):
@@ -1905,11 +1869,9 @@ class Sweep_AP_amp(APSweepFeature):
     def __init__(
         self,
         data=None,
-        compute_at_init=True,
-        ap_selector: Optional[Callable] = None,
-        ft_aggregator: Optional[Callable] = None,
+        **kwargs,
     ):
-        super().__init__(data, compute_at_init, "ap_amp", ap_selector, ft_aggregator)
+        super().__init__(data, "ap_amp", **kwargs)
 
 
 class Sweep_AP_width(APSweepFeature):
@@ -1922,11 +1884,9 @@ class Sweep_AP_width(APSweepFeature):
     def __init__(
         self,
         data=None,
-        compute_at_init=True,
-        ap_selector: Optional[Callable] = None,
-        ft_aggregator: Optional[Callable] = None,
+        **kwargs,
     ):
-        super().__init__(data, compute_at_init, "ap_width", ap_selector, ft_aggregator)
+        super().__init__(data, "ap_width", **kwargs)
 
 
 class Sweep_AP_peak(APSweepFeature):
@@ -1939,11 +1899,9 @@ class Sweep_AP_peak(APSweepFeature):
     def __init__(
         self,
         data=None,
-        compute_at_init=True,
-        ap_selector: Optional[Callable] = None,
-        ft_aggregator: Optional[Callable] = None,
+        **kwargs,
     ):
-        super().__init__(data, compute_at_init, "ap_peak", ap_selector, ft_aggregator)
+        super().__init__(data, "ap_peak", **kwargs)
 
 
 class Sweep_AP_trough(APSweepFeature):
@@ -1956,11 +1914,9 @@ class Sweep_AP_trough(APSweepFeature):
     def __init__(
         self,
         data=None,
-        compute_at_init=True,
-        ap_selector: Optional[Callable] = None,
-        ft_aggregator: Optional[Callable] = None,
+        **kwargs,
     ):
-        super().__init__(data, compute_at_init, "ap_trough", ap_selector, ft_aggregator)
+        super().__init__(data, "ap_trough", **kwargs)
 
 
 class Sweep_AP_UDR(APSweepFeature):
@@ -1973,11 +1929,9 @@ class Sweep_AP_UDR(APSweepFeature):
     def __init__(
         self,
         data=None,
-        compute_at_init=True,
-        ap_selector: Optional[Callable] = None,
-        ft_aggregator: Optional[Callable] = None,
+        **kwargs,
     ):
-        super().__init__(data, compute_at_init, "ap_udr", ap_selector, ft_aggregator)
+        super().__init__(data, "ap_udr", **kwargs)
 
 
 class Sweep_ISI(APSweepFeature):
@@ -1990,11 +1944,9 @@ class Sweep_ISI(APSweepFeature):
     def __init__(
         self,
         data=None,
-        compute_at_init=True,
-        ap_selector: Optional[Callable] = None,
-        ft_aggregator: Optional[Callable] = None,
+        **kwargs,
     ):
-        super().__init__(data, compute_at_init, "isi", ap_selector, ft_aggregator)
+        super().__init__(data, "isi", **kwargs)
 
     def _select(self, data):
         """Function expects a EphysSweepSetFeatureExtractor object as input and

@@ -64,7 +64,7 @@ def available_sweepset_features(
         return {
             k: lambda *args, **kwargs: v(
                 *args,
-                compute_at_init=compute_at_init,
+                **kwargs,
                 store_diagnostics=store_diagnostics,
                 **kwargs,
             )
@@ -88,8 +88,8 @@ class APFeature(SweepSetFeature):
     - AP upstroke-to-downstroke ratio (UDR)
     """
 
-    def __init__(self, feature, data=None, compute_at_init=True):
-        super().__init__(feature, data=data, compute_at_init=compute_at_init)
+    def __init__(self, feature, data=None, **kwargs):
+        super().__init__(feature, data=data, **kwargs)
 
     def _select(self, fts):
         """Select representative sweep and use its AP features to represent the
@@ -134,8 +134,8 @@ class ReboundFeature(SweepSetFeature):
     - rebound area
     """
 
-    def __init__(self, feature, data=None, compute_at_init=True):
-        super().__init__(feature, data=data, compute_at_init=compute_at_init)
+    def __init__(self, feature, data=None, **kwargs):
+        super().__init__(feature, data=data, **kwargs)
 
     def _select(self, fts):
         """Select representative sweep and use its rebound features to represent the
@@ -161,8 +161,8 @@ class SagFeature(SweepSetFeature):
     - sag ratio
     - sag fraction"""
 
-    def __init__(self, feature, data=None, compute_at_init=True):
-        super().__init__(feature, data=data, compute_at_init=compute_at_init)
+    def __init__(self, feature, data=None, **kwargs):
+        super().__init__(feature, data=data, **kwargs)
 
     def _select(self, fts):
         """Select representative sweep and use its sag features to represent the
@@ -192,8 +192,8 @@ class APsFeature(SweepSetFeature):
     - AP CV
     """
 
-    def __init__(self, feature, data=None, compute_at_init=True):
-        super().__init__(feature, data=data, compute_at_init=compute_at_init)
+    def __init__(self, feature, data=None, **kwargs):
+        super().__init__(feature, data=data, **kwargs)
 
     def _select(self, fts):
         """Select representative sweep and use its spiking features to represent the
@@ -227,8 +227,8 @@ class First5MedianFeature(SweepSetFeature):
     - average AP amplitude adaptation
     """
 
-    def __init__(self, feature, data=None, compute_at_init=True):
-        super().__init__(feature, data=data, compute_at_init=compute_at_init)
+    def __init__(self, feature, data=None, **kwargs):
+        super().__init__(feature, data=data, **kwargs)
 
     def _select(self, fts):
         """Select representative sweep and use its features to represent the
@@ -264,8 +264,8 @@ class First5MedianFeature(SweepSetFeature):
 class HyperpolMedianFeature(SweepSetFeature):
     """Obtain sweepset level hyperpolarization feature."""
 
-    def __init__(self, feature, data=None, compute_at_init=True):
-        super().__init__(feature, data=data, compute_at_init=compute_at_init)
+    def __init__(self, feature, data=None, **kwargs):
+        super().__init__(feature, data=data, **kwargs)
 
     def _select(self, fts):
         """Select representative sweep and use its features to represent the
@@ -297,10 +297,8 @@ class HyperpolMedianFeature(SweepSetFeature):
 class SweepSet_AP_latency(SweepSetFeature):
     """Obtain sweepset level AP latency feature."""
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(
-            swft.Sweep_AP_latency, data=data, compute_at_init=compute_at_init
-        )
+    def __init__(self, data=None, **kwargs):
+        super().__init__(swft.Sweep_AP_latency, data=data, **kwargs)
 
     def _select(self, fts):
         """Select representative sweep and use its sag features to represent the
@@ -328,12 +326,9 @@ class SweepSet_AP_latency_20pA(SweepSetFeature):
     """Obtain sweepset level AP latency feature at one stimulus above the first
     one that spikes."""
 
-    def __init__(self, data=None, compute_at_init=True):
+    def __init__(self, data=None, **kwargs):
         super().__init__(
-            swft.Sweep_AP_latency,
-            data=data,
-            compute_at_init=compute_at_init,
-            name="ap_latency_20pA",
+            swft.Sweep_AP_latency, data=data, name="ap_latency_20pA", **kwargs
         )
 
     def _select(self, fts):
@@ -368,13 +363,8 @@ class SweepSet_dfdI(SweepSetFeature):
     units: Hz/pA."""
 
     # TODO: Keep `feature` input arg around for API consistency?
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(
-            swft.NullSweepFeature,
-            data=data,
-            compute_at_init=compute_at_init,
-            name="dfdI",
-        )
+    def __init__(self, data=None, **kwargs):
+        super().__init__(swft.NullSweepFeature, data=data, name="dfdI", **kwargs)
         self.parse_docstring()
 
     def _compute(self, recompute=False, store_diagnostics=False):
@@ -446,13 +436,13 @@ class SweepSet_Rheobase(SweepSetFeature):
     units: pA.
     """
 
-    def __init__(self, data=None, compute_at_init=True, dc_offset=0):
+    def __init__(self, data=None, dc_offset=0, **kwargs):
         self.dc_offset = dc_offset
         super().__init__(
             swft.NullSweepFeature,
             data=data,
-            compute_at_init=compute_at_init,
             name="rheobase",
+            **kwargs,
         )
         self.parse_docstring()
 
@@ -625,11 +615,11 @@ class SweepSet_R_input(SweepSetFeature):
     units: MOhm.
     """
 
-    def __init__(self, data=None, compute_at_init=True):
+    def __init__(self, data=None, **kwargs):
         super().__init__(
             swft.Sweep_R_input,
             data=data,
-            compute_at_init=compute_at_init,
+            **kwargs,
         )
         self.parse_docstring()
 
@@ -689,12 +679,9 @@ class SweepSet_Slow_hyperpolarization(SweepSetFeature):
     units: mV.
     """
 
-    def __init__(self, data=None, compute_at_init=True):
+    def __init__(self, data=None, **kwargs):
         super().__init__(
-            swft.NullSweepFeature,
-            data=data,
-            compute_at_init=compute_at_init,
-            name="slow_hyperpolarization",
+            swft.NullSweepFeature, data=data, name="slow_hyperpolarization", **kwargs
         )
         self.parse_docstring()
 
@@ -734,12 +721,12 @@ class SweepSet_Slow_hyperpolarization_slope(SweepSetFeature):
     units: mV.
     """
 
-    def __init__(self, data=None, compute_at_init=True):
+    def __init__(self, data=None, **kwargs):
         super().__init__(
             swft.NullSweepFeature,
             data=data,
-            compute_at_init=compute_at_init,
             name="slow_hyperpolarization_slope",
+            **kwargs,
         )
         self.parse_docstring()
 
@@ -793,8 +780,8 @@ class SweepSet_Slow_hyperpolarization_slope(SweepSetFeature):
 
 
 class SweepSet_Tau(HyperpolMedianFeature):
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(swft.Sweep_Tau, data=data, compute_at_init=compute_at_init)
+    def __init__(self, data=None, **kwargs):
+        super().__init__(swft.Sweep_Tau, data=data, **kwargs)
 
 
 # class SweepSet_V_rest(SweepSetFeature):
@@ -839,53 +826,43 @@ class SweepSet_Tau(HyperpolMedianFeature):
 
 
 class SweepSet_V_rest(HyperpolMedianFeature):
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(swft.Sweep_V_rest, data=data, compute_at_init=compute_at_init)
+    def __init__(self, data=None, **kwargs):
+        super().__init__(swft.Sweep_V_rest, data=data, **kwargs)
 
 
 class SweepSet_V_baseline(HyperpolMedianFeature):
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(
-            swft.Sweep_V_baseline, data=data, compute_at_init=compute_at_init
-        )
+    def __init__(self, data=None, **kwargs):
+        super().__init__(swft.Sweep_V_baseline, data=data, **kwargs)
 
 
 class SweepSet_Sag(SagFeature):
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(swft.Sweep_Sag, data=data, compute_at_init=compute_at_init)
+    def __init__(self, data=None, **kwargs):
+        super().__init__(swft.Sweep_Sag, data=data, **kwargs)
 
 
 class SweepSet_Sag_ratio(SagFeature):
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(
-            swft.Sweep_Sag_ratio, data=data, compute_at_init=compute_at_init
-        )
+    def __init__(self, data=None, **kwargs):
+        super().__init__(swft.Sweep_Sag_ratio, data=data, **kwargs)
 
 
 class SweepSet_Sag_fraction(SagFeature):
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(
-            swft.Sweep_Sag_fraction, data=data, compute_at_init=compute_at_init
-        )
+    def __init__(self, data=None, **kwargs):
+        super().__init__(swft.Sweep_Sag_fraction, data=data, **kwargs)
 
 
 class SweepSet_Sag_area(SagFeature):
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(
-            swft.Sweep_Sag_area, data=data, compute_at_init=compute_at_init
-        )
+    def __init__(self, data=None, **kwargs):
+        super().__init__(swft.Sweep_Sag_area, data=data, **kwargs)
 
 
 class SweepSet_Sag_time(SagFeature):
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(
-            swft.Sweep_Sag_time, data=data, compute_at_init=compute_at_init
-        )
+    def __init__(self, data=None, **kwargs):
+        super().__init__(swft.Sweep_Sag_time, data=data, **kwargs)
 
 
 class SweepSet_Rebound(ReboundFeature):
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(swft.Sweep_Rebound, data=data, compute_at_init=compute_at_init)
+    def __init__(self, data=None, **kwargs):
+        super().__init__(swft.Sweep_Rebound, data=data, **kwargs)
 
 
 class SweepSet_Rebound_APs(SweepSetFeature):
@@ -895,10 +872,8 @@ class SweepSet_Rebound_APs(SweepSetFeature):
     depends on: Sweep_Rebound_APs.
     units: /."""
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(
-            swft.Sweep_Rebound_APs, data=data, compute_at_init=compute_at_init
-        )
+    def __init__(self, data=None, **kwargs):
+        super().__init__(swft.Sweep_Rebound_APs, data=data, **kwargs)
         self.parse_docstring()
 
     def _select(self, fts):
@@ -921,175 +896,143 @@ class SweepSet_Rebound_APs(SweepSetFeature):
 
 
 class SweepSet_Rebound_area(ReboundFeature):
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(
-            swft.Sweep_Rebound_area, data=data, compute_at_init=compute_at_init
-        )
+    def __init__(self, data=None, **kwargs):
+        super().__init__(swft.Sweep_Rebound_area, data=data, **kwargs)
 
 
 class SweepSet_Rebound_latency(ReboundFeature):
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(
-            swft.Sweep_Rebound_latency, data=data, compute_at_init=compute_at_init
-        )
+    def __init__(self, data=None, **kwargs):
+        super().__init__(swft.Sweep_Rebound_latency, data=data, **kwargs)
 
 
 class SweepSet_Rebound_avg(ReboundFeature):
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(
-            swft.Sweep_Rebound_avg, data=data, compute_at_init=compute_at_init
-        )
+    def __init__(self, data=None, **kwargs):
+        super().__init__(swft.Sweep_Rebound_avg, data=data, **kwargs)
 
 
 class SweepSet_Num_AP(APsFeature):
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(swft.Sweep_Num_AP, data=data, compute_at_init=compute_at_init)
+    def __init__(self, data=None, **kwargs):
+        super().__init__(swft.Sweep_Num_AP, data=data, **kwargs)
 
 
 class SweepSet_AP_freq(APsFeature):
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(swft.Sweep_AP_freq, data=data, compute_at_init=compute_at_init)
+    def __init__(self, data=None, **kwargs):
+        super().__init__(swft.Sweep_AP_freq, data=data, **kwargs)
 
 
 class SweepSet_AP_freq_adapt(APsFeature):
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(
-            swft.Sweep_AP_freq_adapt, data=data, compute_at_init=compute_at_init
-        )
+    def __init__(self, data=None, **kwargs):
+        super().__init__(swft.Sweep_AP_freq_adapt, data=data, **kwargs)
 
 
 class SweepSet_AP_amp_slope(APsFeature):
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(
-            swft.Sweep_AP_amp_slope, data=data, compute_at_init=compute_at_init
-        )
+    def __init__(self, data=None, **kwargs):
+        super().__init__(swft.Sweep_AP_amp_slope, data=data, **kwargs)
 
 
 class SweepSet_ISI_FF(APsFeature):
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(swft.Sweep_ISI_FF, data=data, compute_at_init=compute_at_init)
+    def __init__(self, data=None, **kwargs):
+        super().__init__(swft.Sweep_ISI_FF, data=data, **kwargs)
 
 
 class SweepSet_AP_FF(APsFeature):
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(swft.Sweep_AP_FF, data=data, compute_at_init=compute_at_init)
+    def __init__(self, data=None, **kwargs):
+        super().__init__(swft.Sweep_AP_FF, data=data, **kwargs)
 
 
 class SweepSet_ISI_CV(APsFeature):
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(swft.Sweep_ISI_CV, data=data, compute_at_init=compute_at_init)
+    def __init__(self, data=None, **kwargs):
+        super().__init__(swft.Sweep_ISI_CV, data=data, **kwargs)
 
 
 class SweepSet_AP_CV(APsFeature):
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(swft.Sweep_AP_CV, data=data, compute_at_init=compute_at_init)
+    def __init__(self, data=None, **kwargs):
+        super().__init__(swft.Sweep_AP_CV, data=data, **kwargs)
 
 
 class SweepSet_ISI(APsFeature):
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(swft.Sweep_ISI, data=data, compute_at_init=compute_at_init)
+    def __init__(self, data=None, **kwargs):
+        super().__init__(swft.Sweep_ISI, data=data, **kwargs)
 
 
 class SweepSet_Burstiness(First5MedianFeature):
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(
-            swft.Sweep_Burstiness, data=data, compute_at_init=compute_at_init
-        )
+    def __init__(self, data=None, **kwargs):
+        super().__init__(swft.Sweep_Burstiness, data=data, **kwargs)
 
 
 class SweepSet_Num_bursts(First5MedianFeature):
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(
-            swft.Sweep_Num_bursts, data=data, compute_at_init=compute_at_init
-        )
+    def __init__(self, data=None, **kwargs):
+        super().__init__(swft.Sweep_Num_bursts, data=data, **kwargs)
 
 
 class SweepSet_ISI_adapt(First5MedianFeature):
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(
-            swft.Sweep_ISI_adapt, data=data, compute_at_init=compute_at_init
-        )
+    def __init__(self, data=None, **kwargs):
+        super().__init__(swft.Sweep_ISI_adapt, data=data, **kwargs)
 
 
 class SweepSet_ISI_adapt_avg(First5MedianFeature):
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(
-            swft.Sweep_ISI_adapt_avg, data=data, compute_at_init=compute_at_init
-        )
+    def __init__(self, data=None, **kwargs):
+        super().__init__(swft.Sweep_ISI_adapt_avg, data=data, **kwargs)
 
 
 class SweepSet_AP_amp_adapt(First5MedianFeature):
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(
-            swft.Sweep_AP_amp_adapt, data=data, compute_at_init=compute_at_init
-        )
+    def __init__(self, data=None, **kwargs):
+        super().__init__(swft.Sweep_AP_amp_adapt, data=data, **kwargs)
 
 
 class SweepSet_AP_amp_adapt_avg(First5MedianFeature):
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(
-            swft.Sweep_AP_amp_adapt_avg, data=data, compute_at_init=compute_at_init
-        )
+    def __init__(self, data=None, **kwargs):
+        super().__init__(swft.Sweep_AP_amp_adapt_avg, data=data, **kwargs)
 
 
 class SweepSet_AP_AHP(APFeature):
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(swft.Sweep_AP_AHP, data=data, compute_at_init=compute_at_init)
+    def __init__(self, data=None, **kwargs):
+        super().__init__(swft.Sweep_AP_AHP, data=data, **kwargs)
 
 
 class SweepSet_AP_ADP(APFeature):
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(swft.Sweep_AP_ADP, data=data, compute_at_init=compute_at_init)
+    def __init__(self, data=None, **kwargs):
+        super().__init__(swft.Sweep_AP_ADP, data=data, **kwargs)
 
 
 class SweepSet_AP_thresh(APFeature):
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(
-            swft.Sweep_AP_thresh, data=data, compute_at_init=compute_at_init
-        )
+    def __init__(self, data=None, **kwargs):
+        super().__init__(swft.Sweep_AP_thresh, data=data, **kwargs)
 
 
 class SweepSet_AP_amp(APFeature):
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(swft.Sweep_AP_amp, data=data, compute_at_init=compute_at_init)
+    def __init__(self, data=None, **kwargs):
+        super().__init__(swft.Sweep_AP_amp, data=data, **kwargs)
 
 
 class SweepSet_AP_width(APFeature):
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(
-            swft.Sweep_AP_width, data=data, compute_at_init=compute_at_init
-        )
+    def __init__(self, data=None, **kwargs):
+        super().__init__(swft.Sweep_AP_width, data=data, **kwargs)
 
 
 class SweepSet_AP_peak(APFeature):
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(swft.Sweep_AP_peak, data=data, compute_at_init=compute_at_init)
+    def __init__(self, data=None, **kwargs):
+        super().__init__(swft.Sweep_AP_peak, data=data, **kwargs)
 
 
 class SweepSet_AP_trough(APFeature):
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(
-            swft.Sweep_AP_trough, data=data, compute_at_init=compute_at_init
-        )
+    def __init__(self, data=None, **kwargs):
+        super().__init__(swft.Sweep_AP_trough, data=data, **kwargs)
 
 
 class SweepSet_AP_overshoot(APFeature):
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(
-            swft.Sweep_AP_overshoot, data=data, compute_at_init=compute_at_init
-        )
+    def __init__(self, data=None, **kwargs):
+        super().__init__(swft.Sweep_AP_overshoot, data=data, **kwargs)
 
 
 class SweepSet_AP_ADP_trough(APFeature):
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(
-            swft.Sweep_AP_ADP_trough, data=data, compute_at_init=compute_at_init
-        )
+    def __init__(self, data=None, **kwargs):
+        super().__init__(swft.Sweep_AP_ADP_trough, data=data, **kwargs)
 
 
 class SweepSet_AP_UDR(APFeature):
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(swft.Sweep_AP_UDR, data=data, compute_at_init=compute_at_init)
+    def __init__(self, data=None, **kwargs):
+        super().__init__(swft.Sweep_AP_UDR, data=data, **kwargs)
 
 
 class SweepSet_Num_wild_APs(SweepSetFeature):
@@ -1100,11 +1043,11 @@ class SweepSet_Num_wild_APs(SweepSetFeature):
     units: /.
     """
 
-    def __init__(self, data=None, compute_at_init=True):
+    def __init__(self, data=None, **kwargs):
         super().__init__(
             swft.Sweep_Wildness,
             data=data,
-            compute_at_init=compute_at_init,
+            **kwargs,
             name="num_wild_aps",
         )
         self.parse_docstring()
@@ -1131,11 +1074,11 @@ class SweepSet_Wildness(SweepSetFeature):
     units: /.
     """
 
-    def __init__(self, data=None, compute_at_init=True):
+    def __init__(self, data=None, **kwargs):
         super().__init__(
             swft.Sweep_Wildness,
             data=data,
-            compute_at_init=compute_at_init,
+            **kwargs,
         )
         self.parse_docstring()
 
@@ -1160,14 +1103,12 @@ class NullSweepSetFeature(SweepSetFeature):
     units: /.
     """
 
-    def __init__(
-        self, data=None, compute_at_init=True, name: str = "null_sweepset_feature"
-    ):
+    def __init__(self, data=None, name: str = "null_sweepset_feature", **kwargs):
         super().__init__(
             swft.NullSweepFeature,
             data=data,
-            compute_at_init=compute_at_init,
             name=name,
+            **kwargs,
         )
         self.parse_docstring()
 

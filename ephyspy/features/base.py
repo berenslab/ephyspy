@@ -97,10 +97,13 @@ class BaseFeature(ABC):
         )
         self._value = None
         self._diagnostics = None
-        self.store_with_data = store_with_data
-        self._data_init_incl_storage(data)
-        if not data is None and compute_at_init:
-            self.get_value()
+
+        self.__call__(
+            data,
+            compute=compute_at_init,
+            store_with_data=store_with_data,
+            return_value=False,
+        )
 
         self.parse_docstring()
 
@@ -253,7 +256,7 @@ class BaseFeature(ABC):
         Returns:
             The value of the feature.
         """
-        if recompute or self._value is None:
+        if recompute or self._value is None and not self.data is None:
             self._value = self._compute(
                 recompute=recompute,
                 store_diagnostics=store_diagnostics,
@@ -283,8 +286,7 @@ class BaseFeature(ABC):
         Args:
             data: The dataset to compute the feature for, i.e. an instance of
                 `EphysSweep`.
-            compute: If True, compute the feature even if it is already
-                computed.
+            compute: If True, compute the feature.
             store_diagnostics: If True, store any additional information about
                 the feature computation in the `_diagnostics` attribute.
             store_with_data: If True, store the feature in the `self.data.features`
@@ -297,12 +299,13 @@ class BaseFeature(ABC):
         """
         self.store_with_data = store_with_data
         self._data_init_incl_storage(data)
-        if compute:
+
+        if not data is None and compute:
             self.get_value(
-                recompute=True,
+                recompute=False,
                 store_diagnostics=store_diagnostics,
             )
-        if return_value:
+        if not data is None and return_value:
             return self.value
         return self
 
@@ -458,11 +461,13 @@ class SpikeFeature(BaseFeature):
     additional functionality ot it.
     """
 
+    # TODO: Add support for recursive feature lookup and diagnostics
     def __init__(
         self,
         data: Optional[EphysSweep] = None,
         compute_at_init: bool = True,
         name: Optional[str] = None,
+        store_with_data: bool = True,
     ):
         r"""
         Args:
@@ -475,8 +480,15 @@ class SpikeFeature(BaseFeature):
                 the features are actually needed.
             name: Custom name of the feature. If None, the name of the feature
                 class is used.
+            store_with_data: If True, store the feature in the `self.data.features`
+                dictionary. CURRENTLY NOT SUPPORTED FOR SPIKE FEATURES!
         """
-        super().__init__(data, compute_at_init, name)
+        super().__init__(
+            data,
+            compute_at_init=compute_at_init,
+            name=name,
+            store_with_data=store_with_data,
+        )
 
     def _data_init(self, data: EphysSweep):
         """Initialize the feature with a EphysSweep object.
@@ -576,6 +588,7 @@ class SpikeFeature(BaseFeature):
         data: EphysSweep = None,
         compute: bool = False,
         store_diagnostics: bool = True,
+        store_with_data: bool = True,
         return_value: bool = True,
     ) -> Union[float, SweepFeature]:
         """Compute the feature for a given dataset.
@@ -585,25 +598,24 @@ class SpikeFeature(BaseFeature):
         Args:
             data: The dataset to compute the feature for, i.e. an instance of
                 `EphysSweep`.
-            compute: If True, compute the feature even if it is already
-                computed.
+            compute: If True, compute the feature.
             store_diagnostics: If True, store any additional information about
                 the feature computation in the `_diagnostics` attribute.
+            store_with_data: If True, store the feature in the `self.data.features`
+                dictionary. CURRENTLY NOT SUPPORTED FOR SPIKE FEATURES!
             return_value: If True, return the value of the feature, otherwise
                 return the feature object.
 
         Returns:
             The value of the feature.
         """
-        self._data_init(data)
-        if compute:
-            self.get_value(
-                recompute=True,
-                store_diagnostics=store_diagnostics,
-            )
-        if return_value:
-            return self.value
-        return self
+        return super().__call__(
+            data,
+            compute,
+            store_diagnostics,
+            True,  # disables removal of feature from data.features
+            return_value,
+        )
 
 
 class SweepFeature(BaseFeature):
@@ -724,7 +736,9 @@ class SweepFeature(BaseFeature):
                 ft.__name__.lower().replace("sweep_", ""): ft for ft in available_fts
             }
             if feature_name in available_fts:
-                ft = available_fts[feature_name](self.data)
+                ft = available_fts[feature_name](
+                    self.data, store_with_data=self.store_with_data
+                )
                 if return_value:
                     return ft.value
                 return ft
@@ -890,10 +904,13 @@ class SweepSetFeature(SweepFeature):
         self.baseft_name = swft.name if swft.name != "nullsweepfeature" else self.name
         self._value = None
         self._diagnostics = None
-        self.store_with_data = store_with_data
-        self._data_init_incl_storage(data)
-        if not data is None and compute_at_init:
-            self.get_value()
+
+        self.__call__(
+            data,
+            compute=False,
+            store_with_data=store_with_data,
+            return_value=compute_at_init,
+        )
 
         if ft_cls.__doc__ is not None:
             attrs = parse_func_doc_attrs(ft_cls)
@@ -948,44 +965,6 @@ class SweepSetFeature(SweepFeature):
                 features = self.data.features
                 self._value = features[self.name]._value
                 self._diagnostics = features[self.name]._diagnostics
-
-    def __call__(
-        self,
-        data: EphysSweepSet = None,
-        compute: bool = False,
-        store_diagnostics: bool = True,
-        store_with_data: bool = True,
-        return_value: bool = False,
-    ) -> Union[SweepSetFeature, float]:
-        """Compute the feature for a given dataset.
-
-        Essentially chains together `_data_init` and `get_value`.
-
-        Args:
-            data: The dataset to compute the feature for, i.e. an instance of
-                `EphysSweepSet`.
-            compute: If True, compute the feature even if it is already
-                computed.
-            store_diagnostics: If True, store any additional information about
-                the feature computation in the `_diagnostics` attribute.
-            store_with_data: If True, store the feature in the `self.data.features`
-                dictionary.
-            return_value: If True, return the value of the feature, otherwise
-                return the feature object.
-
-        Returns:
-            The value of the feature.
-        """
-        self.store_with_data = store_with_data
-        self._data_init_incl_storage(data)
-        if compute:
-            self.get_value(
-                recompute=True,
-                store_diagnostics=store_diagnostics,
-            )
-        if return_value:
-            return self.value
-        return self
 
     def __repr__(self):
         return f"{self.name} for {self.data}"
@@ -1086,7 +1065,9 @@ class SweepSetFeature(SweepFeature):
                 ft.__name__.lower().replace("sweepset_", ""): ft for ft in available_fts
             }
             if feature_name in available_fts:
-                ft = available_fts[feature_name](self.data)
+                ft = available_fts[feature_name](
+                    self.data, store_with_data=self.store_with_data
+                )
                 if return_value:
                     return ft.value
                 return ft

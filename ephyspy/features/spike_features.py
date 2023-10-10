@@ -69,8 +69,8 @@ class Spike_AP_upstroke(SpikeFeature):
     units: mV/s.
     """
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, **kwargs):
+        super().__init__(data, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         upstroke = self.lookup_spike_feature("upstroke", recompute=recompute)
@@ -90,8 +90,8 @@ class Spike_AP_downstroke(SpikeFeature):
     units: mV/s.
     """
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, **kwargs):
+        super().__init__(data, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         downstroke = self.lookup_spike_feature("downstroke", recompute=recompute)
@@ -111,8 +111,8 @@ class Spike_AP_fast_trough(SpikeFeature):
     units: mV.
     """
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, **kwargs):
+        super().__init__(data, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         upstroke = self.lookup_spike_feature("fast_trough_v", recompute=recompute)
@@ -132,8 +132,8 @@ class Spike_AP_slow_trough(SpikeFeature):
     units: mV.
     """
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, **kwargs):
+        super().__init__(data, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         upstroke = self.lookup_spike_feature("slow_trough_v", recompute=recompute)
@@ -153,8 +153,8 @@ class Spike_AP_amp(SpikeFeature):
     units: mV.
     """
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, **kwargs):
+        super().__init__(data, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         v_peak = self.lookup_spike_feature("peak_v", recompute=recompute)
@@ -182,8 +182,8 @@ class Spike_AP_AHP(SpikeFeature):
     units: mV.
     """
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, **kwargs):
+        super().__init__(data, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         v_fast_trough = self.lookup_spike_feature("fast_trough_v", recompute=recompute)
@@ -217,8 +217,8 @@ class Spike_AP_ADP(SpikeFeature):
     units: mV.
     """
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, **kwargs):
+        super().__init__(data, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         v_adp = self.lookup_spike_feature("adp_v", recompute=recompute)
@@ -252,8 +252,8 @@ class Spike_AP_ADP_trough(SpikeFeature):
     units: mV.
     """
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, **kwargs):
+        super().__init__(data, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         v_adp = self.lookup_spike_feature("adp_v", recompute=recompute)
@@ -284,8 +284,8 @@ class Spike_AP_peak(SpikeFeature):
     units: mV.
     """
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, **kwargs):
+        super().__init__(data, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         v_peak = self.lookup_spike_feature("peak_v", recompute=recompute)
@@ -305,8 +305,8 @@ class Spike_AP_overshoot(SpikeFeature):
     units: mV.
     """
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, **kwargs):
+        super().__init__(data, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         v_peak = self.lookup_spike_feature("peak_v", recompute=recompute)
@@ -327,8 +327,8 @@ class Spike_AP_thresh(SpikeFeature):
     units: mV.
     """
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, **kwargs):
+        super().__init__(data, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         v_thresh = self.lookup_spike_feature("threshold_v", recompute=recompute)
@@ -348,8 +348,8 @@ class Spike_AP_trough(SpikeFeature):
     units: mV.
     """
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, **kwargs):
+        super().__init__(data, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         v_thresh = self.lookup_spike_feature("trough_v", recompute=recompute)
@@ -369,8 +369,8 @@ class Spike_AP_width(SpikeFeature):
     units: s.
     """
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, **kwargs):
+        super().__init__(data, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         width = self.lookup_spike_feature("width", recompute=recompute)
@@ -426,8 +426,8 @@ class Spike_AP_UDR(SpikeFeature):
     units: /.
     """
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, **kwargs):
+        super().__init__(data, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         upstroke = self.lookup_spike_feature("upstroke", recompute=recompute)
@@ -456,8 +456,8 @@ class Spike_ISI(SpikeFeature):
     units: s.
     """
 
-    def __init__(self, data=None, compute_at_init=True):
-        super().__init__(data, compute_at_init)
+    def __init__(self, data=None, **kwargs):
+        super().__init__(data, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
         spike_times = self.lookup_spike_feature("threshold_t", recompute=recompute)
