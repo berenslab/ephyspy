@@ -30,10 +30,11 @@ ft_keys, ft_funcs = all_features.T
 @pytest.mark.parametrize("Ft", ft_funcs, ids=ft_keys)
 def test_feature(Ft):
     assert issubclass(Ft, BaseFeature)
-    assert Ft().units is not None, "No unit defined for feature."
-    assert Ft().description is not None, "No description found for feature."
-    assert Ft().depends_on is not None, "No dependencies found for feature."
-    assert Ft().name, "No name found for feature."
+    feature = Ft(store_with_data=False)
+    assert feature.units is not None, "No unit defined for feature."
+    assert feature.description is not None, "No description found for feature."
+    assert feature.depends_on is not None, "No dependencies found for feature."
+    assert feature.name, "No name found for feature."
 
 
 ############################

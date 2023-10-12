@@ -111,6 +111,7 @@ def test_plot_sweepset_diagnostics(sweepset, with_precomputed):
     else:
         sweepset.clear_features()
     fig, ax = plot_sweepset_diagnostics(sweepset)
+    sweepset.clear_features()
     ax = np.stack(list(ax.values()))
     if isinstance(ax, np.ndarray):
         assert all(
@@ -118,4 +119,3 @@ def test_plot_sweepset_diagnostics(sweepset, with_precomputed):
         ), "Plot does not return an Axes object."
     else:
         assert isinstance(ax, plt.Axes), "Plot does not return an Axes object."
-    sweepset.clear_features()
