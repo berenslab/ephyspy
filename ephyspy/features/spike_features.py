@@ -117,8 +117,6 @@ class Spike_AP_downstroke(SpikeFeature):
         downstroke_idx = self.lookup_spike_feature(
             "downstroke_index", recompute=recompute
         )
-        peak_t = self.lookup_spike_feature("peak_t", recompute=recompute)
-        trough_t = self.lookup_spike_feature("fast_trough_t", recompute=recompute)
         if store_diagnostics:
             self._update_diagnostics(
                 {
