@@ -70,7 +70,7 @@ class Spike_AP_upstroke(SpikeFeature):
         super().__init__(data, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
-        upstroke = self.lookup_spike_feature("upstroke", recompute=recompute)
+        upstroke = self.lookup_spike_feature("upstroke", recompute=recompute) * 1e3
         upstroke_v = self.lookup_spike_feature("upstroke_v", recompute=recompute)
         upstroke_t = self.lookup_spike_feature("upstroke_t", recompute=recompute)
         upstroke_idx = self.lookup_spike_feature("upstroke_index", recompute=recompute)
@@ -87,7 +87,7 @@ class Spike_AP_upstroke(SpikeFeature):
     def _plot(self, ax: Optional[Axes] = None, selected_idxs=None, **kwargs) -> Axes:
         idxs = slice(None) if selected_idxs is None else selected_idxs
         up_t, up_v = unpack(self.diagnostics, ["upstroke_t", "upstroke_v"])
-        up_dvdt = self.value * 1e3
+        up_dvdt = self.value
 
         T = 15e-5
         t = np.linspace(up_t[idxs] - T, up_t[idxs] + T, 2)
@@ -111,7 +111,7 @@ class Spike_AP_downstroke(SpikeFeature):
         super().__init__(data, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
-        downstroke = self.lookup_spike_feature("downstroke", recompute=recompute)
+        downstroke = self.lookup_spike_feature("downstroke", recompute=recompute) * 1e3
         downstroke_t = self.lookup_spike_feature("downstroke_t", recompute=recompute)
         downstroke_v = self.lookup_spike_feature("downstroke_v", recompute=recompute)
         downstroke_idx = self.lookup_spike_feature(
@@ -130,7 +130,7 @@ class Spike_AP_downstroke(SpikeFeature):
     def _plot(self, ax: Optional[Axes] = None, selected_idxs=None, **kwargs) -> Axes:
         idxs = slice(None) if selected_idxs is None else selected_idxs
         down_t, down_v = unpack(self.diagnostics, ["downstroke_t", "downstroke_v"])
-        down_dvdt = self.value * 1e3
+        down_dvdt = self.value
 
         T = 25e-5
         t = np.linspace(down_t[idxs] - T, down_t[idxs] + T, 2)
