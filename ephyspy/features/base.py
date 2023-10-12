@@ -461,7 +461,7 @@ class SpikeFeature(BaseFeature):
     additional functionality ot it.
     """
 
-    # TODO: Add support for recursive feature lookup and diagnostics
+    # TODO: Add support for recursive feature lookup
     def __init__(
         self,
         data: Optional[EphysSweep] = None,
@@ -540,48 +540,6 @@ class SpikeFeature(BaseFeature):
             return name + vals
         else:
             return f"{self.name}\n0: ? {self.units}"
-
-    @abstractmethod
-    def _compute(
-        self, recompute: bool = False, store_diagnostics: bool = True
-    ) -> ndarray:
-        """Compute the feature.
-
-        All computation that is neccesary to yield the value of the feature should
-        be defined here. This is the core method of SpikeFeature and all other
-        functionality interacts with this method.
-
-        Alongside computing the value of the corresponding feature, this method
-        can also be used to updat the `_diagnostics` attribute, which is a
-        dictionary that can be used to store any additional information about
-        the feature computation. This can be useful for debugging or better
-        understanding how a feature was computed. Diagnostic information can
-        be accessed with `get_diagnostics` or via the `diagnostics` property and
-        updated with `_update_diagnostics`.
-
-        When `__call__` is called `_compute` can be thought of as a function
-        that takes in data (`EphysSweep`) and returns a vector of features.
-
-        Args:
-            recompute: If True, recompute the feature even if it is already
-                computed.
-            store_diagnostics: If True, store any additional information about
-                the feature computation in the `_diagnostics` attribute.
-
-        Returns:
-            The value of the feature.
-        """
-        # load dependencies using lookup_sweep_feature or lookup_spike_feature
-        # do some computation
-        # save diagnostics using _update_diagnostics
-        return
-
-    def get_diagnostics(self, recompute: bool = False):
-        """Overwrite get_diagnostics to return None.
-
-        Diagnostics is currently not supported for spike features."""
-        # No diagnostics for spike features for now!
-        return None
 
     def __call__(
         self,
