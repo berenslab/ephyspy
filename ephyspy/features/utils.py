@@ -26,6 +26,7 @@ from numpy import ndarray
 from pandas import DataFrame
 
 from ephyspy.sweeps import EphysSweep, EphysSweepSet
+from ephyspy.utils import where_between
 
 if TYPE_CHECKING:
     from ephyspy.features.base import SweepFeature, SweepSetFeature
@@ -102,6 +103,39 @@ class FeatureError(ValueError):
     """Error raised when a feature is unknown."""
 
     pass
+
+
+class during_stimulus_only:
+    def __init__(self, sweep, T_stim=None):
+        self.sweep = sweep
+        self.start = sweep.start
+        self.end = sweep.end
+        self.T_stim = T_stim
+        if self.T_stim is None:
+            where_stim = where_stimulus(sweep)
+            self.T_stim = sweep.t[where_stim][[0, -1]]
+        self.all_spikes = None
+
+    def __enter__(self):
+        self.sweep.start = self.T_stim[0]
+        self.sweep.end = self.T_stim[1]
+        if hasattr(self.sweep, "_spikes_df"):
+            self.all_spikes = self.sweep._spikes_df.copy()
+            t_thresh = self.sweep._spikes_df["threshold_t"]
+            while_stim = np.logical_and(
+                self.T_stim[0] < t_thresh, t_thresh < self.T_stim[1]
+            )
+            self.sweep._spikes_df = self.sweep._spikes_df[while_stim]
+        return self.sweep
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.sweep.start = self.start
+        self.sweep.end = self.end
+        if self.all_spikes is not None:
+            self.sweep._spikes_df = self.all_spikes
+        else:
+            delattr(self.sweep, "_spikes_df")
+        return self.sweep
 
 
 def get_sweep_burst_metrics(
@@ -205,6 +239,25 @@ def where_stimulus(data: Union[EphysSweep, EphysSweepSet]) -> Union[bool, ndarra
     return data.i.T != 0
 
 
+def where_spike_during_stimulus(
+    ft: SweepFeature, recompute: bool = False
+) -> ndarray[bool]:
+    """Checks where spikes occur during stimulus.
+
+    Args:
+        ft (SweepFeature): Spike feature to check.
+        recompute (bool, optional): If True, recompute spikes. Defaults to False.
+
+    Returns:
+        ndarray: Boolean array with length of sweep.t; True where spikes occur
+            during stimulus."""
+    t_thresh = ft.lookup_spike_feature("threshold_t", recompute=recompute)
+    stim_onset = ft.lookup_sweep_feature("stim_onset", recompute=recompute)
+    stim_end = ft.lookup_sweep_feature("stim_end", recompute=recompute)
+    during_stim = where_between(t_thresh, stim_onset, stim_end)
+    return during_stim
+
+
 def has_spikes(sweep: EphysSweep) -> bool:
     """Check if sweep has spikes.
 
@@ -270,8 +323,8 @@ def has_rebound(feature: Any, T_rebound: float = 0.3) -> bool:
     Returns:
         bool: True if sweep rebounds."""
     sweep = feature.data
-    if is_hyperpol(sweep):
-        end = feature.lookup_sweep_feature("stim_end")
+    end = feature.lookup_sweep_feature("stim_end")
+    if is_hyperpol(sweep) and end < feature.data.end:
         v_baseline = feature.lookup_sweep_feature("v_baseline")
         ts_rebound = np.logical_and(sweep.t > end, sweep.t < end + T_rebound)
         return np.any(sweep.v[ts_rebound] > v_baseline)

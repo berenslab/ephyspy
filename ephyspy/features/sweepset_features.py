@@ -33,7 +33,11 @@ ransac = linear_model.LinearRegression()
 
 
 from ephyspy.features.base import SweepSetFeature
-from ephyspy.features.utils import fetch_available_fts, median_idx
+from ephyspy.features.utils import (
+    fetch_available_fts,
+    median_idx,
+    where_spike_during_stimulus,
+)
 from ephyspy.utils import is_sweepset_feature
 
 
@@ -482,12 +486,9 @@ class SweepSet_Rheobase(SweepSetFeature):
                 sweep_idx = np.where(has_ap)[0][0]
 
                 spike_df = self.data[sweep_idx]._spikes_df
-                threshold_t = spike_df["threshold_t"]
 
                 # sweep has ap during stimulus
-                onset = self.lookup_sweep_feature("stim_onset")[sweep_idx]
-                end = self.lookup_sweep_feature("stim_end")[sweep_idx]
-                stim_window = where_between(threshold_t.to_numpy(), onset, end)
+                stim_window = where_spike_during_stimulus(self, recompute=recompute)
 
                 if np.any(stim_window):
                     first_spike = spike_df[stim_window].iloc[0]

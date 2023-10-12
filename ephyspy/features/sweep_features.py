@@ -29,6 +29,7 @@ import ephyspy.allen_sdk.ephys_features as ft
 from ephyspy.features.base import SweepFeature
 from ephyspy.features.utils import (
     FeatureError,
+    during_stimulus_only,
     fetch_available_fts,
     get_sweep_burst_metrics,
     has_rebound,
@@ -38,6 +39,7 @@ from ephyspy.features.utils import (
     median_idx,
     sag_idxs,
     sag_period,
+    where_spike_during_stimulus,
     where_stimulus,
 )
 from ephyspy.utils import (
@@ -169,7 +171,6 @@ class Sweep_Stim_end(SweepFeature):
     def _compute(self, recompute=False, store_diagnostics=True):
         stim_end = float("nan")
         if has_stimulus(self.data):
-            stim_type = stimulus_type(self.data)
             where_stim = where_stimulus(self.data)
             stim_end = self.data.t[where_stim][-1]
             i_end = self.data.i[where_stim][-1]
@@ -199,10 +200,7 @@ class Sweep_Num_AP(SweepFeature):
         super().__init__(data, compute_at_init, **kwargs)
 
     def _compute(self, recompute=False, store_diagnostics=True):
-        peak_t = self.lookup_spike_feature("peak_t", recompute=recompute)
-        onset = self.lookup_sweep_feature("stim_onset")
-        end = self.lookup_sweep_feature("stim_end")
-        stim_window = where_between(peak_t, onset, end)
+        stim_window = where_spike_during_stimulus(self, recompute=recompute)
 
         peak_i = self.lookup_spike_feature("peak_index")[stim_window]
         num_ap = len(peak_i)
@@ -211,7 +209,7 @@ class Sweep_Num_AP(SweepFeature):
             num_ap = float("nan")
 
         if store_diagnostics:
-            peak_t = peak_t[stim_window]
+            peak_t = self.lookup_spike_feature("peak_t")[stim_window]
             peak_v = self.lookup_spike_feature("peak_v")[stim_window]
             self._update_diagnostics(
                 {
@@ -270,11 +268,10 @@ class Sweep_AP_latency(SweepFeature):
     def _compute(self, recompute=False, store_diagnostics=True):
         ap_latency = float("nan")
         if has_stimulus(self.data):
-            onset = self.lookup_sweep_feature("stim_onset", recompute=recompute)
-            end = self.lookup_sweep_feature("stim_end", recompute=recompute)
-            thresh_t = self.lookup_spike_feature("threshold_t", recompute=recompute)
             thresholds = self.lookup_spike_feature("threshold_v", recompute=recompute)
-            stim_window = where_between(thresh_t, onset, end)
+            thresh_t = self.lookup_spike_feature("threshold_t", recompute=recompute)
+            onset = self.lookup_sweep_feature("stim_onset", recompute=recompute)
+            stim_window = where_spike_during_stimulus(self, recompute=recompute)
 
             thresh_t_stim = thresh_t[stim_window]
 
@@ -287,7 +284,6 @@ class Sweep_AP_latency(SweepFeature):
                     self._update_diagnostics(
                         {
                             "onset": onset,
-                            "end": end,
                             "spike_times_during_stim": thresh_t_stim,
                             "t_first": t_first_spike,
                             "v_first": v_first_spike,
@@ -488,16 +484,14 @@ class Sweep_AP_freq_adapt(SweepFeature):
         ):
             onset = self.lookup_sweep_feature("stim_onset", recompute=recompute)
             end = self.lookup_sweep_feature("stim_end", recompute=recompute)
+            peak_t = self.lookup_spike_feature("peak_t", recompute=recompute)
             t_half = (end - onset) / 2 + onset
             where_1st_half = where_between(self.data.t, onset, t_half)
             where_2nd_half = where_between(self.data.t, t_half, end)
             t_1st_half = self.data.t[where_1st_half]
             t_2nd_half = self.data.t[where_2nd_half]
 
-            peak_t = self.lookup_spike_feature("peak_t", recompute=recompute)
-            onset = self.lookup_sweep_feature("stim_onset", recompute=recompute)
-            end = self.lookup_sweep_feature("stim_end", recompute=recompute)
-            stim_window = where_between(peak_t, onset, end)
+            stim_window = where_spike_during_stimulus(self, recompute=recompute)
             peak_t = peak_t[stim_window]
 
             spikes_1st_half = peak_t[peak_t < t_half]
@@ -542,11 +536,9 @@ class Sweep_AP_amp_slope(SweepFeature):
 
     def _compute(self, recompute=False, store_diagnostics=True):
         ap_amp_slope = float("nan")
-        onset = self.lookup_sweep_feature("stim_onset")
-        end = self.lookup_sweep_feature("stim_end")
         peak_t = self.lookup_spike_feature("peak_t", recompute=recompute)
         peak_v = self.lookup_spike_feature("peak_v", recompute=recompute)
-        stim_window = where_between(peak_t, onset, end)
+        stim_window = where_spike_during_stimulus(self, recompute=recompute)
 
         peak_t = peak_t[stim_window]
         peak_v = peak_v[stim_window]
@@ -1380,25 +1372,26 @@ class Sweep_Num_bursts(SweepFeature):
         num_bursts = float("nan")
         num_ap = self.lookup_sweep_feature("num_ap", recompute=recompute)
         if num_ap > 5 and has_stimulus(self.data):
-            idx_burst, idx_burst_start, idx_burst_end = get_sweep_burst_metrics(
-                self.data
-            )
-            peak_t = self.lookup_spike_feature("peak_t", recompute=recompute)
-            if not np.isnan(idx_burst).any():
-                t_burst_start = peak_t[idx_burst_start]
-                t_burst_end = peak_t[idx_burst_end]
-                num_bursts = len(idx_burst)
-                num_bursts = float("nan") if num_bursts == 0 else num_bursts
-                if store_diagnostics:
-                    self._update_diagnostics(
-                        {
-                            "idx_burst": idx_burst,
-                            "idx_burst_start": idx_burst_start,
-                            "idx_burst_end": idx_burst_end,
-                            "t_burst_start": t_burst_start,
-                            "t_burst_end": t_burst_end,
-                        }
-                    )
+            with during_stimulus_only(self.data) as sweep:
+                idx_burst, idx_burst_start, idx_burst_end = get_sweep_burst_metrics(
+                    sweep
+                )
+                peak_t = self.lookup_spike_feature("peak_t", recompute=recompute)
+                if not np.isnan(idx_burst).any():
+                    t_burst_start = peak_t[idx_burst_start]
+                    t_burst_end = peak_t[idx_burst_end]
+                    num_bursts = len(idx_burst)
+                    num_bursts = float("nan") if num_bursts == 0 else num_bursts
+                    if store_diagnostics:
+                        self._update_diagnostics(
+                            {
+                                "idx_burst": idx_burst,
+                                "idx_burst_start": idx_burst_start,
+                                "idx_burst_end": idx_burst_end,
+                                "t_burst_start": t_burst_start,
+                                "t_burst_end": t_burst_end,
+                            }
+                        )
         return num_bursts
 
     def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
@@ -1430,29 +1423,30 @@ class Sweep_Burstiness(SweepFeature):
         max_burstiness = float("nan")
         num_ap = self.lookup_sweep_feature("num_ap", recompute=recompute)
         if num_ap > 5 and has_stimulus(self.data):
-            idx_burst, idx_burst_start, idx_burst_end = get_sweep_burst_metrics(
-                self.data
-            )
-            peak_t = self.lookup_spike_feature("peak_t", recompute=recompute)
-            if not np.isnan(idx_burst).any():
-                t_burst_start = peak_t[idx_burst_start]
-                t_burst_end = peak_t[idx_burst_end]
-                num_bursts = len(idx_burst)
-                max_burstiness = idx_burst.max() if num_bursts > 0 else float("nan")
-                max_burstiness = (
-                    float("nan") if max_burstiness < 0 else max_burstiness
-                )  # don't consider negative burstiness
+            with during_stimulus_only(self.data) as sweep:
+                idx_burst, idx_burst_start, idx_burst_end = get_sweep_burst_metrics(
+                    sweep
+                )
+                peak_t = self.lookup_spike_feature("peak_t", recompute=recompute)
+                if not np.isnan(idx_burst).any():
+                    t_burst_start = peak_t[idx_burst_start]
+                    t_burst_end = peak_t[idx_burst_end]
+                    num_bursts = len(idx_burst)
+                    max_burstiness = idx_burst.max() if num_bursts > 0 else float("nan")
+                    max_burstiness = (
+                        float("nan") if max_burstiness < 0 else max_burstiness
+                    )  # don't consider negative burstiness
 
-                if store_diagnostics:
-                    self._update_diagnostics(
-                        {
-                            "idx_burst": idx_burst,
-                            "idx_burst_start": idx_burst_start,
-                            "idx_burst_end": idx_burst_end,
-                            "t_burst_start": t_burst_start,
-                            "t_burst_end": t_burst_end,
-                        }
-                    )
+                    if store_diagnostics:
+                        self._update_diagnostics(
+                            {
+                                "idx_burst": idx_burst,
+                                "idx_burst_start": idx_burst_start,
+                                "idx_burst_end": idx_burst_end,
+                                "t_burst_start": t_burst_start,
+                                "t_burst_end": t_burst_end,
+                            }
+                        )
         return max_burstiness
 
     def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
@@ -1510,7 +1504,7 @@ class Sweep_ISI_adapt(SweepFeature):
     """Extract sweep level inter-spike-interval (ISI) adaptation index feature.
 
     depends on: ISIs.
-    description: /.
+    description: 1st ISI / 2nd ISI.
     units: /."""
 
     def __init__(self, data=None, compute_at_init=True, **kwargs):
@@ -1519,7 +1513,10 @@ class Sweep_ISI_adapt(SweepFeature):
     def _compute(self, recompute=False, store_diagnostics=True):
         isi_adapt = float("nan")
         if has_spikes(self.data):
-            isi = self.lookup_spike_feature("isi", recompute=recompute)[1:]
+            isi = self.lookup_spike_feature("isi", recompute=recompute)
+            during_stim = where_spike_during_stimulus(self, recompute=recompute)
+            isi = isi[during_stim]
+            isi = isi[1:] if isi[0] == 0 else isi
             if len(isi) > 1:
                 isi_adapt = isi[1] / isi[0]
 
@@ -1538,7 +1535,7 @@ class Sweep_ISI_adapt_avg(SweepFeature):
     """Extract sweep level average inter-spike-interval (ISI) adaptation index feature.
 
     depends on: ISIs.
-    description: /.
+    description: mean of ISI_{i} / ISI_{i+1}.
     units: /."""
 
     def __init__(self, data=None, compute_at_init=True, **kwargs):
@@ -1547,7 +1544,10 @@ class Sweep_ISI_adapt_avg(SweepFeature):
     def _compute(self, recompute=False, store_diagnostics=True):
         isi_adapt_avg = float("nan")
         if has_spikes(self.data):
-            isi = self.lookup_spike_feature("isi", recompute=recompute)[1:]
+            isi = self.lookup_spike_feature("isi", recompute=recompute)
+            during_stim = where_spike_during_stimulus(self, recompute=recompute)
+            isi = isi[during_stim]
+            isi = isi[1:] if isi[0] == 0 else isi
             if len(isi) > 2:
                 isi_changes = isi[1:] / isi[:-1]
                 isi_adapt_avg = isi_changes.mean()
@@ -1567,7 +1567,7 @@ class Sweep_AP_amp_adapt(SweepFeature):
     """Extract sweep level AP amplitude adaptation index feature.
 
     depends on: ap_amp.
-    description: /.
+    description: 1st AP_amp / 2nd AP_amp.
     units: mV/s."""
 
     def __init__(self, data=None, compute_at_init=True, **kwargs):
@@ -1577,6 +1577,8 @@ class Sweep_AP_amp_adapt(SweepFeature):
         ap_amp_adapt = float("nan")
         if has_spikes(self.data):
             ap_amp = self.lookup_spike_feature("ap_amp", recompute=recompute)
+            during_stim = where_spike_during_stimulus(self, recompute=recompute)
+            ap_amp = ap_amp[during_stim]
             if len(ap_amp) > 1:
                 ap_amp_adapt = ap_amp[1] / ap_amp[0]
 
@@ -1596,7 +1598,7 @@ class Sweep_AP_amp_adapt_avg(SweepFeature):
     """Extract sweep level average AP amplitude adaptation index feature.
 
     depends on: ap_amp.
-    description: /.
+    description: mean of AP_amp_{i} / AP_amp_{i+1}.
     units: /."""
 
     def __init__(self, data=None, compute_at_init=True, **kwargs):
@@ -1606,6 +1608,8 @@ class Sweep_AP_amp_adapt_avg(SweepFeature):
         ap_amp_adapt_avg = float("nan")
         if has_spikes(self.data):
             ap_amp = self.lookup_spike_feature("ap_amp", recompute=recompute)
+            during_stim = where_spike_during_stimulus(self, recompute=recompute)
+            ap_amp = ap_amp[during_stim]
             if len(ap_amp) > 2:
                 ap_amp_changes = ap_amp[1:] / ap_amp[:-1]
                 ap_amp_adapt_avg = ap_amp_changes.mean()
@@ -1635,12 +1639,10 @@ class Sweep_Wildness(SweepFeature):
     def _compute(self, recompute=False, store_diagnostics=True):
         num_wild_spikes = float("nan")
         if has_spikes(self.data):
-            onset = self.lookup_sweep_feature("stim_onset", recompute=recompute)
-            end = self.lookup_sweep_feature("stim_end", recompute=recompute)
             peak_t = self.lookup_spike_feature("peak_t", recompute=recompute)
             peak_idx = self.lookup_spike_feature("peak_index", recompute=recompute)
             peak_v = self.lookup_spike_feature("peak_v", recompute=recompute)
-            stim_window = where_between(peak_t, onset, end)
+            stim_window = where_spike_during_stimulus(self, recompute=recompute)
 
             idx_wild_spikes = peak_idx[~stim_window]
             t_wild_spikes = peak_t[~stim_window]
@@ -1703,10 +1705,7 @@ class APSweepFeature(SweepFeature):
         during stimulus window.
         """
         if self.ap_selector is None:
-            peak_t = self.lookup_spike_feature("peak_t")
-            onset = self.lookup_sweep_feature("stim_onset")
-            end = self.lookup_sweep_feature("stim_end")
-            stim_window = where_between(peak_t, onset, end)
+            stim_window = where_spike_during_stimulus(self)
 
             # include sanity check?
             # first = np.array([], dtype=int)
@@ -1950,11 +1949,7 @@ class Sweep_ISI(APSweepFeature):
         # ISI_{i} = t_{i} - t_{i-1}
         # therefore ISI_{1} = t_1 - t_0 = t_1 - NaN -> defined as 0
         # first actual ISI is from 1st to 2nd spike, hence the +1
-        isi = self.lookup_spike_feature("isi")
-        threshold_t = self.lookup_spike_feature("threshold_t")
-        onset = self.lookup_sweep_feature("stim_onset")
-        end = self.lookup_sweep_feature("stim_end")
-        stim_window = where_between(threshold_t, onset, end)
+        stim_window = where_spike_during_stimulus(self)
         if np.sum(stim_window) > 1:
             return super()._select(data) + 1
         return np.array([], dtype=int)

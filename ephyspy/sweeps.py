@@ -290,8 +290,8 @@ class EphysSweepSet(EphysSweepSetFeatureExtractor):
         t_set: Optional[Union[List, ndarray]] = None,
         v_set: Optional[Union[List, ndarray]] = None,
         i_set: Optional[Union[List, ndarray]] = None,
-        t_start: Optional[Union[List, ndarray, float]] = None,
-        t_end: Optional[Union[List, ndarray, float]] = None,
+        start: Optional[Union[List, ndarray, float]] = None,
+        end: Optional[Union[List, ndarray, float]] = None,
         metadata: Dict = {},
         *args,
         **kwargs,
@@ -312,12 +312,12 @@ class EphysSweepSet(EphysSweepSetFeatureExtractor):
         t_set = list(t_set) if is_array(t_set) else t_set
         v_set = list(v_set) if is_array(v_set) else v_set
         i_set = list(i_set) if is_array(i_set) else i_set
-        if t_start is None and v_set is not None:
-            t_start, t_end = np.array(t_set)[:, [0, -1]].T.tolist()
-        elif is_float(t_start):
-            t_start, t_end = np.array([[t_start, t_end]] * len(t_set)).T
+        if start is None and v_set is not None:
+            start, end = np.array(t_set)[:, [0, -1]].T.tolist()
+        elif is_float(start):
+            start, end = np.array([[start, end]] * len(t_set)).T
 
-        super().__init__(t_set, v_set, i_set, t_start, t_end, *args, **kwargs)
+        super().__init__(t_set, v_set, i_set, start, end, *args, **kwargs)
         self.metadata = metadata
         for sweep in self.sweeps():
             sweep.metadata = metadata
