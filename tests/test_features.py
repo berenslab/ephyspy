@@ -148,12 +148,12 @@ def test_no_new_features():
     ground_truth_features.keys(),
     ids=ground_truth_features.keys(),
 )
-def test_compare_against_ground_truth(ft_name):
+def test_against_ground_truth(ft_name):
     est = computed_features[ft_name]
     true = ground_truth_features[ft_name]
     assert (
         np.allclose(est, true) or np.isnan(est) and np.isnan(true)
-    ), f"Feature {ft_name} has changed vs. latest ground truth."
+    ), f"{ft_name} has changed vs. ground truth: {est:.2} vs. {true:.2}."
 
 
 test_sweepset.clear_features()

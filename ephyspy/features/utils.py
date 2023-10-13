@@ -240,18 +240,21 @@ def where_stimulus(data: Union[EphysSweep, EphysSweepSet]) -> Union[bool, ndarra
 
 
 def where_spike_during_stimulus(
-    ft: SweepFeature, recompute: bool = False
+    ft: SweepFeature, recompute: bool = False, spike_ft: str = "peak"
 ) -> ndarray[bool]:
     """Checks where spikes occur during stimulus.
 
     Args:
         ft (SweepFeature): Spike feature to check.
         recompute (bool, optional): If True, recompute spikes. Defaults to False.
+        spike_ft (str, optional): Which spike feature to consider when inferring,
+            whether a spike is inside of the stimulus window, i.e. "peak",
+            "threshold", "trough", etc.. Defaults to "peak".
 
     Returns:
         ndarray: Boolean array with length of sweep.t; True where spikes occur
             during stimulus."""
-    t_thresh = ft.lookup_spike_feature("threshold_t", recompute=recompute)
+    t_thresh = ft.lookup_spike_feature(f"{spike_ft}_t", recompute=recompute)
     stim_onset = ft.lookup_sweep_feature("stim_onset", recompute=recompute)
     stim_end = ft.lookup_sweep_feature("stim_end", recompute=recompute)
     during_stim = where_between(t_thresh, stim_onset, stim_end)
