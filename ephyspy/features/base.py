@@ -24,9 +24,14 @@ import numpy as np
 from matplotlib.pyplot import Axes
 from numpy import ndarray
 
-from ephyspy.features.utils import FeatureError, fetch_available_fts
+from ephyspy.features.utils import (
+    FeatureError,
+    fetch_available_fts,
+    get_allensdk_spike_features,
+)
 from ephyspy.sweeps import EphysSweep, EphysSweepSet
 from ephyspy.utils import (
+    is_spike_feature,
     is_sweep_feature,
     is_sweepset_feature,
     parse_deps,
@@ -239,6 +244,55 @@ class BaseFeature(ABC):
             self._diagnostics = {}
         self._diagnostics.update(dct)
 
+    def lookup_spike_feature(
+        self, feature_name: str, recompute: bool = False
+    ) -> ndarray:
+        """Look up a spike level feature and return its value.
+
+        This method will first check if the feature is already computed,
+        and if not, compute all spike level features using `process_spikes` from
+        the underlying `EphysSweep` object, and then
+        instantiate and compute the feature. Lookup is recursive and considers all
+        registered and implemented spike features.
+
+        Args:
+            feature_name: Name of the feature to look up.
+            recompute: If True, recompute the feature even if it is already
+                computed.
+
+        Returns:
+            The value of the feature for each detected spike.
+
+        Raises:
+            FeatureError: If the feature is not found via `fetch_available_fts`.
+        """
+        sweep = self.data
+        is_allen_ft = feature_name in get_allensdk_spike_features()
+        ft_already_added = feature_name in sweep.added_spike_features
+        if not (is_allen_ft or ft_already_added):
+            available_fts = fetch_available_fts()
+            available_fts = [ft for ft in available_fts if is_spike_feature(ft)]
+            available_fts = {
+                ft.__name__.lower().replace("spike_", ""): ft for ft in available_fts
+            }
+            if feature_name in available_fts:
+                feature = available_fts[feature_name](sweep, compute_at_init=False)
+                sweep.add_spike_feature(feature.name, feature)
+            else:
+                raise FeatureError(
+                    f"{feature_name} was not found. Make sure it is implemented or registered."
+                )
+
+        if not hasattr(sweep, "_spikes_df") or recompute:
+            sweep.process_spikes()
+        elif (
+            feature_name in sweep.added_spike_features  # prevents RecursionError
+            and feature_name not in sweep._spikes_df.columns
+        ):
+            sweep.process_spikes()
+
+        return sweep.spike_feature(feature_name, include_clipped=True)
+
     def get_value(
         self, recompute: bool = False, store_diagnostics: bool = True
     ) -> float:
@@ -430,9 +484,6 @@ class SpikeFeature(BaseFeature):
     compute spike features with `EphysSweep.process_spikes`, while being able to
     provide additional functionality to the spike feature class.
 
-    Currently, no diagnostics or recursive feature lookup is supported for spike
-    features! For now this class mainly just acts as a feature function.
-
     The description of the feature should contain a short description of the
     feature, and a list of dependencies. The dependencies should be listed
     as a comma separated list of feature names. It is parsed and can be displayed
@@ -449,11 +500,14 @@ class SpikeFeature(BaseFeature):
 
     <Some more text>'''
 
-    All computed features are added to the underlying `EphysSweep`
-    object, and can be accessed via `lookup_spike_feature`. The methods will
-    first check if the feature is already computed, and if not, instantiate and
-    compute it. Any dependencies already computed will be reused, unless
-    `recompute=True` is passed.
+    All computed features are added to `EphysSweep.added_spike_features`, and
+    can be accessed via `lookup_spike_feature`. The methods will first check if
+    the feature is already computed, and if not, instantiate and compute it.
+    This works recursively, so that features can depend on other features as
+    long as they are looked up with `lookup_spike_feature`. Hence any feature
+    can be computed at any point, without having to compute any dependencies first.
+    Any dependencies already computed will be reused, unless `recompute=True` is
+    passed.
 
     `SpikeFeature`s can also implement a _plot method, the feature. If the
     feature cannot be displayed in a V(t) or I(t) plot, instead the `plot` method
@@ -461,7 +515,6 @@ class SpikeFeature(BaseFeature):
     additional functionality ot it.
     """
 
-    # TODO: Add support for recursive feature lookup
     def __init__(
         self,
         data: Optional[EphysSweep] = None,
@@ -503,33 +556,6 @@ class SpikeFeature(BaseFeature):
             assert isinstance(data, EphysSweep), "data must be EphysSweep"
             self.type = type(data).__name__
             self.ensure_correct_hyperparams()
-
-    def lookup_spike_feature(
-        self, feature_name: str, recompute: bool = False
-    ) -> ndarray:
-        """Look up a spike level feature and return its value.
-
-        This method will first check if the feature is already computed,
-        and if not, compute all spike level features using `process_spikes` from
-        the underlying `EphysSweep` object, and then
-        instantiate and compute the feature.
-
-        Args:
-            feature_name: Name of the feature to look up.
-            recompute: If True, recompute the feature even if it is already
-                computed.
-
-        Returns:
-            The value of the feature for each detected spike.
-        """
-        if not hasattr(self.data, "_spikes_df") or recompute:
-            self.data.process_spikes()
-        elif (
-            feature_name in self.data.added_spike_features
-            and feature_name not in self.data._spikes_df.columns
-        ):
-            self.data.process_spikes()
-        return self.data.spike_feature(feature_name, include_clipped=True)
 
     def __str__(self):
         name = f"{self.name}\n"
@@ -706,33 +732,6 @@ class SweepFeature(BaseFeature):
         if return_value:
             return ft.get_value(recompute=recompute)
         return ft
-
-    def lookup_spike_feature(
-        self, feature_name: str, recompute: bool = False
-    ) -> ndarray:
-        """Look up a spike level feature and return its value.
-
-        This method will first check if the feature is already computed,
-        and if not, compute all spike level features using `process_spikes` from
-        the underlying `EphysSweep` object, and then
-        instantiate and compute the feature.
-
-        Args:
-            feature_name: Name of the feature to look up.
-            recompute: If True, recompute the feature even if it is already
-                computed.
-
-        Returns:
-            The value of the feature for each detected spike.
-        """
-        if not hasattr(self.data, "_spikes_df") or recompute:
-            self.data.process_spikes()
-        elif (
-            feature_name in self.data.added_spike_features
-            and feature_name not in self.data._spikes_df.columns
-        ):
-            self.data.process_spikes()
-        return self.data.spike_feature(feature_name, include_clipped=True)
 
     def __repr__(self):
         return f"{self.name} for {self.data}"

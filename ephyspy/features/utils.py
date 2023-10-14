@@ -105,6 +105,46 @@ class FeatureError(ValueError):
     pass
 
 
+def get_allensdk_spike_features():
+    return [
+        "threshold_index",
+        "threshold_t",
+        "threshold_v",
+        "threshold_i",
+        "peak_index",
+        "peak_t",
+        "peak_v",
+        "peak_i",
+        "trough_index",
+        "trough_t",
+        "trough_v",
+        "trough_i",
+        "upstroke_index",
+        "upstroke",
+        "upstroke_t",
+        "upstroke_v",
+        "downstroke_index",
+        "downstroke",
+        "downstroke_t",
+        "downstroke_v",
+        "isi_type",
+        "fast_trough_index",
+        "fast_trough_t",
+        "fast_trough_v",
+        "fast_trough_i",
+        "adp_index",
+        "adp_t",
+        "adp_v",
+        "adp_i",
+        "slow_trough_index",
+        "slow_trough_t",
+        "slow_trough_v",
+        "slow_trough_i",
+        "width",
+        "upstroke_downstroke_ratio",
+    ]
+
+
 class during_stimulus_only:
     def __init__(self, sweep, T_stim=None):
         self.sweep = sweep

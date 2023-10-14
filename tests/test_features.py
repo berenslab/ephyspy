@@ -70,9 +70,6 @@ def test_spike_feature(ft_func, sweep, is_depol):
 
 # test value, diagnostics etc.
 
-depol_test_sweep.add_features(available_spike_features())
-hyperpol_test_sweep.add_features(available_spike_features())
-
 
 @pytest.mark.parametrize(
     "Ft", available_sweep_features().values(), ids=available_sweep_features().keys()

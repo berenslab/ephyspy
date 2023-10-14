@@ -22,7 +22,7 @@ test_sweepset = EphysSweepSet(
     filter=5,
     metadata={"dc_offset": -14.52083},
 )
-test_sweepset.add_features(available_spike_features())
+# test_sweepset.add_features(available_spike_features())
 
 # create test sweeps
 depol_test_sweep = EphysSweep(t_set[11], u_set[11], i_set[11], start, end, filter=1)
