@@ -22,6 +22,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.pyplot import Axes
 from numpy import ndarray
+from pandas import DataFrame
 
 import ephyspy.allen_sdk.ephys_extractor as efex
 from ephyspy.allen_sdk.ephys_extractor import (
@@ -150,6 +151,21 @@ class EphysSweep(EphysSweepFeatureExtractor):
                     k: ft.get_value(recompute=recompute)
                     for k, ft in self.features.items()
                 }
+
+    def get_spike_features(self, recompute: bool = False) -> DataFrame:
+        """Compute all spike features that have been added to the `EphysSweep` instance.
+
+        Includes all features that can be found in `self.added_spike_features`.
+
+        Args:
+            recompute (bool, optional): Whether to force recomputation of the
+                features. Defaults to False.
+
+        Returns:
+            DataFrame: DataFrame of features and values."""
+        if not hasattr(self, "_spikes_df") or recompute:
+            self.process_spikes()
+        return self._spikes_df
 
     def clear_features(self):
         """Clear all features."""
@@ -458,6 +474,25 @@ class EphysSweepSet(EphysSweepSetFeatureExtractor):
             if self.features is not None:
                 LD = [sw.get_features(recompute=recompute) for sw in self.sweeps()]
                 return {k: [dic[k] for dic in LD] for k in LD[0]}
+
+    def get_spike_features(self, recompute: bool = False) -> List[DataFrame]:
+        """Collect spike features on a sweep level.
+
+        This computes / looks up all spike features that have been computed at
+        the sweep level and returns them as a list of dataframes. Each dataframe
+        contains the values for the respective feature for each spike, i.e.
+        `get_spike_features()[sweep_idx][feature_name]` returns the values of
+        `feature_name` for the `sweep_idx`-th sweep.
+
+        Args:
+            recompute (bool, optional): Whether to force recomputation of the
+                features. Defaults to False.
+
+        Returns:
+            Dict[str, List[float]]: Dictionary of features and values.
+        """
+        dfs = [sw.get_spike_features(recompute=recompute) for sw in self.sweeps()]
+        return dfs
 
     def plot(
         self, ax: Optional[Axes] = None, show_stimulus: bool = False, **kwargs
