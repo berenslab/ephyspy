@@ -94,7 +94,7 @@ class Spike_AP_upstroke(SpikeFeature):
         ax = scatter_spike_ft(
             "upstroke", self.data, ax=ax, selected_idxs=selected_idxs, **kwargs
         )
-        kwargs["color"] = next(ax._get_lines.prop_cycler)["color"]
+        kwargs["color"] = ax._get_lines._cycler_items[0]["color"]
         ax.plot(t, up_dvdt[idxs] * (t - up_t[idxs]) + up_v[idxs], **kwargs)
         return ax
 
@@ -137,7 +137,7 @@ class Spike_AP_downstroke(SpikeFeature):
         ax = scatter_spike_ft(
             "downstroke", self.data, ax=ax, selected_idxs=selected_idxs, **kwargs
         )
-        kwargs["color"] = next(ax._get_lines.prop_cycler)["color"]
+        kwargs["color"] = ax._get_lines._cycler_items[0]["color"]
         ax.plot(t, down_dvdt[idxs] * (t - down_t[idxs]) + down_v[idxs], **kwargs)
         return ax
 

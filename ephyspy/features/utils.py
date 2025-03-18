@@ -264,10 +264,10 @@ def sag_period(sweep: EphysSweep, where_sag: ndarray) -> float:
 
 
 def where_stimulus(data: Union[EphysSweep, EphysSweepSet]) -> Union[bool, ndarray]:
-    """Checks where the stimulus is non-zero.
+    """Checks where the stimulus is unequal to current at t=0.
 
-    Checks where stimulus is non-zero for a single sweep or each sweep in a
-    sweepset.
+    Checks where stimulus is unequal to current at t=0 for a single sweep or each 
+    sweep in a sweepset.
 
     Args:
         data (EphysSweep or EphysSweepSet):
@@ -276,7 +276,7 @@ def where_stimulus(data: Union[EphysSweep, EphysSweepSet]) -> Union[bool, ndarra
     Returns:
         bool: True if stimulus is non-zero.
     """
-    return data.i.T != 0
+    return data.i.T != data.i.T[0]
 
 
 def where_spike_during_stimulus(
@@ -326,7 +326,7 @@ def has_stimulus(data: Union[EphysSweep, EphysSweepSet]) -> Union[bool, ndarray]
 
     Returns:
         bool: True if sweep has stimulus."""
-    return np.any(where_stimulus(data), axis=0)
+    return np.any(data.i.T*where_stimulus(data) != 0, axis=0)
 
 
 def is_hyperpol(data: Union[EphysSweep, EphysSweepSet]) -> Union[bool, ndarray]:
@@ -338,7 +338,7 @@ def is_hyperpol(data: Union[EphysSweep, EphysSweepSet]) -> Union[bool, ndarray]:
 
     Returns:
         bool: True if sweep is hyperpolarizing."""
-    return np.any(data.i.T < 0, axis=0)
+    return np.any(data.i.T*where_stimulus(data) < 0, axis=0)
 
 
 def is_depol(data: Union[EphysSweep, EphysSweepSet]) -> Union[bool, ndarray]:
@@ -350,7 +350,7 @@ def is_depol(data: Union[EphysSweep, EphysSweepSet]) -> Union[bool, ndarray]:
 
     Returns:
         bool: True if sweep is depolarizing."""
-    return np.any(data.i.T > 0, axis=0)
+    return np.any(data.i.T*where_stimulus(data) > 0, axis=0)
 
 
 def has_rebound(feature: Any, T_rebound: float = 0.3) -> bool:
@@ -388,7 +388,7 @@ def median_idx(d: Union[DataFrame, ndarray]) -> Union[int, slice]:
         Union[int, slice]: Index of median value or slice(0) if d is empty or
             all nan."""
     d = d if isinstance(d, DataFrame) else DataFrame(d)
-    if len(d) > 0:
+    if len(d) > 0 and not np.all(d.isna()):
         is_median = d == d.median()
         if any(is_median):
             return int(d.index[is_median].to_numpy())
