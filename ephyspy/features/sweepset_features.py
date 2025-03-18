@@ -285,7 +285,11 @@ class HyperpolMedianFeature(SweepSetFeature):
                 "selected_idx": hyperpol_idx[median_idx(fts)],
             }
         )
-        med = float("nan") if len(fts) == 0 or np.all(np.isnan(fts)) else np.nanmedian(fts).item()
+        med = (
+            float("nan")
+            if len(fts) == 0 or np.all(np.isnan(fts))
+            else np.nanmedian(fts).item()
+        )
         return med
 
 

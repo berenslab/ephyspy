@@ -169,8 +169,12 @@ def stimulus_type(sweep_or_sweepset: Union[EphysSweep, EphysSweepSet]) -> str:
     if np.all(slope == 0):
         return "long_square"
 
-    rel_slope_change = np.abs(slope - slope[0]) / slope[0] if np.all(slope > 0) else np.nan
-    if np.all(rel_slope_change < 0.001) and not np.isnan(rel_slope_change):  # same slope
+    rel_slope_change = (
+        np.abs(slope - slope[0]) / slope[0] if np.all(slope > 0) else np.nan
+    )
+    if np.all(rel_slope_change < 0.001) and not np.isnan(
+        rel_slope_change
+    ):  # same slope
         return "ramp"
     else:
         return "unknown"

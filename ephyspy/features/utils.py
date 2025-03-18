@@ -266,7 +266,7 @@ def sag_period(sweep: EphysSweep, where_sag: ndarray) -> float:
 def where_stimulus(data: Union[EphysSweep, EphysSweepSet]) -> Union[bool, ndarray]:
     """Checks where the stimulus is unequal to current at t=0.
 
-    Checks where stimulus is unequal to current at t=0 for a single sweep or each 
+    Checks where stimulus is unequal to current at t=0 for a single sweep or each
     sweep in a sweepset.
 
     Args:
@@ -326,7 +326,7 @@ def has_stimulus(data: Union[EphysSweep, EphysSweepSet]) -> Union[bool, ndarray]
 
     Returns:
         bool: True if sweep has stimulus."""
-    return np.any(data.i.T*where_stimulus(data) != 0, axis=0)
+    return np.any(data.i.T * where_stimulus(data) != 0, axis=0)
 
 
 def is_hyperpol(data: Union[EphysSweep, EphysSweepSet]) -> Union[bool, ndarray]:
@@ -338,7 +338,7 @@ def is_hyperpol(data: Union[EphysSweep, EphysSweepSet]) -> Union[bool, ndarray]:
 
     Returns:
         bool: True if sweep is hyperpolarizing."""
-    return np.any(data.i.T*where_stimulus(data) < 0, axis=0)
+    return np.any(data.i.T * where_stimulus(data) < 0, axis=0)
 
 
 def is_depol(data: Union[EphysSweep, EphysSweepSet]) -> Union[bool, ndarray]:
@@ -350,7 +350,7 @@ def is_depol(data: Union[EphysSweep, EphysSweepSet]) -> Union[bool, ndarray]:
 
     Returns:
         bool: True if sweep is depolarizing."""
-    return np.any(data.i.T*where_stimulus(data) > 0, axis=0)
+    return np.any(data.i.T * where_stimulus(data) > 0, axis=0)
 
 
 def has_rebound(feature: Any, T_rebound: float = 0.3) -> bool:

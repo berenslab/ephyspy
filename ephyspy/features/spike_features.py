@@ -590,9 +590,11 @@ class Spike_AP_width(SpikeFeature):
 
             width_idx = np.array(
                 [
-                    pk - np.flatnonzero(v[pk:spk:-1] <= wl)[0]
-                    if np.flatnonzero(v[pk:spk:-1] <= wl).size > 0
-                    else np.nan
+                    (
+                        pk - np.flatnonzero(v[pk:spk:-1] <= wl)[0]
+                        if np.flatnonzero(v[pk:spk:-1] <= wl).size > 0
+                        else np.nan
+                    )
                     for pk, spk, wl in zip(
                         peak_idxs,
                         spike_idxs,
