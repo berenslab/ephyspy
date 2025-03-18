@@ -552,9 +552,11 @@ class Spike_AP_width(SpikeFeature):
 
     def _compute(self, recompute=False, store_diagnostics=True):
         width = self.lookup_spike_feature("width", recompute=recompute)
-        trough_idxs = self.lookup_spike_feature("trough_index").astype(int)
-        spike_idxs = self.lookup_spike_feature("threshold_index").astype(int)
-        peak_idxs = self.lookup_spike_feature("peak_index").astype(int)
+
+        # values are floats since they can be nan
+        trough_idxs = self.lookup_spike_feature("trough_index")
+        spike_idxs = self.lookup_spike_feature("threshold_index")
+        peak_idxs = self.lookup_spike_feature("peak_index")
 
         if store_diagnostics:
             self._update_diagnostics(
@@ -574,6 +576,9 @@ class Spike_AP_width(SpikeFeature):
             trough_idxs, spike_idxs, peak_idxs = unpack(
                 self.diagnostics, ["trough_idx", "spike_idx", "peak_idx"]
             )
+            trough_idxs = trough_idxs.astype(int)
+            spike_idxs = spike_idxs.astype(int)
+            peak_idxs = peak_idxs.astype(int)
 
             t = self.data.t
             v = self.data.v

@@ -291,6 +291,10 @@ class BaseFeature(ABC):
         ):
             sweep.process_spikes()
 
+        # Allen dataframe does not always have all columns even though the features
+        # in theory could be computed.
+        if is_allen_ft and feature_name not in sweep._spikes_df.columns:
+            return np.array([])
         return sweep.spike_feature(feature_name, include_clipped=True)
 
     def get_value(

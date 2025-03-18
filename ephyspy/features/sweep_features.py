@@ -587,6 +587,11 @@ class Sweep_ISI_FF(SweepFeature):
         isi_ff = float("nan")
         if has_spikes(self.data):
             isi = self.lookup_spike_feature("isi", recompute=recompute)[1:]
+            during_stim = where_spike_during_stimulus(self, recompute=recompute)[1:]
+            if np.any(during_stim):
+                isi = isi[during_stim]
+                isi = isi[1:] if isi[0] == 0 else isi
+
             if len(isi) > 1:
                 isi_ff = np.nanvar(isi) / np.nanmean(isi)
 
@@ -619,6 +624,11 @@ class Sweep_ISI_CV(SweepFeature):
         isi_cv = float("nan")
         if has_spikes(self.data):
             isi = self.lookup_spike_feature("isi", recompute=recompute)[1:]
+            during_stim = where_spike_during_stimulus(self, recompute=recompute)[1:]
+            if np.any(during_stim):
+                isi = isi[during_stim]
+                isi = isi[1:] if isi[0] == 0 else isi
+
             if len(isi) > 1:
                 isi_cv = np.nanstd(isi) / np.nanmean(isi)
 
@@ -1513,15 +1523,16 @@ class Sweep_ISI_adapt(SweepFeature):
     def _compute(self, recompute=False, store_diagnostics=True):
         isi_adapt = float("nan")
         if has_spikes(self.data):
-            isi = self.lookup_spike_feature("isi", recompute=recompute)
-            during_stim = where_spike_during_stimulus(self, recompute=recompute)
-            isi = isi[during_stim]
-            isi = isi[1:] if isi[0] == 0 else isi
-            if len(isi) > 1:
-                isi_adapt = isi[1] / isi[0]
+            isi = self.lookup_spike_feature("isi", recompute=recompute)[1:]
+            during_stim = where_spike_during_stimulus(self, recompute=recompute)[1:]
+            if np.any(during_stim):
+                isi = isi[during_stim]
+                isi = isi[1:] if isi[0] == 0 else isi
+                if len(isi) > 1:
+                    isi_adapt = isi[1] / isi[0]
 
-            if store_diagnostics:
-                self._update_diagnostics({"isi": isi})
+                if store_diagnostics:
+                    self._update_diagnostics({"isi": isi})
         return isi_adapt
 
     def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:
@@ -1544,16 +1555,17 @@ class Sweep_ISI_adapt_avg(SweepFeature):
     def _compute(self, recompute=False, store_diagnostics=True):
         isi_adapt_avg = float("nan")
         if has_spikes(self.data):
-            isi = self.lookup_spike_feature("isi", recompute=recompute)
-            during_stim = where_spike_during_stimulus(self, recompute=recompute)
-            isi = isi[during_stim]
-            isi = isi[1:] if isi[0] == 0 else isi
-            if len(isi) > 2:
-                isi_changes = isi[1:] / isi[:-1]
-                isi_adapt_avg = isi_changes.mean()
+            isi = self.lookup_spike_feature("isi", recompute=recompute)[1:]
+            during_stim = where_spike_during_stimulus(self, recompute=recompute)[1:]
+            if np.any(during_stim):
+                isi = isi[during_stim]
+                isi = isi[1:] if isi[0] == 0 else isi
+                if len(isi) > 2:
+                    isi_changes = isi[1:] / isi[:-1]
+                    isi_adapt_avg = isi_changes.mean()
 
-                if store_diagnostics:
-                    self._update_diagnostics({"isi": isi})
+                    if store_diagnostics:
+                        self._update_diagnostics({"isi": isi})
         return isi_adapt_avg
 
     def _plot(self, ax: Optional[Axes] = None, **kwargs) -> Axes:

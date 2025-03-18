@@ -203,10 +203,12 @@ def find_upstroke_indexes(v, t, spike_indexes, peak_indexes, filter=10.0, dvdt=N
     if dvdt is None:
         dvdt = calculate_dvdt(v, t, filter)
 
-    upstroke_indexes = [
-        np.argmax(dvdt[spike:peak]) + spike
-        for spike, peak in zip(spike_indexes, peak_indexes)
-    ]
+    upstroke_indexes = []
+    for spike, peak in zip(spike_indexes, peak_indexes):
+        if len(dvdt[spike:peak]) > 0:
+            upstroke_indexes.append(np.argmax(dvdt[spike:peak]) + spike)
+        else:
+            upstroke_indexes.append(np.nan)
 
     return np.array(upstroke_indexes)
 
@@ -985,7 +987,8 @@ def detect_pauses(isis, isi_types, cost_weight=1.0):
             break
         cv = non_pause_isis.std() / non_pause_isis.mean()
         benefit = all_cv - cv
-        cost = np.sum(non_pause_isis.std() / np.abs(non_pause_isis.mean() - pause_isis))
+        div = non_pause_isis.mean() - pause_isis
+        cost = np.sum(non_pause_isis.std() / np.abs(div if div != 0 else float("nan")))
         cost *= cost_weight
         net = benefit - cost
         if net > 0 and net < best_net:
