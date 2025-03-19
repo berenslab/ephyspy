@@ -1,22 +1,22 @@
 [build-system]
-requires = ["setuptools>=45", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "ephyspy"
+version = "0.0.8"
 description = "Package to extract summary statistics from electrophysiological data."
 readme = "README.md"
 authors = [
     {name = "Jonas Beck"}
 ]
 requires-python = ">=3.12"
-dynamic = ["version"]
+license = {text = "GPL-3.0-or-later"}
 classifiers = [
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.12",
 ]
-
 dependencies = [
     "numpy>=1.20.0",
     "pandas>=1.5.3",
@@ -28,35 +28,6 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "black",
-    "isort",
-    "pytest",
-    "pytest-cov",
-]
-
-[tool.setuptools]
-packages = ["ephyspy"]
-package-dir = {"" = "."}
-# FIX: temporary workaround until https://github.com/pypa/setuptools/issues/4759 is fixed
-license-files = []
-
-[tool.setuptools.exclude-package-data]
-"*" = ["*.tests.*", "tests.*", "*.tests", "tests"]
-
-[tool.setuptools.dynamic]
-version = {attr = "ephyspy.__version__.__version__"}
-
-[tool.pytest]
-pep8maxlinelength = 88
-markers = [
-    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-]
-
-[tool.isort]
-profile = "black"
-
-[dependency-groups]
-dev = [
-    "black",
     "ipython>=8.12.3",
     "isort",
     "jupyter>=1.1.1",
@@ -65,3 +36,15 @@ dev = [
     "pytest-cov>=6.0.0",
     "seaborn>=0.13.2",
 ]
+
+[tool.hatch.build.targets.wheel]
+packages = ["ephyspy"]
+
+[tool.pytest.ini_options]
+pep8maxlinelength = 88
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+]
+
+[tool.isort]
+profile = "black"
