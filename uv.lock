@@ -448,9 +448,9 @@ provides-extras = ["dev"]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "black", specifier = ">=25.1.0" },
+    { name = "black" },
     { name = "ipython", specifier = ">=8.12.3" },
-    { name = "isort", specifier = ">=6.0.1" },
+    { name = "isort" },
     { name = "jupyter", specifier = ">=1.1.1" },
     { name = "jupyter-black", specifier = ">=0.4.0" },
     { name = "pytest", specifier = ">=8.3.5" },

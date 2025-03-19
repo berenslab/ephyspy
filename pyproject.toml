@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=42", "wheel"]
+requires = ["setuptools>=45", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -9,9 +9,14 @@ readme = "README.md"
 authors = [
     {name = "Jonas Beck"}
 ]
-license = {text = "GPLv3"}
 requires-python = ">=3.12"
 dynamic = ["version"]
+classifiers = [
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+]
+
 dependencies = [
     "numpy>=1.20.0",
     "pandas>=1.5.3",
@@ -31,6 +36,8 @@ dev = [
 [tool.setuptools]
 packages = ["ephyspy"]
 package-dir = {"" = "."}
+# FIX: temporary workaround until https://github.com/pypa/setuptools/issues/4759 is fixed
+license-files = []
 
 [tool.setuptools.exclude-package-data]
 "*" = ["*.tests.*", "tests.*", "*.tests", "tests"]
@@ -44,25 +51,14 @@ markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
 ]
 
-[tool.flake8]
-max-line-length = 88
-exclude = ["docs", "build", "dist", ".ipynb_checkpoints"]
-
 [tool.isort]
-line_length = 88
-include_trailing_comma = true
-force_grid_wrap = 0
-use_parentheses = true
-skip_glob = ".ipynb_checkpoints"
-known_first_party = ["ephyspy", "tests"]
-known_third_party = ["matplotlib", "numpy", "pytest", "scipy", "setuptools", "six", "sklearn", "pandas"]
-multi_line_output = 3
+profile = "black"
 
 [dependency-groups]
 dev = [
-    "black>=25.1.0",
+    "black",
     "ipython>=8.12.3",
-    "isort>=6.0.1",
+    "isort",
     "jupyter>=1.1.1",
     "jupyter-black>=0.4.0",
     "pytest>=8.3.5",
